@@ -1,0 +1,210 @@
+import QuizRun from '../models/QuizRun.js';
+import Attempt from '../models/Attempt.js';
+import GeneratedQuestion from '../models/GeneratedQuestion.js';
+import { practiceFactsForBelt, buildQuizSet } from './question.service.js';
+import { startTimer, pauseTimer, resumeTimer, isTimeUp } from './timer.service.js';
+import { getBlackTiming, isBlack } from '../utils/belts.js';
+import { incDaily } from './daily.service.js';
+
+// ------------- PREPARE -------------
+export async function prepare(user, { level, beltOrDegree, operation }) {
+  // create empty quiz run (prepared)
+  const run = await QuizRun.create({
+    user: user._id,
+    operation,
+    level,
+    beltOrDegree,
+    status: 'prepared',
+    items: [],
+    currentIndex: 0,
+    totalActiveMs: 0,
+    timer: (() => {
+      if (isBlack(beltOrDegree)) {
+        const { limitMs } = getBlackTiming(beltOrDegree);
+        return { limitMs, remainingMs: limitMs };
+      }
+      return { limitMs: 0, remainingMs: 0 };
+    })()
+  });
+
+  // practice items (1 if identical; else 2)
+  const practice = await practiceFactsForBelt(operation, level, beltOrDegree);
+  return { run, practice };
+}
+
+// ------------- START -------------
+export async function start(runId) {
+  const run = await QuizRun.findById(runId);
+  if (!run) throw new Error('Quiz run not found');
+  if (run.status !== 'prepared') throw new Error('Quiz already started');
+
+  const set = await buildQuizSet(run.operation, run.level, run.beltOrDegree);
+  run.items = set.map(q => ({ questionId: q._id }));
+  run.status = 'in-progress';
+  startTimer(run);
+  await run.save();
+
+  const firstQ = await GeneratedQuestion.findById(run.items[0].questionId);
+  return { run, question: firstQ };
+}
+
+// ------------- ANSWER -------------
+export async function submitAnswer(runId, questionId, answer, responseMs) {
+  const run = await QuizRun.findById(runId);
+  if (!run) throw new Error('Quiz run not found');
+  if (run.status !== 'in-progress') throw new Error('Quiz not in progress');
+
+  if (isTimeUp(run)) {
+    pauseTimer(run);
+    run.status = 'failed';
+    await run.save();
+    return { completed: true, passed: false, reason: 'timeup' };
+  }
+
+  const item = run.items[run.currentIndex];
+  if (!item || String(item.questionId) !== String(questionId)) {
+    throw new Error('Not the current question');
+  }
+
+  const q = await GeneratedQuestion.findById(questionId);
+  const isCorrect = Number(answer) === q.correctAnswer;
+
+  // record attempt
+  await Attempt.create({
+    quizRun: run._id,
+    questionId: q._id,
+    userAnswer: answer,
+    isCorrect,
+    responseMs,
+    reason: 'answer'
+  });
+
+  if (!isCorrect) {
+    // pause timer & return same question as practice
+    pauseTimer(run);
+    item.practiceRequired = true;
+    await run.save();
+    return { practice: q, reason: 'wrong' };
+  }
+
+  // correct: advance
+  run.stats.correct += 1;
+  // add to daily
+  await incDaily(run.user, 1, 0);
+
+  // next index
+  run.currentIndex += 1;
+
+  // if finished
+  if (run.currentIndex >= run.items.length) {
+    pauseTimer(run);
+    run.status = 'completed';
+    await run.save();
+    return { completed: true, passed: true, summary: { correct: run.stats.correct, totalActiveMs: run.totalActiveMs } };
+  }
+
+  // continue: resume timer, return next
+  resumeTimer(run);
+  await run.save();
+  const nextQ = await GeneratedQuestion.findById(run.items[run.currentIndex].questionId);
+  return { next: nextQ };
+}
+
+// ------------- INACTIVITY -------------
+export async function inactivity(runId, questionId) {
+  const run = await QuizRun.findById(runId);
+  if (!run || run.status !== 'in-progress') throw new Error('Invalid run');
+  const item = run.items[run.currentIndex];
+  if (!item || String(item.questionId) !== String(questionId)) throw new Error('Not current question');
+
+  pauseTimer(run);
+  item.practiceRequired = true;
+
+  // record attempt as inactivity trigger
+  await Attempt.create({
+    quizRun: run._id,
+    questionId,
+    triggeredPractice: true,
+    reason: 'inactivity'
+  });
+
+  await run.save();
+  const q = await GeneratedQuestion.findById(questionId);
+  return { practice: q };
+}
+
+// ------------- PRACTICE ANSWER -------------
+export async function practiceAnswer(runId, questionId, answer) {
+  const run = await QuizRun.findById(runId);
+  if (!run) throw new Error('Run not found');
+  const item = run.items[run.currentIndex];
+  if (!item || String(item.questionId) !== String(questionId)) throw new Error('Not current question');
+
+  const q = await GeneratedQuestion.findById(questionId);
+  const correct = Number(answer) === q.correctAnswer;
+
+  // update last practice attempt
+  await Attempt.create({
+    quizRun: run._id,
+    questionId,
+    userAnswer: answer,
+    isCorrect: correct,
+    practiceCompleted: correct,
+    reason: 'answer'
+  });
+
+  if (!correct) {
+    // stay in practice; timer remains paused
+    return { practice: q, stillPracticing: true };
+  }
+
+  // correct practice: mark practiced and resume quiz timer, do not advance index here
+  item.practiceRequired = false;
+  item.practiced = true;
+
+  // resume quiz timer
+  if (run.status === 'in-progress') {
+    // resume and return SAME current quiz question again (so learner answers it in quiz flow)
+    // Spec says: after correct practice, resume quiz at the NEXT item.
+    // We implement exactly that: move to next item, because the fact is now practiced.
+    run.currentIndex += 1;
+
+    if (run.currentIndex >= run.items.length) {
+      // completed right after practice
+      await run.save();
+      return { completed: true };
+    }
+    // resume timer and serve next
+    await run.save();
+    const nextQ = await GeneratedQuestion.findById(run.items[run.currentIndex].questionId);
+    return { resume: nextQ };
+  }
+
+  await run.save();
+  return { resume: true };
+}
+
+// ------------- COMPLETE -------------
+export async function complete(runId) {
+  const run = await QuizRun.findById(runId);
+  if (!run) throw new Error('Run not found');
+
+  // finalize time if running
+  if (run.status === 'in-progress') {
+    // if still in-progress, pause and mark completed by force
+    // (frontend can call this at quiz end)
+    pauseTimer(run);
+    run.status = 'completed';
+  }
+  await run.save();
+
+  return {
+    completed: true,
+    result: {
+      correct: run.stats.correct,
+      wrong: run.stats.wrong,
+      totalActiveMs: run.totalActiveMs,
+      passed: run.status === 'completed'
+    }
+  };
+}
