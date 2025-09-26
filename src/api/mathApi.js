@@ -83,6 +83,7 @@ export const userGetProgress = async (pin) => {
  * Maps a backend question object (from GeneratedQuestion model) to the frontend format.
  * Includes FIX for missing 'choices' array (answers) and displays for L1 White Belt (digit identification).
  */
+
 export function mapQuestionToFrontend(backendQuestion) {
   if (!backendQuestion) return null;
   const a = backendQuestion.params?.a ?? '';
@@ -93,13 +94,17 @@ export function mapQuestionToFrontend(backendQuestion) {
   if (
     backendQuestion.operation === 'add' &&
     backendQuestion.level === 1 &&
-    backendQuestion.beltOrDegree === 'white' &&
-    b === 0 &&
-    !questionString // If it's a generated ID question and has no string yet
+    backendQuestion.beltOrDegree === 'white'
   ) {
-    questionString = String(a); // Show only the digit 'N' (e.g., '9')
+    if (a === 0 && b === 0 && !questionString) { // Check specifically for 0 + 0 case
+      // FIX: Force the question string to be '0 + 0' for the fact display
+      questionString = `${a} + ${b}`;
+    } else if (b === 0 && !questionString) {
+      // Digit recognition questions (d+0) - should show just the digit 'd'
+      questionString = String(a);
+    }
   } else if (!questionString) {
-    // Default format if questionString is missing (like in older objects)
+    // Default format if questionString is missing
     questionString = `${a} + ${b}`; 
   }
   

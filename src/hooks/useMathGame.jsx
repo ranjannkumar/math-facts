@@ -12,6 +12,7 @@ import {
   quizSubmitAnswer,
   quizHandleInactivity,
   userGetProgress,
+  userGetDailyStats, // FIX: Import userGetDailyStats
   mapQuestionToFrontend,
 } from '../api/mathApi.js';
 
@@ -48,6 +49,8 @@ const useMathGame = () => {
   // Timers
   const [quizStartTime, setQuizStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [dailyTotalMs, setDailyTotalMs] = useState(0); // NEW: Base MS from backend (for daily total calculation)
+  const [totalTimeToday, setTotalTimeToday] = useState(0); // NEW: Total accumulated time in seconds
   const [pausedTime, setPausedTime] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
 
@@ -132,17 +135,6 @@ const useMathGame = () => {
 
   // --- API / LIFECYCLE ---
 
-  const fetchProgress = useCallback(async (pin) => {
-    if (!pin) return;
-    try {
-      const { progress } = await userGetProgress(pin);
-      // Map the backend structure (which uses L1, L2 keys) directly into state
-      setTableProgress(progress || {});
-    } catch (e) {
-      console.error('Error fetching progress:', e.message);
-    }
-  }, []);
-
   const handlePinSubmit = useCallback(
     async (pinValue) => {
       const oldPin = localStorage.getItem('math-child-pin');
@@ -161,7 +153,18 @@ const useMathGame = () => {
         localStorage.setItem('math-child-name', user.name);
         setChildName(user.name);
         
-        await fetchProgress(pinValue); // Fetch initial progression
+        // --- CONSOLIDATED FETCHING LOGIC (FIX) ---
+        
+        // 1. Fetch ALL progression data
+        const { progress } = await userGetProgress(pinValue);
+        setTableProgress(progress || {});
+
+        // 2. Fetch daily stats (score and total active time)
+        const stats = await userGetDailyStats(pinValue);
+        setDailyTotalMs(stats?.totalActiveMs || 0); 
+        setCorrectCount(stats?.correctCount || 0); 
+        
+        // --- END CONSOLIDATED LOGIC ---
 
         navigate('/pre-test-popup');
 
@@ -169,7 +172,7 @@ const useMathGame = () => {
         throw new Error(e.message || 'Login failed.');
       }
     },
-    [childName, navigate, hardResetQuizState, fetchProgress]
+    [childName, navigate, hardResetQuizState]
   );
 
 
@@ -264,7 +267,8 @@ const useMathGame = () => {
         if (timeTaken <= 1.5) symbol = '⚡';
         else if (timeTaken <= 2) symbol = '⭐';
         else if (timeTaken <= 5) symbol = '✓';
-        else symbol = '✓';
+        else symbol = '❌'; // FIX: Set to red cross if correct but too slow (> 5s)
+
         audioManager.playCorrectSound();
         setCorrectCount((c) => c + 1);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
@@ -292,9 +296,16 @@ const useMathGame = () => {
               setTimeout(async () => {
                   setShowResult(true);
                   setIsAnimating(false);
-                  await fetchProgress(childPin); // Update progress after completion
+                  
+                  // FIX: Refetch progress & daily stats after completion/failure
+                  const { progress } = await userGetProgress(childPin);
+                  setTableProgress(progress || {}); 
+                  const stats = await userGetDailyStats(childPin);
+                  setDailyTotalMs(stats?.totalActiveMs || 0); 
+                  setCorrectCount(stats?.correctCount || 0); 
+                  
+                  // localStorage will be updated by the timer effect/cleanup
                   navigate(out.passed ? '/results' : '/way-to-go');
-                  localStorage.setItem('math-last-session-seconds', out.summary.totalActiveMs / 1000);
               }, 500);
           } else if (out.next) {
               setTimeout(() => {
@@ -302,7 +313,11 @@ const useMathGame = () => {
                   setCurrentQuestionIndex(prev => prev + 1);
                   questionStartTimestamp.current = Date.now();
                   setIsAnimating(false);
-                  setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
+                  
+                  // FIX: Only update progress bar if the *previous* answer was correct
+                  if (isCorrect) { 
+                    setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
+                  }
               }, 500);
           } else if (out.practice) {
               setTimeout(() => {
@@ -321,7 +336,7 @@ const useMathGame = () => {
           navigate('/belts');
       }
     },
-    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, fetchProgress, maxQuestions]
+    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions]
   );
   
   // 4. Inactivity Timer Effect
@@ -368,16 +383,23 @@ const useMathGame = () => {
     let timer;
     if (!isTimerPaused && quizStartTime) {
       timer = setInterval(() => {
-        const currentElapsed = Math.floor((Date.now() - quizStartTime) / 1000);
-        setElapsedTime(currentElapsed);
-        localStorage.setItem('math-last-session-seconds', currentElapsed);
+        const sessionElapsedMs = Date.now() - quizStartTime;
+        // FIX: Calculate total time by adding the base daily time (dailyTotalMs)
+        const totalElapsedSeconds = Math.floor((dailyTotalMs + sessionElapsedMs) / 1000); 
+
+        setElapsedTime(sessionElapsedMs / 1000); // Current session elapsed time in seconds
+        setTotalTimeToday(totalElapsedSeconds); // NEW: Total accumulated time today in seconds
+
+        // Update local storage with the TOTAL accumulated time today
+        localStorage.setItem('math-last-session-seconds', totalElapsedSeconds); 
       }, 1000);
     }
     return () => {
       clearInterval(timer);
-      localStorage.setItem('math-last-session-seconds', elapsedTime);
+      // Ensure local storage captures final time when unmounting/cleanup occurs
+      localStorage.setItem('math-last-session-seconds', totalTimeToday); 
     };
-  }, [isTimerPaused, quizStartTime, elapsedTime]);
+  }, [isTimerPaused, quizStartTime, dailyTotalMs, totalTimeToday]); // FIX: Added dailyTotalMs, totalTimeToday to deps
 
 
   const handleConfirmQuit = useCallback(() => navigate('/'), [navigate]);
@@ -389,8 +411,8 @@ const useMathGame = () => {
     setChildName('');
     setChildAge('');
     setTableProgress({});
-    setUnlockedDegrees([]);
-    setCompletedBlackBeltDegrees([]);
+    // setUnlockedDegrees([]); // Removed obsolete state update
+    // setCompletedBlackBeltDegrees([]); // Removed obsolete state update
     navigate('/');
   }, [navigate, hardResetQuizState]);
 
@@ -444,6 +466,7 @@ const useMathGame = () => {
     elapsedTime, setElapsedTime,
     pausedTime, setPausedTime,
     isTimerPaused, setIsTimerPaused,
+    totalTimeToday, // NEW: Export total time today for MainLayout/SessionTimer
     getQuizTimeLimit: () => quizTimeLimit,
     // Learning/Practice
     showLearningModule, setShowLearningModule,

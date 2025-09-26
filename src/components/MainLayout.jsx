@@ -13,6 +13,7 @@ const MainLayout = () => {
     isTimerPaused,
     quizStartTime,
     pausedTime,
+    totalTimeToday, 
     elapsedTime,
     handleQuit,
     handleResetProgress,
@@ -62,7 +63,7 @@ const MainLayout = () => {
             startTime={quizStartTime}
             isPaused={isTimerPaused}
             pauseStartTime={pausedTime}
-            accumulatedTime={elapsedTime}
+            accumulatedTime={totalTimeToday}
           />
         </div>
       )}

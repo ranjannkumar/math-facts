@@ -91,7 +91,7 @@ export async function buildQuizSet(operation, level, beltOrDegree){
   }
 
   // PREVIOUS pool: all earlier belts in same level + all belts in earlier levels
-  const needPrev = isIdentical ? 8 : 6;
+  const needPrev = 10 - news.length;
   const prevPool = await getPreviousPool(operation, level, beltOrDegree);
   const prevQs = await samplePrevious(prevPool, needPrev);
 

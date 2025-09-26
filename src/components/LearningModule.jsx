@@ -94,7 +94,8 @@ const LearningModule = () => {
       const questionPart = extractQuestion(q);
       
       // If the question is a simple digit (like '9'), show '9 = 9' for the fact screen
-      if (!questionPart.includes('+')) {
+      if (questionPart.includes('+')) {
+          // Normal math fact: "A + B = C"
           return `${questionPart} = ${q.correctAnswer}`;
       }
       // Otherwise, show the full equation

@@ -22,7 +22,8 @@ const WayToGoScreen = () => {
         const ls = Number(localStorage.getItem('math-last-session-seconds') || 0);
         return Number.isFinite(ls) ? ls : 0;
     });
-    const timeLabel = `${Math.floor(timeSecs)}s`;
+    // FIX: Format total time today in minutes and seconds
+    const timeLabel = `${Math.floor(timeSecs / 60)}m ${Math.floor(timeSecs % 60)}s`; 
 
     useEffect(() => {
         audioManager.playWrongSound?.(); 
