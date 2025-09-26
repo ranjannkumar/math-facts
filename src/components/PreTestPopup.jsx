@@ -10,6 +10,7 @@ const PreTestPopup = () => {
     setPreTestScore,
     setPreTestTimerActive,
     setPreTestSection,
+    setPreTestTimer,  
     navigate,
   } = useContext(MathGameContext);
 

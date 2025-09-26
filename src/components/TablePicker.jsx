@@ -8,87 +8,44 @@ import { themeConfigs } from '../utils/mathGameLogic.js';
 const TOTAL_LEVELS = 6; // only 6 levels as required
 const COLOR_BELTS = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
 
-/* ----------------- Progress helpers (unchanged) ----------------- */
-function readBeltProgressFromLS(level, belt) {
-  try {
-    const key = `math-table-progress-${level}-${belt}`;
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    if (raw === 'completed') return { completed: true, perfectPerformance: false };
-    if (raw === 'perfect') return { completed: true, perfectPerformance: true };
-    const obj = JSON.parse(raw);
-    return obj && typeof obj === 'object' ? obj : null;
-  } catch {
-    return null;
-  }
-}
+/* ----------------- Progress helpers (Updated to rely on Context/Hook) ----------------- */
 function areColorBeltsCompleted(level, tableProgress) {
-  const lvlKey = String(level);
-  return COLOR_BELTS.every((belt) => {
-    const ctx = tableProgress?.[lvlKey]?.[belt];
-    const ls = readBeltProgressFromLS(lvlKey, belt);
-    return !!(ctx?.completed || ls?.completed);
-  });
+  const lvlKey = `L${level}`;
+  const levelProgress = tableProgress?.[lvlKey];
+  if (!levelProgress) return false;
+  return COLOR_BELTS.every((belt) => !!levelProgress[belt]?.completed);
 }
 function countCompletedBelts(level, tableProgress) {
-  const lvlKey = String(level);
-  let count = 0;
-  COLOR_BELTS.forEach((belt) => {
-    const ctx = tableProgress?.[lvlKey]?.[belt];
-    const ls = readBeltProgressFromLS(lvlKey, belt);
-    if (ctx?.completed || ls?.completed) count++;
-  });
-  return count;
+  const lvlKey = `L${level}`;
+  const levelProgress = tableProgress?.[lvlKey];
+  if (!levelProgress) return 0;
+  return COLOR_BELTS.filter((belt) => !!levelProgress[belt]?.completed).length;
 }
-function areAllBlackDegreesCompleted(level) {
-  try {
-    const raw = localStorage.getItem(`math-l${level}-completed-black-degrees`);
-    const arr = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(arr)) return false;
-    for (let d = 1; d <= 7; d++) if (!arr.includes(d)) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
-const REQUIRE_BLACK_FOR_NEXT_LEVEL = true;
 function isPreviousLevelCompleted(level, tableProgress) {
   const prevLevel = level - 1;
-  const colorDone = areColorBeltsCompleted(prevLevel, tableProgress);
-  const blackOk = !REQUIRE_BLACK_FOR_NEXT_LEVEL || areAllBlackDegreesCompleted(prevLevel);
-  return colorDone && blackOk;
+  if (prevLevel < 1) return true; // Level 1 is always unlocked
+  
+  // A level is unlocked if the previous one is marked 'completed' (by Black Belt Degree 7 completion)
+  // OR if the current level is explicitly marked 'unlocked' (e.g., L1 is unlocked on login).
+  const prevLvlKey = `L${prevLevel}`;
+  return !!tableProgress?.[prevLvlKey]?.completed || !!tableProgress?.[`L${level}`]?.unlocked;
 }
 
-/* ----------------- Theme resolver (handles OBJECTS or STRINGS) ----------------- */
+/* ----------------- Theme resolver (Keep existing logic) ----------------- */
 const THEME_LS_KEYS = ['math-selected-theme', 'selected-theme', 'selectedTheme', 'theme', 'themeKey'];
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z]/g, '');
 const safeParse = (s) => { try { return JSON.parse(s); } catch { return null; } };
 
 function resolveThemeKey(preferredFromContext) {
-  const keys = Object.keys(themeConfigs); // ['animals','candyland','fairytales','farm','dinosaurs','underwater']
+  const keys = Object.keys(themeConfigs);
 
-  // 1) Context as OBJECT
   if (preferredFromContext && typeof preferredFromContext === 'object') {
     const k = preferredFromContext.key || preferredFromContext.id || preferredFromContext.name;
     if (k && themeConfigs[k]) return k;
-    if (k) {
-      const n = norm(k);
-      const exact = keys.find((x) => norm(x) === n);
-      if (exact) return exact;
-      const fuzzy = keys.find((x) => norm(x).startsWith(n) || n.startsWith(norm(x)));
-      if (fuzzy) return fuzzy;
-    }
   }
-  // 2) Context as STRING
   if (preferredFromContext && typeof preferredFromContext === 'string') {
     if (themeConfigs[preferredFromContext]) return preferredFromContext;
-    const n = norm(preferredFromContext);
-    const exact = keys.find((x) => norm(x) === n);
-    if (exact) return exact;
-    const fuzzy = keys.find((x) => norm(x).startsWith(n) || n.startsWith(norm(x)));
-    if (fuzzy) return fuzzy;
   }
-  // 3) LocalStorage
   if (typeof window !== 'undefined') {
     for (const lsKey of THEME_LS_KEYS) {
       const raw = localStorage.getItem(lsKey);
@@ -98,16 +55,9 @@ function resolveThemeKey(preferredFromContext) {
         const obj = safeParse(raw);
         candidate = obj?.key || obj?.value || obj?.name || obj?.id || '';
       }
-      if (!candidate) continue;
       if (themeConfigs[candidate]) return candidate;
-      const n = norm(candidate);
-      const exact = keys.find((x) => norm(x) === n);
-      if (exact) return exact;
-      const fuzzy = keys.find((x) => norm(x).startsWith(n) || n.startsWith(norm(x)));
-      if (fuzzy) return fuzzy;
     }
   }
-  // 4) default
   return keys[0];
 }
 
@@ -123,8 +73,10 @@ const TablePicker = () => {
   // Unlocked levels (recompute each render)
   const unlockedLevels = (() => {
     const arr = new Array(TOTAL_LEVELS).fill(false);
-    arr[0] = true;
-    for (let lvl = 2; lvl <= TOTAL_LEVELS; lvl++) arr[lvl - 1] = isPreviousLevelCompleted(lvl, tableProgress);
+    arr[0] = true; // Level 1 is always unlocked
+    for (let lvl = 2; lvl <= TOTAL_LEVELS; lvl++) {
+        arr[lvl - 1] = isPreviousLevelCompleted(lvl, tableProgress);
+    }
     return arr;
   })();
 
@@ -220,7 +172,6 @@ const TablePicker = () => {
             className={`transition-transform ${
               animDir === 'left' ? 'animate-slide-left' : animDir === 'right' ? 'animate-slide-right' : ''
             }`}
-            // key ensures emoji pop resets when level changes
             key={`card-${activeIdx}`}
           >
             <button
@@ -233,12 +184,8 @@ const TablePicker = () => {
               <div className="absolute top-2 right-3 text-xl">{unlocked ? '🔓' : '🔒'}</div>
 
               {/* Emoji badge (pop-in) */}
-              <div className="w-full flex items-center justify-center mb-3">
-                <div
-                  className={`w-20 h-20 ${badgeBgCls} rounded-full shadow-md flex items-center justify-center text-4xl select-none bg-opacity-90 animate-pop`}
-                >
-                  <span aria-hidden="true">{emojiForLevel}</span>
-                </div>
+              <div className="w-20 h-20 bg-black/10 rounded-full shadow-md flex items-center justify-center text-4xl select-none animate-pop">
+                <span aria-hidden="true">{emojiForLevel}</span>
               </div>
 
               {/* Themed table name */}
@@ -252,7 +199,9 @@ const TablePicker = () => {
 
               {/* Helper text */}
               <div className="mt-1 text-center opacity-95">
-                {levelNumber === 1 ? <span>Start here</span> : <span>Finish Level {levelNumber - 1} belts to unlock</span>}
+                {unlocked ? 
+                    <span>Select a belt</span> : 
+                    <span>Finish Level {levelNumber - 1} Black Belt to unlock</span>}
               </div>
             </button>
           </div>

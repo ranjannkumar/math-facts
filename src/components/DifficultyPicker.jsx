@@ -1,9 +1,8 @@
 // src/components/DifficultyPicker.jsx
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { MathGameContext } from '../App.jsx';
-import { tableBgColors, themeConfigs } from '../utils/mathGameLogic.js';
 
 const COLOR_BELTS = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
 const beltImages = {
@@ -28,63 +27,60 @@ const BELT_STRIP = {
   black: 'bg-gray-900',
 };
 
-function readLSProgress(level, belt) {
-  try {
-    const raw = localStorage.getItem(`math-table-progress-${level}-${belt}`);
-    if (!raw) return null;
-    if (raw === 'completed') return { completed: true, perfectPerformance: false };
-    if (raw === 'perfect') return { completed: true, perfectPerformance: true };
-    const obj = JSON.parse(raw);
-    return obj && typeof obj === 'object' ? obj : null;
-  } catch {
-    return null;
-  }
-}
-
 const DifficultyPicker = () => {
   const navigate = useNavigate();
   const {
     selectedTable,
-    selectedTheme,
     tableProgress,
     startQuizWithDifficulty,
   } = useContext(MathGameContext);
 
+  useEffect(() => {
+    if (!selectedTable) {
+      navigate('/levels');
+    }
+  }, [selectedTable, navigate]);
+
   if (!selectedTable) {
-    navigate('/levels');
-    return null;
+    return null; 
   }
 
-  const theme = selectedTheme?.key ? themeConfigs[selectedTheme.key] : null;
 
+  // --- PROGRESS LOGIC: Rely entirely on `tableProgress` from context ---
   const unlockedMap = useMemo(() => {
-    const lvlKey = String(selectedTable);
-    const map = { white: true };
+    const lvlKey = `L${selectedTable}`;
+    const map = {};
+    
+    // 1. Color Belts: unlocked if the current belt is explicitly marked unlocked
     COLOR_BELTS.forEach((belt, idx) => {
-      if (idx === 0) return;
-      const prev = COLOR_BELTS[idx - 1];
-      const ctxPrev = tableProgress?.[lvlKey]?.[prev];
-      const lsPrev = readLSProgress(lvlKey, prev);
-      map[belt] = !!(ctxPrev?.completed || lsPrev?.completed);
+        const ctx = tableProgress?.[lvlKey]?.[belt];
+        if (idx === 0) { 
+            // White belt for the current level is unlocked if the level entry exists or is L1
+            map[belt] = !!(tableProgress?.[lvlKey]?.unlocked || selectedTable === 1);
+        } else {
+            map[belt] = !!ctx?.unlocked;
+        }
     });
-    const ctxBrown = tableProgress?.[lvlKey]?.brown;
-    const lsBrown = readLSProgress(lvlKey, 'brown');
-    map.black = !!(ctxBrown?.completed || lsBrown?.completed);
+
+    // 2. Black Belt: unlocked if the 'black' key exists and is marked unlocked
+    map.black = !!tableProgress?.[lvlKey]?.black?.unlocked;
+    
+    if (selectedTable === 1) map.white = true; 
+
     return map;
   }, [selectedTable, tableProgress]);
 
   const handlePick = (belt, locked) => {
     if (locked) return;
     if (belt === 'black') navigate('/black');
-    else startQuizWithDifficulty(belt);
+    else startQuizWithDifficulty(belt, selectedTable);
   };
 
   const getBeltProgress = (belt) => {
-    const lvlKey = String(selectedTable);
+    const lvlKey = `L${selectedTable}`;
     const ctx = tableProgress?.[lvlKey]?.[belt];
-    const ls = readLSProgress(lvlKey, belt);
-    const hasCompleted = !!(ctx?.completed || ls?.completed);
-    const hasPerfect = !!(ctx?.perfectPerformance || ls?.perfectPerformance);
+    const hasCompleted = !!ctx?.completed;
+    const hasPerfect = false; // Perfect tracking removed from core logic
     return { hasCompleted, hasPerfect };
   };
 
@@ -145,7 +141,7 @@ const DifficultyPicker = () => {
         <CardShell locked={locked} stripColor={BELT_STRIP.black}>
           <h3 className="text-[20px] leading-6 font-extrabold text-slate-800 mt-1 mb-2">Black Belt</h3>
           <img src={beltImages.black} alt="Black belt" className="h-12 mx-auto my-1 drop-shadow" />
-          <div className="text-[18px] mb-1">☆</div>
+          <div className="text-[18px] mb-1">{unlockedMap.black ? '🔓' : '☆'}</div> 
           <div className="text-slate-700 text-[13px]">Degrees 1–7</div>
         </CardShell>
       </button>

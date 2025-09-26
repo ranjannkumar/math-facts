@@ -11,13 +11,13 @@ const WayToGoScreen = () => {
         selectedDifficulty,
         selectedTable,
         correctCount,
-        startActualQuiz,
+        startQuizWithDifficulty, // Use the new API-backed start flow
     } = useContext(MathGameContext);
 
     // This ensures the quiz restarts only once.
     const hasRestarted = useRef(false);
 
-    // Get time from localStorage
+    // Get time from LS set by hook
     const [timeSecs] = useState(() => {
         const ls = Number(localStorage.getItem('math-last-session-seconds') || 0);
         return Number.isFinite(ls) ? ls : 0;
@@ -25,21 +25,21 @@ const WayToGoScreen = () => {
     const timeLabel = `${Math.floor(timeSecs)}s`;
 
     useEffect(() => {
-        audioManager.playWrongSound?.(); // Play a distinct sound for this screen
+        audioManager.playWrongSound?.(); 
         if (hasRestarted.current) return;
         
         const timer = setTimeout(() => {
             if (selectedTable && selectedDifficulty) {
-                startActualQuiz(selectedDifficulty, selectedTable);
-                navigate('/quiz', { replace: true });
+                // Call the API-backed quiz start flow. 
+                startQuizWithDifficulty(selectedDifficulty, selectedTable); 
             } else {
                 navigate('/belts');
             }
             hasRestarted.current = true;
-        }, 5000); // 5 seconds as per spec
+        }, 5000); 
         
         return () => clearTimeout(timer);
-    }, [navigate, selectedDifficulty, selectedTable, startActualQuiz]);
+    }, [navigate, selectedDifficulty, selectedTable, startQuizWithDifficulty]);
     
     const handleBackToBelts = () => {
         navigate('/belts');
@@ -60,7 +60,7 @@ const WayToGoScreen = () => {
             <Confetti
                 width={window.innerWidth}
                 height={window.innerHeight}
-                numberOfPieces={160} // Fewer pieces for an "almost there" feel
+                numberOfPieces={160} 
                 gravity={0.5}
                 run
                 recycle={false}

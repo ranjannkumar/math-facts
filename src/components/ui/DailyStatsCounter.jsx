@@ -1,21 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { MathGameContext } from '../../App.jsx';
+import { userGetDailyStats } from '../../api/mathApi.js';
 
 const DailyStatsCounter = ({ style }) => {
+    const { childPin } = useContext(MathGameContext);
     const [dailyCorrect, setDailyCorrect] = useState(0);
 
-    const getTodayString = () => new Date().toLocaleDateString();
-
-    const updateCount = () => {
-        const today = getTodayString();
-        const count = parseInt(localStorage.getItem(`math-daily-correct-${today}`) || '0');
-        setDailyCorrect(count);
+    const updateCount = async () => {
+        if (!childPin) {
+            setDailyCorrect(0);
+            return;
+        }
+        
+        try {
+            const stats = await userGetDailyStats(childPin);
+            setDailyCorrect(stats?.correctCount || 0);
+        } catch (e) {
+            console.error('Error fetching daily stats:', e.message);
+            setDailyCorrect(0);
+        }
     };
 
     useEffect(() => {
       updateCount();
-      const intervalId = setInterval(updateCount, 1000); // Check every second for updates
+      // Poll every 5 seconds to keep the counter somewhat fresh during a session
+      const intervalId = setInterval(updateCount, 5000); 
       return () => clearInterval(intervalId);
-    }, []);
+    }, [childPin]);
 
     return (
       <div style={style}>

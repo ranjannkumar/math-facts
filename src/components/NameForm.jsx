@@ -11,14 +11,19 @@ const NameForm = () => {
 
   const [error, setError] = useState('');
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     if (!childPin || childPin.trim().length < 2) {
       setError('Please enter a valid PIN (at least 2 characters).');
       return;
     }
     setError('');
-    handlePinSubmit(childPin.trim());
+    
+    try {
+        await handlePinSubmit(childPin.trim());
+    } catch (err) {
+        setError(err.message || 'Login failed. Please check your PIN.');
+    }
   };
 
   return (

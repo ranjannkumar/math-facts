@@ -4,6 +4,7 @@ import Confetti from 'react-confetti';
 import { showShootingStars, clearShootingStars } from '../utils/mathGameLogic';
 import { MathGameContext } from '../App.jsx';
 import { useNavigate } from 'react-router-dom';
+import { quizComplete } from '../api/mathApi.js';
 
 const ResultsScreen = () => {
     const navigate = useNavigate();
@@ -14,94 +15,35 @@ const ResultsScreen = () => {
         selectedTable,
         correctCount,
         setShowResult,
-        setTableProgress,
-        tableProgress,
-        unlockedDegrees,
-        setUnlockedDegrees,
-        setCompletedBlackBeltDegrees,
+        quizRunId,
+        childPin,
     } = useContext(MathGameContext);
 
+    // --- Quiz Info ---
     const isBlack = String(selectedDifficulty).startsWith('black');
     const degree = isBlack ? parseInt(String(selectedDifficulty).split('-')[1] || '1', 10) : null;
     const maxQuestions = isBlack ? (degree === 7 ? 30 : 20) : 10;
     const allCorrect = correctCount === maxQuestions;
 
-    // Redirect to WayToGoScreen if the quiz was not perfectly completed
+    // --- Cleanup/Completion Side Effects ---
+    // 1. Redirect if not perfect score
     useEffect(() => {
         if (!allCorrect) {
             navigate('/way-to-go', { replace: true });
         }
     }, [allCorrect, navigate]);
-
-    // Only proceed with the rest of the logic if allCorrect is true
-    if (!allCorrect) {
-        return null;
-    }
-
-    // ---- optional time (read if your game stored it) ----
-    const [timeSecs, setTimeSecs] = useState(() => {
-        const ls = Number(localStorage.getItem('math-last-session-seconds') || 0);
-        return Number.isFinite(ls) ? ls : 0;
-    });
-    const timeLabel = `${Math.floor(timeSecs)}s`;
-
-    // === Persist completion for COLORED BELTS exactly once ===
-    const persistedColoredRef = useRef(false);
+    
+    // 2. Mark complete on the backend (optional, but good for final record keeping)
+    const completionSentRef = useRef(false);
     useEffect(() => {
-        if (persistedColoredRef.current) return;
-        if (!selectedTable || !selectedDifficulty || isBlack) return;
-        const levelKey = String(selectedTable);
-        const beltKey = String(selectedDifficulty);
-        const lsKey = `math-table-progress-${levelKey}-${beltKey}`;
-        const alreadyInLS = !!localStorage.getItem(lsKey);
-        const alreadyInState = !!(tableProgress?.[levelKey]?.[beltKey]?.completed);
-        if (alreadyInLS || alreadyInState) {
-            persistedColoredRef.current = true;
-            return;
+        if (allCorrect && !completionSentRef.current && quizRunId) {
+            completionSentRef.current = true;
+            // Progression already handled by the final /quiz/answer call. This is non-critical.
+            quizComplete(quizRunId, childPin).catch(console.error);
         }
-        try { localStorage.setItem(lsKey, allCorrect ? 'perfect' : 'completed'); } catch {}
-        setTableProgress((prev = {}) => {
-            const prevBelt = prev?.[levelKey]?.[beltKey];
-            if (prevBelt?.completed) return prev;
-            const levelObj = prev[levelKey] || {};
-            return {
-                ...prev,
-                [levelKey]: {
-                    ...levelObj,
-                    [beltKey]: { completed: true, perfectPerformance: allCorrect },
-                },
-            };
-        });
-        persistedColoredRef.current = true;
-    }, [selectedTable, selectedDifficulty, isBlack, allCorrect, setTableProgress, tableProgress]);
+    }, [allCorrect, quizRunId, childPin]);
 
-    // === Persist completion & unlock NEXT degree for BLACK (per-level) ===
-    const persistedBlackRef = useRef(false);
-    useEffect(() => {
-        if (persistedBlackRef.current) return;
-        if (!isBlack || !degree || !selectedTable) return;
-        const uKey = `math-l${selectedTable}-unlocked-degrees`;
-        const cKey = `math-l${selectedTable}-completed-black-degrees`;
-        setCompletedBlackBeltDegrees((prev = []) => {
-            const base = Array.isArray(prev) ? prev.slice() : [];
-            if (!base.includes(degree)) base.push(degree);
-            base.sort((a, b) => a - b);
-            try { localStorage.setItem(cKey, JSON.stringify(base)); } catch {}
-            return base;
-        });
-        setUnlockedDegrees((prev = []) => {
-            let base = Array.isArray(prev) ? prev.slice() : [];
-            if (!base.includes(degree)) base.push(degree);
-            const next = degree + 1;
-            if (next <= 7 && !base.includes(next)) base.push(next);
-            base = Array.from(new Set(base)).sort((a, b) => a - b);
-            try { localStorage.setItem(uKey, JSON.stringify(base)); } catch {}
-            return base;
-        });
-        persistedBlackRef.current = true;
-    }, [isBlack, degree, selectedTable, setUnlockedDegrees, setCompletedBlackBeltDegrees]);
-
-    // Shooting stars once
+    // 3. Shooting stars/Confetti (client-side visual effect)
     const starsShownRef = useRef(false);
     useEffect(() => {
         if (allCorrect && !starsShownRef.current) {
@@ -111,6 +53,29 @@ const ResultsScreen = () => {
         return () => clearShootingStars();
     }, [allCorrect]);
 
+
+    // Only proceed with the rest of the logic if allCorrect is true
+    if (!allCorrect) {
+        return null;
+    }
+
+    // ---- Time (read from LS set by hook) ----
+    const [timeSecs, setTimeSecs] = useState(() => {
+        const ls = Number(localStorage.getItem('math-last-session-seconds') || 0);
+        return Number.isFinite(ls) ? ls : 0;
+    });
+    const timeLabel = `${Math.floor(timeSecs)}s`;
+
+    // --- Black Belt Degree 7 completion auto-nav ---
+    useEffect(() => {
+        if (isBlack && degree === 7 && allCorrect) {
+            const t = setTimeout(() => navigate('/levels', { replace: true }), 3000);
+            return () => clearTimeout(t);
+        }
+    }, [isBlack, degree, allCorrect, navigate]);
+
+
+    // --- Display Logic ---
     const beltName = (() => {
         if (isBlack) return `Black (Degree ${degree})`;
         switch (selectedDifficulty) {
@@ -123,14 +88,6 @@ const ResultsScreen = () => {
             default: return 'Unknown';
         }
     })();
-
-    useEffect(() => {
-    if (isBlack && degree === 7 && allCorrect) {
-        // small delay so user sees the celebration
-        const t = setTimeout(() => navigate('/levels', { replace: true }), 3000);
-        return () => clearTimeout(t);
-    }
-    }, [isBlack, degree, allCorrect, navigate]);
 
     const handlePrimary = () => {
         setShowResult(false);
