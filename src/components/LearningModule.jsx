@@ -1,4 +1,3 @@
-// src/components/LearningModule.jsx
 import React, { useEffect, useMemo, useState, useContext } from 'react';
 import { MathGameContext } from '../App.jsx';
 import { normalizeDifficulty } from '../utils/mathGameLogic.js';
@@ -33,251 +32,331 @@ const LearningModule = () => {
 
   const diff = useMemo(() => normalizeDifficulty(pendingDifficulty), [pendingDifficulty]);
 
-  const [step, setStep] = useState(0); 
+  const [isShowingFact, setIsShowingFact] = useState(true);
+  const [currentPracticeIndex, setCurrentPracticeIndex] = useState(0);
   const [practiceQ, setPracticeQ] = useState(null); 
-  const [practiceInput, setPracticeInput] = useState('');
   const [practiceMsg, setPracticeMsg] = useState('');
+  const [showAdvanceButton, setShowAdvanceButton] = useState(false);
+  const [selectedAnswer, setSelectedAnswer] = useState(null); // Tracks the button click answer
 
   const isIntervention = !!interventionQuestion;
   const isPreQuizFlow = !isIntervention && preQuizPracticeItems?.length > 0;
   
-  const fact1 = isPreQuizFlow && preQuizPracticeItems[0];
-  const fact2 = isPreQuizFlow && preQuizPracticeItems[isPreQuizFlow ? preQuizPracticeItems.length - 1 : 1];
-
-
   // --- INIT & RESET ---
   useEffect(() => {
+    // Helper to map and set practice question details
+    const initializePractice = (rawQuestion) => {
+        const mappedQ = mapQuestionToFrontend(rawQuestion);
+        setPracticeQ(mappedQ);
+        setSelectedAnswer(null); // Reset selection
+        setShowAdvanceButton(false);
+        setPracticeMsg('');
+    };
+
     if (isIntervention && interventionQuestion) {
-      setPracticeQ(interventionQuestion);
-      setStep(1); 
+      // Intervention always starts with the Fact Screen (isShowingFact: true)
+      initializePractice(interventionQuestion);
+      setIsShowingFact(true);
     } else if (isPreQuizFlow) {
-      setStep(0);
-      setPracticeQ(null);
+      if (preQuizPracticeItems.length > 0) {
+        // Pre-quiz starts with the Fact Screen for the first item
+        const mappedItems = preQuizPracticeItems.map(mapQuestionToFrontend);
+        setPracticeQ(mappedItems[0]);
+        setCurrentPracticeIndex(0);
+        setIsShowingFact(true);
+      } else {
+        setShowLearningModule(false);
+        startActualQuiz(quizRunId);
+      }
     } else {
       if (!isIntervention && !isPreQuizFlow) navigate('/belts');
     }
     
-    setPracticeInput('');
-    setPracticeMsg('');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isIntervention, interventionQuestion, isPreQuizFlow]);
+  }, [isIntervention, interventionQuestion, isPreQuizFlow, preQuizPracticeItems, navigate, startActualQuiz, setShowLearningModule, quizRunId]);
   
   useEffect(() => {
       if (!isIntervention && (!selectedTable || !diff) && !isPreQuizFlow) {
           setShowLearningModule(false);
           navigate('/belts');
       }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTable, diff, isPreQuizFlow, isIntervention]);
+  }, [selectedTable, diff, isPreQuizFlow, isIntervention, setShowLearningModule, navigate]);
   
   
   // --- HELPERS ---
   const extractQuestion = (q) => {
     if (!q) return '—';
-    // The backend provides the full question string in the object if the object is from /answer or /inactivity.
-    // If it's a practice object from /prepare, it might just have params. We default to the mapQuestionToFrontend behavior.
-    return q.question || `${q.params.a} + ${q.params.b}`;
+    // Question string is now correctly formatted (e.g., "9" or "0 + 0") by mapQuestionToFrontend
+    return q.question;
+  }
+  
+  const extractFactDisplay = (q) => {
+      if (!q) return '—';
+      const questionPart = extractQuestion(q);
+      
+      // If the question is a simple digit (like '9'), show '9 = 9' for the fact screen
+      if (!questionPart.includes('+')) {
+          return `${questionPart} = ${q.correctAnswer}`;
+      }
+      // Otherwise, show the full equation
+      return `${questionPart} = ${q.correctAnswer}`;
   }
 
 
   // --- NAVIGATION LOGIC ---
   const handleNext = () => {
-    audioManager.playButtonClick?.();
-    setPracticeInput('');
-    setPracticeMsg('');
-
-    if (isPreQuizFlow) {
-        if (step === 0) {
-          setPracticeQ(fact1);
-          setStep(1);
-        } else if (step === 2) {
-          setPracticeQ(fact2);
-          setStep(3);
-        } else if (step === 3) {
-          setShowLearningModule(false);
-          startActualQuiz(quizRunId);
+    // FIX: Only transition to practice screen if answers are available
+    if (practiceQ && practiceQ.answers && practiceQ.answers.length > 0) {
+        audioManager.playButtonClick?.();
+        setPracticeMsg('');
+        setIsShowingFact(false); // Move from Fact Screen to Practice Screen
+    } else {
+        // Fallback or skip if data is missing, should not happen if mapQuestionToFrontend is correct
+        console.warn("Cannot start practice: Answers data is missing.");
+        if (isIntervention) {
+             handleResumeIntervention();
+        } else if (isPreQuizFlow) {
+             handleAdvancePreQuizFlow(); // Skip current item if possible
         }
     }
   };
+  
+  // Handler for Pre-Quiz flow: moves to next fact or starts quiz
+  const handleAdvancePreQuizFlow = () => {
+    audioManager.playButtonClick?.();
+    const nextIndex = currentPracticeIndex + 1;
+    if (nextIndex < preQuizPracticeItems.length) {
+        // Map the next raw question from the list
+        const mappedQ = mapQuestionToFrontend(preQuizPracticeItems[nextIndex]);
+        
+        setCurrentPracticeIndex(nextIndex);
+        setPracticeQ(mappedQ);
+        setIsShowingFact(true); // Move back to Fact screen for the next fact
+        setShowAdvanceButton(false);
+        setSelectedAnswer(null);
+    } else {
+        // Last practice item is done, start quiz
+        setShowLearningModule(false);
+        startActualQuiz(quizRunId);
+    }
+  };
+  
+  // Handler for Intervention flow: resumes the paused quiz
+  const handleResumeIntervention = () => {
+    audioManager.playButtonClick?.();
+    
+    // Clear intervention state and resume timer/navigation
+    setIsTimerPaused(false);
+    if (pausedTime) setQuizStartTime((prev) => (prev ? prev + (Date.now() - pausedTime) : prev));
+    setInterventionQuestion(null);
+    setShowLearningModule(false);
+    
+    // Resume the quiz on the same question
+    navigate('/quiz'); 
+  }
 
-  const handlePracticeSubmit = async (e) => {
-    e?.preventDefault?.();
-    const val = Number(practiceInput);
-    if (!practiceQ || !quizRunId || !childPin) return;
+  const handlePracticeAnswerClick = async (answer) => {
+    if (selectedAnswer !== null) return;
+    
+    setSelectedAnswer(answer);
 
-    if (val === practiceQ.correctAnswer) {
+    if (!practiceQ || !practiceQ.id || !quizRunId || !childPin) {
+        setPracticeMsg('Error submitting practice: Practice question not found');
+        return;
+    }
+
+    const isCorrect = answer === practiceQ.correctAnswer;
+    
+    if (isCorrect) {
       audioManager.playCorrectSound?.();
       setPracticeMsg('Correct!');
+      setShowAdvanceButton(true);
       
       try {
-        const out = await quizPracticeAnswer(quizRunId, practiceQ.id, val, childPin);
-
-        setTimeout(() => {
-            if (isIntervention) {
-                if (out.resume) {
-                    setIsTimerPaused(false);
-                    if (pausedTime) setQuizStartTime((prev) => (prev ? prev + (Date.now() - pausedTime) : prev));
-                    setInterventionQuestion(null);
-                    setShowLearningModule(false);
-                    
-                    if (out.resume !== true) { 
-                        setCurrentQuestion(mapQuestionToFrontend(out.resume));
-                        setCurrentQuestionIndex(prev => prev + 1);
-                        setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100)); 
-                    } else {
-                        navigate('/results', { replace: true }); // Should only happen if completed exactly after practice
-                    }
-                    
-                    navigate('/quiz'); 
-
-                } else if (out.completed) {
-                    navigate('/results', { replace: true });
-                }
-                
-            } else if (isPreQuizFlow) {
-                if (step === 1) {
-                    setStep(2); 
-                    setPracticeQ(null);
-                } else if (step === 3) {
-                    setShowLearningModule(false);
-                    startActualQuiz(quizRunId);
-                }
+        const out = await quizPracticeAnswer(quizRunId, practiceQ.id, answer, childPin); 
+        
+        if (isIntervention) {
+            // Check for quiz completion immediately after practice (rare, but possible)
+            if (out.completed) {
+                 setTimeout(() => navigate('/results', { replace: true }), 300);
             }
-            setPracticeInput('');
-            setPracticeMsg('');
-
-        }, 300);
+        }
 
       } catch (e) {
-        console.error('Practice submission failed:', e.message);
-        setPracticeMsg('Error submitting practice: ' + e.message);
+        const msg = e.message || 'Error submitting practice: Not current question';
+        console.error('Practice submission failed:', msg);
+        setPracticeMsg('Error submitting practice: ' + msg);
       }
 
     } else {
       audioManager.playWrongSound?.();
-      setPracticeMsg('Try again.');
+      setPracticeMsg('Wrong! Try again.');
+      
+      setTimeout(() => {
+        setSelectedAnswer(null);
+        setPracticeMsg('');
+      }, 1000);
     }
   };
 
-
   const renderBody = () => {
-    // 1. Intervention Practice Screen
+    if (!practiceQ) {
+        return (
+            <div className="text-center">
+                <h3 className="text-xl font-bold text-center text-blue-700 mb-4">Loading Module</h3>
+                <p>Preparing content or already starting quiz...</p>
+            </div>
+        );
+    }
+    
+    const currentCorrectAnswer = practiceQ.correctAnswer;
+    const practiceAnswers = practiceQ.answers || []; // Safely access answers
+
+    // --- 1. Intervention Flow (Show Fact -> Practice -> Resume) ---
     if (isIntervention) {
-      if (!practiceQ) return <p className="text-white">Loading practice question...</p>;
-      const isCorrect = practiceInput && Number(practiceInput) === practiceQ.correctAnswer;
-      
-      return (
-        <>
-          <h3 className="text-xl font-bold text-center text-red-700 mb-4">You missed this fact:</h3>
-          <div className="text-4xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
-            {extractQuestion(practiceQ)} = {practiceQ.correctAnswer}
-          </div>
-          <form onSubmit={handlePracticeSubmit} className="flex flex-col items-center gap-3">
-            <div className="text-lg font-semibold text-gray-700">{extractQuestion(practiceQ)}</div>
-            <input
-              type="number"
-              value={practiceInput}
-              onChange={(e) => setPracticeInput(e.target.value)}
-              className="w-28 text-center text-2xl border-2 border-gray-300 rounded-lg px-3 py-2"
-              required
-            />
-            <button
-              type="submit"
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
-              disabled={isCorrect}
-            >
-              Practice
-            </button>
-            {practiceMsg && (
-              <p className={`mt-2 font-semibold ${practiceMsg === 'Correct!' ? 'text-green-700' : 'text-red-700'}`}>
-                {practiceMsg}
-              </p>
-            )}
-            
-          </form>
-        </>
-      );
-    }
-    
-    // 2. Pre-Quiz Fact Screens (0 and 2)
-    if (isPreQuizFlow && (step === 0 || step === 2)) {
-      const fact = step === 0 ? fact1 : fact2;
-      const progressText = step === 0 ? 'Fact 1 of 2' : 'Fact 2 of 2';
-      if (!fact) return <p className="text-white">Loading fact...</p>;
-
-      return (
-        <>
-          <h3 className="text-xl font-bold text-center text-blue-700 mb-4">{progressText}</h3>
-          <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
-            {extractQuestion(fact)} = {fact.correctAnswer}
-          </div>
-          <div className="flex justify-center">
-            <button
-              className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-6 sm:px-8 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-base sm:text-lg shadow-lg"
-              onClick={handleNext}
-            >
-              {step === 0 ? 'Practice Fact 1' : 'Practice Fact 2'}
-            </button>
-          </div>
-        </>
-      );
-    }
-
-    // 3. Pre-Quiz Practice Screens (1 and 3)
-    if (isPreQuizFlow && (step === 1 || step === 3)) {
-      if (!practiceQ) return <p className="text-white">Loading practice question...</p>;
-      
-      const buttonText = step === 1 ? 'Next Fact' : 'Start Quiz';
-      const isCorrect = practiceInput && Number(practiceInput) === practiceQ.correctAnswer;
-
-      return (
-        <>
-          <h3 className="text-xl font-bold text-center text-blue-700 mb-2">Practice Time</h3>
-          <div className="text-4xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
-            {extractQuestion(practiceQ)}
-          </div>
-          <form onSubmit={handlePracticeSubmit} className="flex flex-col items-center gap-3">
-            <input
-              type="number"
-              value={practiceInput}
-              onChange={(e) => setPracticeInput(e.target.value)}
-              className="w-28 text-center text-2xl border-2 border-gray-300 rounded-lg px-3 py-2"
-              required
-            />
-            <button
-              type="submit"
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
-              disabled={isCorrect}
-            >
-              Check
-            </button>
-            {practiceMsg && (
-              <p className={`mt-2 font-semibold ${practiceMsg === 'Correct!' ? 'text-green-700' : 'text-red-700'}`}>
-                {practiceMsg}
-              </p>
-            )}
-            
-            {practiceMsg === 'Correct!' && (
-                 <button
-                    type="button"
-                    onClick={handleNext}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg mt-4"
+      if (isShowingFact) {
+        // Fact screen
+        return (
+          <>
+            <h3 className="text-xl font-bold text-center text-red-700 mb-4">You missed this fact:</h3>
+            <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
+              {extractFactDisplay(practiceQ)}
+            </div>
+            <div className="flex justify-center">
+              <button
+                className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-6 sm:px-8 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-base sm:text-lg shadow-lg"
+                onClick={handleNext}
+              >
+                Practice Now
+              </button>
+            </div>
+          </>
+        );
+      } else {
+        // Practice screen (Intervention)
+        return (
+          <>
+            <h3 className="text-xl font-bold text-center text-red-700 mb-4">Practice Time</h3>
+            <div className="text-4xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
+              {extractQuestion(practiceQ)}
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-4 w-full">
+              {practiceAnswers.map((answer, index) => (
+                <button
+                  key={index}
+                  onClick={() => handlePracticeAnswerClick(answer)}
+                  disabled={!!selectedAnswer}
+                  className={`py-4 rounded-xl text-2xl font-bold shadow-md transition-all duration-200
+                  ${
+                    selectedAnswer === null
+                      ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                      : answer === currentCorrectAnswer
+                      ? 'bg-green-500 text-white'
+                      : answer === selectedAnswer
+                      ? 'bg-red-500 text-white'
+                      : 'bg-gray-200 text-gray-800 opacity-50'
+                  }`}
                 >
-                    {buttonText}
+                  {answer}
                 </button>
+              ))}
+            </div>
+            {practiceMsg && (
+              <p className={`mt-4 font-semibold text-center ${practiceMsg === 'Correct!' ? 'text-green-700' : 'text-red-700'}`}>
+                {practiceMsg}
+              </p>
             )}
-            
-          </form>
-        </>
-      );
+            {showAdvanceButton && (
+                <div className="flex justify-center mt-4">
+                    <button
+                        type="button"
+                        onClick={handleResumeIntervention}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
+                    >
+                        Resume Quiz
+                    </button>
+                </div>
+            )}
+          </>
+        );
+      }
     }
     
-    return (
-        <div className="text-center">
-            <h3 className="text-xl font-bold text-center text-blue-700 mb-4">Loading Module</h3>
-            <p>Preparing content or already starting quiz...</p>
-        </div>
-    );
+    // --- 2. Pre-Quiz Flow (Show Fact -> Practice -> Next Fact/Quiz) ---
+    if (isPreQuizFlow) {
+      const isLastFact = currentPracticeIndex === preQuizPracticeItems.length - 1;
+      const progressText = `Fact ${currentPracticeIndex + 1} of ${preQuizPracticeItems.length}`;
+      
+      if (isShowingFact) {
+        // Fact screen
+        return (
+          <>
+            <h3 className="text-xl font-bold text-center text-blue-700 mb-4">{progressText}</h3>
+            <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
+              {extractFactDisplay(practiceQ)}
+            </div>
+            <div className="flex justify-center">
+              <button
+                className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-6 sm:px-8 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-base sm:text-lg shadow-lg"
+                onClick={handleNext}
+              >
+                Next
+              </button>
+            </div>
+          </>
+        );
+      } else {
+        // Practice screen (Pre-Quiz)
+        const buttonText = isLastFact ? 'Start Quiz' : 'Next Fact';
+
+        return (
+          <>
+            <h3 className="text-xl font-bold text-center text-blue-700 mb-2">Practice Time ({progressText})</h3>
+            <div className="text-4xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
+              {extractQuestion(practiceQ)}
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-4 w-full">
+              {practiceAnswers.map((answer, index) => (
+                <button
+                  key={index}
+                  onClick={() => handlePracticeAnswerClick(answer)}
+                  disabled={!!selectedAnswer}
+                  className={`py-4 rounded-xl text-2xl font-bold shadow-md transition-all duration-200
+                  ${
+                    selectedAnswer === null
+                      ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                      : answer === currentCorrectAnswer
+                      ? 'bg-green-500 text-white'
+                      : answer === selectedAnswer
+                      ? 'bg-red-500 text-white'
+                      : 'bg-gray-200 text-gray-800 opacity-50'
+                  }`}
+                >
+                  {answer}
+                </button>
+              ))}
+            </div>
+            {practiceMsg && (
+              <p className={`mt-4 font-semibold text-center ${practiceMsg === 'Correct!' ? 'text-green-700' : 'text-red-700'}`}>
+                {practiceMsg}
+              </p>
+            )}
+            {showAdvanceButton && (
+                <div className="flex justify-center mt-4">
+                    <button
+                        type="button"
+                        onClick={handleAdvancePreQuizFlow}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
+                    >
+                        {buttonText}
+                    </button>
+                </div>
+            )}
+          </>
+        );
+      }
+    }
+    
+    return null;
   };
 
   return (

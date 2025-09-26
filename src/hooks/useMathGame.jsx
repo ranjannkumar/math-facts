@@ -57,9 +57,9 @@ const useMathGame = () => {
   const [childAge, setChildAge] = useState(() => localStorage.getItem('math-child-age') || '');
   const [childPin, setChildPin] = useState(() => localStorage.getItem('math-child-pin') || '');
   const [tableProgress, setTableProgress] = useState({});
-  const [unlockedDegrees, setUnlockedDegrees] = useState([]);
-  const [completedBlackBeltDegrees, setCompletedBlackBeltDegrees] = useState([]);
-  const [currentDegree, setCurrentDegree] = useState(1);
+  // const [unlockedDegrees, setUnlockedDegrees] = useState([]);
+  // const [completedBlackBeltDegrees, setCompletedBlackBeltDegrees] = useState([]);
+  // const [currentDegree, setCurrentDegree] = useState(1);
 
   // Misc UI
   const [showQuitModal, setShowQuitModal] = useState(false);
@@ -264,7 +264,7 @@ const useMathGame = () => {
         if (timeTaken <= 1.5) symbol = '⚡';
         else if (timeTaken <= 2) symbol = '⭐';
         else if (timeTaken <= 5) symbol = '✓';
-        else symbol = '❌'; 
+        else symbol = '✓';
         audioManager.playCorrectSound();
         setCorrectCount((c) => c + 1);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
@@ -462,8 +462,8 @@ const useMathGame = () => {
     showSettings, setShowSettings,
     // Progression Data
     tableProgress, setTableProgress,
-    unlockedDegrees, setUnlockedDegrees,
-    completedBlackBeltDegrees, setCompletedBlackBeltDegrees,
+    // unlockedDegrees, setUnlockedDegrees,
+    // completedBlackBeltDegrees, setCompletedBlackBeltDegrees,
     // Pre-test specific exports (re-add these)
     preTestSection, setPreTestSection,
     preTestQuestions, setPreTestQuestions,
@@ -481,7 +481,7 @@ const useMathGame = () => {
     currentSpeedTestIndex, speedTestStartTime, speedTestTimes,
     speedTestComplete, speedTestStarted, speedTestCorrectCount,
     speedTestShowTick, studentReactionSpeed, selectedTheme,
-    currentDegree, setLastQuestion,
+    // currentDegree, setLastQuestion,
     // ... all other original exports ...
   };
 };

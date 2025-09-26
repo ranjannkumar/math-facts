@@ -39,8 +39,10 @@ export const authLogin = async (pin, name = 'Player') => {
   return callApi('/auth/login-pin', 'POST', { pin, name });
 };
 
-export const quizPrepare = async (level, beltOrDegree, pin) => {
-  return callApi('/quiz/prepare', 'POST', { level, beltOrDegree, operation: 'add' }, pin);
+// FIX: Ensure quizPrepare receives and passes the pin parameter.
+// The useMathGame hook already calls this correctly with the pin.
+export const quizPrepare = async (level, beltOrDegree, pin, operation = 'add') => { 
+  return callApi('/quiz/prepare', 'POST', { level, beltOrDegree, operation }, pin);
 };
 
 export const quizStart = async (quizRunId, pin) => {
@@ -79,17 +81,35 @@ export const userGetProgress = async (pin) => {
 
 /**
  * Maps a backend question object (from GeneratedQuestion model) to the frontend format.
+ * Includes FIX for missing 'choices' array (answers) and displays for L1 White Belt (digit identification).
  */
 export function mapQuestionToFrontend(backendQuestion) {
   if (!backendQuestion) return null;
   const a = backendQuestion.params?.a ?? '';
   const b = backendQuestion.params?.b ?? '';
-  const questionString = backendQuestion.operation === 'add' ? `${a} + ${b}` : `${a}`;
+  let questionString = backendQuestion.question;
+
+  // FIX 1: Handle White Belt digit identification questions 
+  if (
+    backendQuestion.operation === 'add' &&
+    backendQuestion.level === 1 &&
+    backendQuestion.beltOrDegree === 'white' &&
+    b === 0 &&
+    !questionString // If it's a generated ID question and has no string yet
+  ) {
+    questionString = String(a); // Show only the digit 'N' (e.g., '9')
+  } else if (!questionString) {
+    // Default format if questionString is missing (like in older objects)
+    questionString = `${a} + ${b}`; 
+  }
+  
+  // FIX 2: Ensure 'answers' array is always present to prevent map() crash
+  const answers = backendQuestion.choices || [];
   
   return {
-    id: backendQuestion._id,
+    id: backendQuestion._id || backendQuestion.id, // Use id or _id for consistency
     question: questionString,
     correctAnswer: backendQuestion.correctAnswer,
-    answers: backendQuestion.choices,
+    answers: answers, // Use the fixed array
   };
 }

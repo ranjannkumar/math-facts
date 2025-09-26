@@ -9,9 +9,6 @@ const BlackBeltPicker = () => {
   const navigate = useNavigate();
   const {
     selectedTable,
-    unlockedDegrees,
-    completedBlackBeltDegrees,
-    setUnlockedDegrees,
     startActualQuiz,
     tableProgress,
   } = useContext(MathGameContext);
@@ -21,67 +18,30 @@ const BlackBeltPicker = () => {
     if (!selectedTable) navigate('/belts');
   }, [selectedTable, navigate]);
 
-  // Helper: read LS list for this level
-  const readLsUnlockedForLevel = () => {
-    if (!selectedTable) return [];
-    try {
-      const raw = localStorage.getItem(`math-l${selectedTable}-unlocked-degrees`);
-      const arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
-    } catch {
-      return [];
-    }
-  };
 
-  // Safety: ensure degree 1 is unlocked if Brown is done (per-level)
-  useEffect(() => {
-    if (!selectedTable) return;
-    const lvl = String(selectedTable);
-    const brownDone =
-      !!tableProgress?.[lvl]?.brown?.completed ||
-      localStorage.getItem(`math-table-progress-${lvl}-brown`) !== null;
 
-    if (!brownDone) return;
 
-    const ls = readLsUnlockedForLevel();
-    const stateArr = Array.isArray(unlockedDegrees) ? unlockedDegrees : [];
-    if (!ls.includes(1) || !stateArr.includes(1)) {
-      const next = Array.from(new Set([1, ...stateArr, ...ls])).sort((a, b) => a - b);
-      setUnlockedDegrees(next);
-      localStorage.setItem(`math-l${selectedTable}-unlocked-degrees`, JSON.stringify(next));
-    }
-  }, [selectedTable, tableProgress, unlockedDegrees, setUnlockedDegrees]);
+  // Compute EFFECTIVE unlocks from state (based on backend source of truth)
+ const { effectiveMaxUnlocked, completedSet } = useMemo(() => {
+    if (!selectedTable) return { effectiveMaxUnlocked: 1, completedSet: new Set() };
 
-  // Compute EFFECTIVE unlocks from state + LS + completed list (all per-level)
-  const { effectiveMaxUnlocked, effectiveSet, completedSet } = useMemo(() => {
-    const ls = readLsUnlockedForLevel();
-    const fromState = Array.isArray(unlockedDegrees) ? unlockedDegrees : [];
-    const fromCompleted = Array.isArray(completedBlackBeltDegrees)
-      ? completedBlackBeltDegrees
+    const lvlKey = `L${selectedTable}`;
+    const levelProg = tableProgress?.[lvlKey]?.black;
+
+    const fromCompleted = Array.isArray(levelProg?.completedDegrees)
+      ? levelProg.completedDegrees
       : [];
 
-    const base = new Set();
-    fromState.forEach((d) => base.add(d));
-    ls.forEach((d) => base.add(d));
-    if (base.size === 0) base.add(1);
-
-    if (fromCompleted.length) {
-      const maxCompleted = Math.max(...fromCompleted);
-      const next = Math.min(7, maxCompleted + 1);
-      base.add(next);
-    }
-
-    const arr = Array.from(base).filter((d) => d >= 1 && d <= 7);
-    const max = arr.length ? Math.max(...arr) : 1;
+    const maxCompleted = fromCompleted.length ? Math.max(...fromCompleted) : 0;
+    const nextUnlocked = Math.min(7, maxCompleted + 1);
 
     return {
-      effectiveMaxUnlocked: Math.max(1, max),
-      effectiveSet: new Set(arr),
+      effectiveMaxUnlocked: Math.max(1, nextUnlocked),
       completedSet: new Set(fromCompleted),
     };
-  }, [unlockedDegrees, completedBlackBeltDegrees, selectedTable]);
+  }, [selectedTable, tableProgress]); 
 
-  const isUnlocked = (deg) => deg <= effectiveMaxUnlocked || effectiveSet.has(deg);
+   const isUnlocked = (deg) => deg <= effectiveMaxUnlocked; // Simplified check
   const isCompleted = (deg) => completedSet.has(deg);
 
   const handlePick = (deg) => {

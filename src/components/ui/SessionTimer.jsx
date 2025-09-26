@@ -1,29 +1,28 @@
 import React, { useState, useEffect } from 'react';
 
 const SessionTimer = ({ isActive, startTime, style, isPaused, pauseStartTime, accumulatedTime = 0 }) => {
-    const [elapsed, setElapsed] = useState(0);
-    const [pausedElapsed, setPausedElapsed] = useState(0);
+    // const [elapsed, setElapsed] = useState(0);
+    // const [pausedElapsed, setPausedElapsed] = useState(0);
     
-    useEffect(() => {
-        if (!isActive || !startTime) return;
+    // useEffect(() => {
+    //     if (!isActive || !startTime) return;
         
-        const update = () => {
-            if (isPaused && pauseStartTime) {
-                const timeBeforePause = Math.floor((pauseStartTime - startTime) / 1000);
-                setPausedElapsed(timeBeforePause);
-            } else {
-                const currentElapsed = Math.floor((Date.now() - startTime) / 1000);
-                setElapsed(currentElapsed);
-            }
-        };
+    //     const update = () => {
+    //         if (isPaused && pauseStartTime) {
+    //             const timeBeforePause = Math.floor((pauseStartTime - startTime) / 1000);
+    //             setPausedElapsed(timeBeforePause);
+    //         } else {
+    //             const currentElapsed = Math.floor((Date.now() - startTime) / 1000);
+    //             setElapsed(currentElapsed);
+    //         }
+    //     };
         
-        update();
-        const interval = setInterval(update, 1000);
-        return () => clearInterval(interval);
-    }, [isActive, startTime, isPaused, pauseStartTime]);
+    //     update();
+    //     const interval = setInterval(update, 1000);
+    //     return () => clearInterval(interval);
+    // }, [isActive, startTime, isPaused, pauseStartTime]);
     
-    const currentTime = isPaused ? pausedElapsed : elapsed;
-    const displayTime = accumulatedTime + currentTime;
+    const displayTime = accumulatedTime;
     const hours = Math.floor(displayTime / 3600);
     const mins = Math.floor((displayTime % 3600) / 60);
     const secs = displayTime % 60;

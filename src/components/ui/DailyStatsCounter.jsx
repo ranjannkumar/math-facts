@@ -28,8 +28,8 @@ const DailyStatsCounter = ({ style }) => {
       updateCount();
       
       // Poll every 5 seconds to keep the counter somewhat fresh during a session
-      const intervalId = setInterval(updateCount, 5000); 
-      return () => clearInterval(intervalId);
+      // const intervalId = setInterval(updateCount, 5000); 
+      // return () => clearInterval(intervalId);
     }, [childPin, updateCount]); // FIX 3: Include updateCount in the dependency array
 
     return (

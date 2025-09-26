@@ -18,6 +18,7 @@ export async function prepare(user, { level, beltOrDegree, operation }) {
     items: [],
     currentIndex: 0,
     totalActiveMs: 0,
+    stats: { correct: 0, wrong: 0 }, // FIX: Explicitly initialize stats
     timer: (() => {
       if (isBlack(beltOrDegree)) {
         const { limitMs } = getBlackTiming(beltOrDegree);
@@ -137,11 +138,24 @@ export async function inactivity(runId, questionId) {
 export async function practiceAnswer(runId, questionId, answer) {
   const run = await QuizRun.findById(runId);
   if (!run) throw new Error('Run not found');
-  const item = run.items[run.currentIndex];
-  if (!item || String(item.questionId) !== String(questionId)) throw new Error('Not current question');
-
+  
   const q = await GeneratedQuestion.findById(questionId);
+  if (!q) throw new Error('Practice question not found');
   const correct = Number(answer) === q.correctAnswer;
+
+  // --- MODIFIED LOGIC START ---
+  if (run.status === 'in-progress') {
+    // Intervention flow: check for index match
+    const item = run.items[run.currentIndex];
+    if (!item || String(item.questionId) !== String(questionId)) {
+      throw new Error('Not current question');
+    }
+  } else if (run.status !== 'prepared') {
+    // If not prepared and not in-progress, reject.
+    throw new Error('Quiz run status not valid for practice');
+  }
+  // --- MODIFIED LOGIC END ---
+
 
   // update last practice attempt
   await Attempt.create({
@@ -158,28 +172,19 @@ export async function practiceAnswer(runId, questionId, answer) {
     return { practice: q, stillPracticing: true };
   }
 
-  // correct practice: mark practiced and resume quiz timer, do not advance index here
-  item.practiceRequired = false;
-  item.practiced = true;
-
-  // resume quiz timer
+  // correct practice: 
   if (run.status === 'in-progress') {
-    // resume and return SAME current quiz question again (so learner answers it in quiz flow)
-    // Spec says: after correct practice, resume quiz at the NEXT item.
-    // We implement exactly that: move to next item, because the fact is now practiced.
-    run.currentIndex += 1;
-
-    if (run.currentIndex >= run.items.length) {
-      // completed right after practice
-      await run.save();
-      return { completed: true };
-    }
-    // resume timer and serve next
+    // Intervention flow: mark practiced, do not advance index, resume timer, return current question.
+    const item = run.items[run.currentIndex];
+    item.practiceRequired = false;
+    item.practiced = true;
+    resumeTimer(run);
     await run.save();
-    const nextQ = await GeneratedQuestion.findById(run.items[run.currentIndex].questionId);
-    return { resume: nextQ };
+    return { resume: q };
   }
-
+  
+  // Pre-quiz flow: simply signal successful practice to the frontend.
+  // The frontend handles progression through the practice items and calling quizStart.
   await run.save();
   return { resume: true };
 }
