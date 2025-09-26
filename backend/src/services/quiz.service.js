@@ -100,8 +100,12 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
   if (run.currentIndex >= run.items.length) {
     pauseTimer(run);
     run.status = 'completed';
+    
+    // FIX: Determine pass status by comparing correct answers to total questions
+    const passed = run.stats.correct === run.items.length; 
+    
     await run.save();
-    return { completed: true, passed: true, summary: { correct: run.stats.correct, totalActiveMs: run.totalActiveMs } };
+    return { completed: true, passed, summary: { correct: run.stats.correct, totalActiveMs: run.totalActiveMs } };
   }
 
   // continue: resume timer, return next
