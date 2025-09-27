@@ -9,7 +9,7 @@ const BlackBeltPicker = () => {
   const navigate = useNavigate();
   const {
     selectedTable,
-    startActualQuiz,
+    startQuizWithDifficulty,
     tableProgress,
   } = useContext(MathGameContext);
 
@@ -46,8 +46,8 @@ const BlackBeltPicker = () => {
 
   const handlePick = (deg) => {
     if (!isUnlocked(deg)) return;
-    startActualQuiz(`black-${deg}`, selectedTable);
-    navigate('/quiz');
+    startQuizWithDifficulty(`black-${deg}`, selectedTable);
+    // navigate('/quiz');
   };
 
   return (

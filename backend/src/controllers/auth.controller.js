@@ -10,7 +10,11 @@ export async function loginPin(req, res, next) {
       user = await User.create({ pin, name: name || 'Player' });
       // unlock first level + white belt by default
       const key = 'L1';
-      user.progress.set(key, { level: 1, white: { unlocked: true }, unlocked: true });
+      user.progress.set(key, { 
+          level: 1, 
+          unlocked: true, // Mark level as unlocked
+          white: { unlocked: true, completed: false } // Mark white belt as unlocked for L1
+      });
       await user.save();
     }
     res.json({ user, token: pin }); // simple: frontend sends x-pin header with this pin
