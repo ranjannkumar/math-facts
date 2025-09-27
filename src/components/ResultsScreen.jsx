@@ -13,6 +13,8 @@ const ResultsScreen = () => {
     const {
         selectedDifficulty,
         selectedTable,
+        sessionCorrectCount, // FIX: Import session correct count
+        elapsedTime, // FIX: Import session elapsed time
         correctCount,
         setShowResult,
         quizRunId,
@@ -23,15 +25,11 @@ const ResultsScreen = () => {
     const isBlack = String(selectedDifficulty).startsWith('black');
     const degree = isBlack ? parseInt(String(selectedDifficulty).split('-')[1] || '1', 10) : null;
     const maxQuestions = isBlack ? (degree === 7 ? 30 : 20) : 10;
-    // NOTE: correctCount here is the *daily total* correct count due to fetch on complete in hook.
-    // The previous logic for checking allCorrect must use the session score, which is now missing.
-    // Assuming the session score is implicitly checked by the navigation in useMathGame.jsx to only 
-    // land here on perfect score, OR for colored belts maxQuestions is 10.
-    const allCorrect = correctCount === maxQuestions; // Keeping this line, assuming logic from hook handles redirection.
+    const allCorrect = sessionCorrectCount === maxQuestions;  
 
-    // --- Cleanup/Completion Side Effects ---
     // 1. Redirect if not perfect score
     useEffect(() => {
+        // Redundant safeguard: navigation in hook should prevent this.
         if (!allCorrect) {
             navigate('/way-to-go', { replace: true });
         }
@@ -69,7 +67,8 @@ const ResultsScreen = () => {
         return Number.isFinite(ls) ? ls : 0;
     });
     // FIX: Format total time today in minutes and seconds
-    const timeLabel = `${Math.floor(timeSecs / 60)}m ${Math.floor(timeSecs % 60)}s`; 
+    const sessionTimeSecs = Math.round(elapsedTime);
+    const timeLabel = `${Math.floor(sessionTimeSecs / 60)}m ${Math.floor(sessionTimeSecs % 60)}s`;  
 
     // --- Black Belt Degree 7 completion auto-nav ---
     useEffect(() => {
@@ -105,8 +104,7 @@ const ResultsScreen = () => {
     };
 
     if (leaving) return null;
-    const pointsEarned = allCorrect ? 10 : Math.max(1, Math.floor(correctCount / 2));
-    
+    const pointsEarned = 10;    
     return (
         <div
             className={
@@ -154,12 +152,12 @@ const ResultsScreen = () => {
                 </p>
                 <div className="grid grid-cols-2 gap-4 md:gap-6 justify-center max-w-xl mx-auto mb-8">
                     <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 md:p-5 shadow">
-                        <div className="text-gray-500 text-sm">Today&apos;s Score</div>
-                        <div className="wordart-number mt-1">{correctCount}</div>
+                        <div className="text-gray-500 text-sm">Session Score</div>
+                        <div className="wordart-number mt-1">{sessionCorrectCount}</div> {/* FIX: Display session score */}
                     </div>
                     <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 md:p-5 shadow">
-                        <div className="text-gray-500 text-sm">Time Spent</div>
-                        <div className="wordart-number mt-1">{timeLabel}</div>
+                        <div className="text-gray-500 text-sm">Time Taken (Session)</div>
+                        <div className="wordart-number mt-1">{timeLabel}</div> {/* FIX: Display session time */}
                     </div>
                 </div>
                 <div className="mb-6">

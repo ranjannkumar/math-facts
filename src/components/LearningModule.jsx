@@ -170,13 +170,13 @@ const LearningModule = () => {
 
     const isCorrect = answer === practiceQ.correctAnswer;
     
-      if (isCorrect) {
+    if (isCorrect) {
         audioManager.playCorrectSound?.();
         setPracticeMsg('Correct!');
         setShowAdvanceButton(true);
 
         try {
-          await handlePracticeAnswer(practiceQ.id, answer);
+          const out = await handlePracticeAnswer(practiceQ.id, answer);
 
           if (isPreQuizFlow) {
             // Pre-quiz: let the advance button control flow
@@ -184,12 +184,14 @@ const LearningModule = () => {
           }
 
           if (isIntervention) {
-            // Immediately resume quiz without showing the Fact popup again
-            setIsClosing(true);                 // <-- blocks init effect
-            setInterventionQuestion(null);      // <-- remove intervention trigger
-            setShowLearningModule(false);       // <-- close modal synchronously
-            navigate('/quiz', { replace: true });
-            return;
+            // FIX: If API confirmed resume, navigate immediately.
+            if (out.resume) {
+              setIsClosing(true);                 
+              setInterventionQuestion(null);      
+              setShowLearningModule(false);       
+              navigate('/quiz', { replace: true });
+              return;
+            }
           }
         } catch (e) {
           const msg = e.message || 'Error submitting practice.';

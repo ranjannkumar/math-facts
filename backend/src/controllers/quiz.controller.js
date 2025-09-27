@@ -20,16 +20,16 @@ export async function start(req, res, next) {
 export async function answer(req, res, next) {
   try {
     const { quizRunId, questionId, answer, responseMs } = req.body;
-    console.log('Received answer:', answer);
     const out = await QuizSvc.submitAnswer(quizRunId, questionId, answer, responseMs);
     
     if (out.completed && out.passed && out.summary) { // FIX: Check for summary existence
-      await ProgressSvc.unlockOnPass(
+     const updatedUser = await ProgressSvc.unlockOnPass( 
           req.user, 
-          out.summary.level, // FIX: Use level from summary
-          out.summary.beltOrDegree, // FIX: Use belt/degree from summary
+          out.summary.level,
+          out.summary.beltOrDegree,
           true
       );
+      out.updatedProgress = Object.fromEntries(updatedUser.progress);
     }
     res.json(out);
   } catch (e) { next(e); }

@@ -111,7 +111,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     run.status = 'completed';
     
     // Determine pass status: requires a perfect score (all questions correct)
-    const passed = run.stats.correct === run.items.length; 
+    const passed = run.stats.wrong === 0; 
 
     const summary = { 
         correct: run.stats.correct, 

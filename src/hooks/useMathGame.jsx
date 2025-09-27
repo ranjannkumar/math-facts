@@ -313,8 +313,10 @@ const useMathGame = () => {
                   setSessionCorrectCount(out.sessionCorrectCount || 0); 
 
                   // FIX: Refetch progress & daily stats after completion/failure
-                  const { progress } = await userGetProgress(childPin);
-                  setTableProgress(progress || {}); 
+                   if (out.updatedProgress) {
+                      setTableProgress(out.updatedProgress);
+                  }
+                  
                   const stats = await userGetDailyStats(childPin);
                   setDailyTotalMs(stats?.totalActiveMs || 0); 
                   setCorrectCount(stats?.correctCount || 0); 
