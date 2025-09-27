@@ -82,8 +82,10 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
 
   if (!isCorrect) {
     // pause timer & return same question as practice
-    pauseTimer(run);
+   pauseTimer(run);
+    run.stats.wrong += 1; // FIX: Track wrong answers for final summary
     item.practiceRequired = true;
+    // Do NOT advance index
     await run.save();
     return { practice: q, reason: 'wrong' };
   }
@@ -103,9 +105,17 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     
     // FIX: Determine pass status by comparing correct answers to total questions
     const passed = run.stats.correct === run.items.length; 
+
+    const summary = { 
+        correct: run.stats.correct, 
+        totalActiveMs: run.totalActiveMs,
+        level: run.level, // New field for progression
+        beltOrDegree: run.beltOrDegree // New field for progression
+    };
+
     
     await run.save();
-    return { completed: true, passed, summary: { correct: run.stats.correct, totalActiveMs: run.totalActiveMs } };
+    return { completed: true, passed, summary };
   }
 
   // continue: resume timer, return next
