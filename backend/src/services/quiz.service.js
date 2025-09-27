@@ -129,7 +129,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
   resumeTimer(run);
   await run.save();
   const nextQ = await GeneratedQuestion.findById(run.items[run.currentIndex].questionId);
-  return { next: nextQ };
+  return { next: nextQ.toObject()  };
 }
 
 // ------------- INACTIVITY -------------
@@ -190,7 +190,7 @@ export async function practiceAnswer(runId, questionId, answer) {
 
   if (!correct) {
     // stay in practice; timer remains paused
-    return { practice: q, stillPracticing: true };
+    return { practice: q.toObject(), stillPracticing: true };
   }
 
   // correct practice: 
@@ -201,7 +201,7 @@ export async function practiceAnswer(runId, questionId, answer) {
     item.practiced = true;
     resumeTimer(run);
     await run.save();
-    return { resume: q };
+    return { resume:  q.toObject() };
   }
   
   // Pre-quiz flow: simply signal successful practice to the frontend.

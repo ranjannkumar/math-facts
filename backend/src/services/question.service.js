@@ -127,7 +127,7 @@ async function makeGenQuestion(operation, level, beltOrDegree, a, b, source, que
     choices,
     source,
     seed: newSeed()
-  });
+  }).then(doc => doc.toObject());
 }
 
 async function makeDigitQuestion(level, beltOrDegree, d){
