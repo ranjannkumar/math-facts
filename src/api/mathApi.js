@@ -84,24 +84,114 @@ export const userGetProgress = async (pin) => {
  * Includes FIX for missing 'choices' array (answers) and displays for L1 White Belt (digit identification).
  */
 
+// export function mapQuestionToFrontend(backendQuestion) {
+//   if (!backendQuestion) return null;
+//   const a = backendQuestion.params?.a ?? '';
+//   const b = backendQuestion.params?.b ?? '';
+//   let questionString = backendQuestion.question;
+
+//   if (!questionString) { 
+//     questionString = `${a} + ${b}`;
+//   }
+  
+//   // FIX 2: Ensure 'answers' array is always present to prevent map() crash
+//   const answers = backendQuestion.choices || [] ;
+//   console.log('Mapped question:', { questionString, answers });
+  
+//   return {
+//     id: backendQuestion._id || backendQuestion.id, // Use id or _id for consistency
+//     question: questionString,
+//     correctAnswer: backendQuestion.correctAnswer,
+//     answers: answers, // Use the fixed array
+//   };
+// }
+
+// src/api/mathApi.js  (keep the other exports as-is)
+
+/**
+ * Ensure the frontend always gets a complete question object:
+ *  - question: "A + B"
+ *  - correctAnswer: number
+ *  - answers: [four unique numbers incl. correct]
+ */
 export function mapQuestionToFrontend(backendQuestion) {
   if (!backendQuestion) return null;
-  const a = backendQuestion.params?.a ?? '';
-  const b = backendQuestion.params?.b ?? '';
-  let questionString = backendQuestion.question;
 
-  if (!questionString) { 
+  // 1) Build display string
+  const a =
+    backendQuestion?.params?.a ??
+    backendQuestion?.a ??
+    (Array.isArray(backendQuestion?.operands) ? backendQuestion.operands[0] : undefined);
+
+  const b =
+    backendQuestion?.params?.b ??
+    backendQuestion?.b ??
+    (Array.isArray(backendQuestion?.operands) ? backendQuestion.operands[1] : undefined);
+
+  let questionString = backendQuestion.question;
+  if (!questionString && Number.isFinite(a) && Number.isFinite(b)) {
+    // default to addition display — update if you add other ops here
     questionString = `${a} + ${b}`;
   }
-  
-  // FIX 2: Ensure 'answers' array is always present to prevent map() crash
-  const answers = backendQuestion.choices || [] ;
-  console.log('Mapped question:', { questionString, answers });
-  
+
+  // 2) Correct answer
+  const computed = Number.isFinite(a) && Number.isFinite(b) ? a + b : undefined;
+  const correct =
+    typeof backendQuestion.correctAnswer === 'number'
+      ? backendQuestion.correctAnswer
+      : computed;
+
+  // 3) Choices (fallback if API didn’t send them or sent < 4)
+  let answers = Array.isArray(backendQuestion.choices)
+    ? backendQuestion.choices.filter((n) => typeof n === 'number')
+    : [];
+
+  const needToBuild = !answers.length || answers.length < 4;
+  if (needToBuild && Number.isFinite(correct)) {
+    const set = new Set(answers);
+    set.add(correct);
+
+    // simple pool around the correct answer + some small numbers
+    const candidates = [
+      correct - 1,
+      correct + 1,
+      correct + 2,
+      correct - 2,
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      a ?? 0,
+      b ?? 0,
+    ];
+
+    for (const c of candidates) {
+      if (set.size >= 4) break;
+      if (Number.isFinite(c) && c >= 0) set.add(c);
+    }
+
+    // if still not 4, jitter around the correct until we reach 4 unique options
+    while (set.size < 4) {
+      const jitter = Math.floor(Math.random() * 9) - 4; // [-4..4]
+      const c = Math.max(0, correct + jitter);
+      set.add(c);
+    }
+
+    answers = Array.from(set).slice(0, 4);
+  }
+
+  // 4) Shuffle
+  for (let i = answers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [answers[i], answers[j]] = [answers[j], answers[i]];
+  }
+
   return {
-    id: backendQuestion._id || backendQuestion.id, // Use id or _id for consistency
-    question: questionString,
-    correctAnswer: backendQuestion.correctAnswer,
-    answers: answers, // Use the fixed array
+    id: backendQuestion._id || backendQuestion.id,
+    question: questionString || String(backendQuestion.question || ''),
+    correctAnswer: correct,
+    answers,
   };
 }

@@ -10,6 +10,8 @@ import { mapQuestionToFrontend } from '../api/mathApi.js'; // Removed unused qui
  * Pre-Quiz: Fact#1 (from /prepare) -> Practice#1 -> Fact#2 -> Practice#2 -> Start Quiz
  * Intervention: Intervention Question -> Practice -> Resume Quiz
  */
+
+
 const LearningModule = () => {
   const {
     pendingDifficulty,
@@ -43,10 +45,22 @@ const LearningModule = () => {
 
   const isIntervention = !!interventionQuestion;
   const isPreQuizFlow = !isIntervention && preQuizPracticeItems?.length > 0;
+
+  const [isClosing, setIsClosing] = useState(false);
+
+
+    // --- NEW helper: always map before storing in state ---
+// const initializePractice = (rawQuestion) => {
+//   const mappedQ = mapQuestionToFrontend(rawQuestion);
+//   setPracticeQ(mappedQ);
+//   setSelectedAnswer(null);
+//   setPracticeMsg('');
+// };
   
   // --- INIT & RESET ---
   useEffect(() => {
     // Helper to map and set practice question details
+    if (isClosing) return;
     const initializePractice = (rawQuestion) => {
         const mappedQ = mapQuestionToFrontend(rawQuestion);
         console.log('Initialized Practice Question:', mappedQ);
@@ -75,7 +89,7 @@ const LearningModule = () => {
       if (!isIntervention && !isPreQuizFlow) navigate('/belts');
     }
     
-  }, [isIntervention, interventionQuestion, isPreQuizFlow, preQuizPracticeItems, navigate, startActualQuiz, setShowLearningModule, quizRunId]);
+  }, [isIntervention, interventionQuestion, isPreQuizFlow, preQuizPracticeItems, navigate, startActualQuiz, setShowLearningModule, quizRunId,isClosing]);
   
   useEffect(() => {
       if (!isIntervention && (!selectedTable || !diff) && !isPreQuizFlow) {
@@ -137,6 +151,9 @@ const LearningModule = () => {
         startActualQuiz(quizRunId);
     }
   };
+
+
+
   
   // Handler for Intervention flow: resumes the paused quiz
   const handleResumeIntervention = () => {
@@ -153,39 +170,41 @@ const LearningModule = () => {
 
     const isCorrect = answer === practiceQ.correctAnswer;
     
-    if (isCorrect) {
-      audioManager.playCorrectSound?.();
-      setPracticeMsg('Correct!');
-      setShowAdvanceButton(true);
-      
-      try {
-        const out = await handlePracticeAnswer(practiceQ.id, answer); // <--- Use the exposed function
+      if (isCorrect) {
+        audioManager.playCorrectSound?.();
+        setPracticeMsg('Correct!');
+        setShowAdvanceButton(true);
 
-        // If in pre-quiz flow, we manually handle progression here
-        if (isPreQuizFlow) {
-             // The next button (Start Quiz / Next Fact) will be shown, handled by renderBody
-        } else if (isIntervention) {
-             // If intervention is resolved, the hook has cleared interventionQuestion and resumed the timer.
-             // We can now show the resume button.
-             // (The logic in handlePracticeAnswer handles the backend state and timer resume)
+        try {
+          await handlePracticeAnswer(practiceQ.id, answer);
+
+          if (isPreQuizFlow) {
+            // Pre-quiz: let the advance button control flow
+            return;
+          }
+
+          if (isIntervention) {
+            // Immediately resume quiz without showing the Fact popup again
+            setIsClosing(true);                 // <-- blocks init effect
+            setInterventionQuestion(null);      // <-- remove intervention trigger
+            setShowLearningModule(false);       // <-- close modal synchronously
+            navigate('/quiz', { replace: true });
+            return;
+          }
+        } catch (e) {
+          const msg = e.message || 'Error submitting practice.';
+          console.error('Practice submission failed:', msg);
+          setPracticeMsg('Error submitting practice: ' + msg);
         }
-
-      } catch (e) {
-        const msg = e.message || 'Error submitting practice.';
-        console.error('Practice submission failed:', msg);
-        setPracticeMsg('Error submitting practice: ' + msg);
+      } else {
+        audioManager.playWrongSound?.();
+        setPracticeMsg('Wrong! Try again.');
+        setTimeout(() => {
+          setSelectedAnswer(null);
+          setPracticeMsg('');
+        }, 1000);
       }
-
-    } else {
-      audioManager.playWrongSound?.();
-      setPracticeMsg('Wrong! Try again.');
-      
-      setTimeout(() => {
-        setSelectedAnswer(null);
-        setPracticeMsg('');
-      }, 1000);
-    }
-  };
+    };
 
   const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
       <>
