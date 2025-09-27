@@ -1,0 +1,3 @@
+JWT_SECRET= yourjwtsecret
+MONGO_URI =  mongodb://localhost:27017
+VERCEL_FRONTEND_URL= 'http://localhost:5173'

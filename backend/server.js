@@ -11,7 +11,8 @@ const PORT = process.env.PORT || 8080;
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-];
+  process.env.VERCEL_FRONTEND_URL,
+].filter(Boolean);
 
 // IMPORTANT: enable CORS before routes handle requests
 app.use(
