@@ -72,7 +72,7 @@ const QuizScreen = () => {
               style={{ width: `${quizProgress}%` }}
             ></div>
           </div>
-          <div className="text-center mt-1 text-xs text-gray-300">{answerSymbols.length}/{maxQuestions}</div>
+          {/* <div className="text-center mt-1 text-xs text-gray-300">{answerSymbols.length}/{maxQuestions}</div> */}
         </div>
 
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4">

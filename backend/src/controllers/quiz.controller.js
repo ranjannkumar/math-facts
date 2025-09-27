@@ -20,6 +20,7 @@ export async function start(req, res, next) {
 export async function answer(req, res, next) {
   try {
     const { quizRunId, questionId, answer, responseMs } = req.body;
+    console.log('Received answer:', answer);
     const out = await QuizSvc.submitAnswer(quizRunId, questionId, answer, responseMs);
     
     if (out.completed && out.passed && out.summary) { // FIX: Check for summary existence

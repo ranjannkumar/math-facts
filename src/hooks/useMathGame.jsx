@@ -272,6 +272,7 @@ const useMathGame = () => {
         audioManager.playCorrectSound();
         setCorrectCount((c) => c + 1);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
+        setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
       } else {
         symbol = '❌';
         audioManager.playWrongSound();
@@ -291,6 +292,8 @@ const useMathGame = () => {
               childPin
           );
 
+          console.log('Quiz Submit Answer Response:', out);
+
           // Handle server response
           if (out.completed) {
               setTimeout(async () => {
@@ -308,20 +311,11 @@ const useMathGame = () => {
                   navigate(out.passed ? '/results' : '/way-to-go');
               }, 500);
           } else if (out.next) {
-              setTimeout(() => {
+               setTimeout(() => {
                   setCurrentQuestion(mapQuestionToFrontend(out.next));
                   setCurrentQuestionIndex(prev => prev + 1);
                   questionStartTimestamp.current = Date.now();
                   setIsAnimating(false);
-                  
-                  // FIX: Only update progress bar if the *previous* answer was correct
-                  if (isCorrect) { 
-                    setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
-                  }else {
-                      // If incorrect, the backend *should* return `out.practice`
-                      // but if it returns `out.next` (unexpected, or black belt auto-advance)
-                      // we should still update the index, but NOT the progress bar.
-                  }
               }, 500);
           } else if (out.practice) {
               setTimeout(() => {
@@ -333,24 +327,7 @@ const useMathGame = () => {
                   setIsAnimating(false);
               }, 500);
           }else {
-             // FIX: If !out.completed, !out.next, and !out.practice, we should still advance 
-             // for the question count even if the answer was wrong and no practice was needed
-             // (e.g., if practice is disabled in the future, or in a different quiz mode).
-             // But for now, we assume a wrong answer leads to practice, so if we reach here 
-             // without 'next' or 'practice' we should log an error or simply advance if correct.
-             // Given the bug description, the primary issue is the client state update logic.
-             // The backend logic (File 2) is the true source of the fix for advancing/failing.
-             if(isCorrect) {
-                 // For now, let's assume if correct and no instruction, we advance.
-                 // This path is usually unreachable due to backend design.
-                 setCurrentQuestionIndex(prev => prev + 1);
-                 questionStartTimestamp.current = Date.now();
-                 setIsAnimating(false);
-                 setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
-             } else {
-                 // If incorrect and no practice/next from backend, we just reset animation
-                 setIsAnimating(false);
-             }
+             setIsAnimating(false);
           }
       } catch (e) {
           console.error('Quiz Answer/State update failed:', e.message);
@@ -375,6 +352,10 @@ const useMathGame = () => {
     if (inactivityTimeoutId.current) clearTimeout(inactivityTimeoutId.current);
 
     inactivityTimeoutId.current = setTimeout(async () => {
+      setAnswerSymbols((prev) => [
+            ...prev, 
+            { symbol: '❌', isCorrect: false, timeTaken: INACTIVITY_TIMEOUT_MS / 1000, reason: 'inactivity' }
+        ]);
         try {
             const out = await quizHandleInactivity(quizRunId, currentQuestion.id, childPin);
             

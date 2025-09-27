@@ -109,7 +109,7 @@ export function mapQuestionToFrontend(backendQuestion) {
   }
   
   // FIX 2: Ensure 'answers' array is always present to prevent map() crash
-  const answers = backendQuestion.choices || [];
+  const answers = backendQuestion.choices || [] ;
   
   return {
     id: backendQuestion._id || backendQuestion.id, // Use id or _id for consistency

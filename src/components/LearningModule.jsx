@@ -47,6 +47,7 @@ const LearningModule = () => {
     // Helper to map and set practice question details
     const initializePractice = (rawQuestion) => {
         const mappedQ = mapQuestionToFrontend(rawQuestion);
+        console.log('Initialized Practice Question:', mappedQ);
         setPracticeQ(mappedQ);
         setSelectedAnswer(null); // Reset selection
         setShowAdvanceButton(false);
@@ -106,19 +107,18 @@ const LearningModule = () => {
   // --- NAVIGATION LOGIC ---
   const handleNext = () => {
     // FIX: Only transition to practice screen if answers are available
-    if (practiceQ && practiceQ.answers && practiceQ.answers.length > 0) {
-        audioManager.playButtonClick?.();
-        setPracticeMsg('');
-        setIsShowingFact(false); // Move from Fact Screen to Practice Screen
-    } else {
-        // Fallback or skip if data is missing, should not happen if mapQuestionToFrontend is correct
-        console.warn("Cannot start practice: Answers data is missing.");
-        if (isIntervention) {
-             handleResumeIntervention();
-        } else if (isPreQuizFlow) {
-             handleAdvancePreQuizFlow(); // Skip current item if possible
-        }
+    if (!practiceQ) return;
+    audioManager.playButtonClick?.();
+    setPracticeMsg('');
+    setIsShowingFact(false); // Move from Fact Screen to Practice Screen
+
+    if (isPreQuizFlow && (!practiceQ.answers || practiceQ.answers.length === 0)) {
+        handleAdvancePreQuizFlow();
+    } else if (!isIntervention && !isPreQuizFlow) {
+        // If somehow triggered outside of flow
+        navigate('/belts');
     }
+
   };
   
   // Handler for Pre-Quiz flow: moves to next fact or starts quiz
@@ -227,13 +227,15 @@ const LearningModule = () => {
                 className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-6 sm:px-8 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-base sm:text-lg shadow-lg"
                 onClick={handleNext}
               >
-                Practice Now
+                Next
               </button>
             </div>
           </>
         );
       } else {
-        // Practice screen (Intervention)
+        // Practice screen (Intervention) || [];
+        const practiceAnswers = practiceQ.answers;
+        console.log('Practice Answers:', practiceAnswers);
         return (
           <>
             <h3 className="text-xl font-bold text-center text-red-700 mb-4">Practice Time</h3>
