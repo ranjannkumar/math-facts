@@ -93,7 +93,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     item.practiceRequired = true;
     // Do NOT advance index
     await run.save();
-    return { practice: q, reason: 'wrong' }; // <--- This triggers the LearningModule intervention
+    return { practice: q.toObject(), reason: 'wrong' }; // <--- This triggers the LearningModule intervention
   }
 
   // Correct answer: advance
@@ -152,7 +152,7 @@ export async function inactivity(runId, questionId) {
 
   await run.save();
   const q = await GeneratedQuestion.findById(questionId);
-  return { practice: q };
+  return { practice: q.toObject()};
 }
 
 // ------------- PRACTICE ANSWER -------------
