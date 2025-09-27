@@ -30,15 +30,26 @@ export async function unlockOnPass(user, level, beltOrDegree, passed) {
 
   // colored belt progression
   const key = `L${level}`;
+  console.log('Unlocking for user', user._id, 'level', level, 'belt', beltOrDegree);
   const prog = user.progress.get(key) || { level };
+  user.progress.set(key, prog); // Ensure Map is tracked if new
+  console.log('Current prog:', prog)
+
   // mark this belt completed and unlock next
-  prog[ beltOrDegree ] = { completed: true, unlocked: true };
+  // 1. Mark this belt completed and unlocked using dot notation (Mongoose sub-document update)
+  // FIX: Access belt property directly to ensure proper sub-document update
+  prog[beltOrDegree].completed = true;
+  prog[beltOrDegree].unlocked = true;
+ 
   const nb = nextBelt(beltOrDegree);
+  console.log('Next belt:', nb);
   if (nb) {
-    prog[ nb ] = { ...(prog[nb]||{}), unlocked: true };
+    // FIX: Access next belt property directly and set unlocked
+    prog[nb].unlocked = true;
   } else {
-    // finished brown -> unlock black
-    prog.black = { unlocked: true, completedDegrees: [] };
+     // finished brown -> unlock black
+    prog.black.unlocked = true;
+    prog.black.completedDegrees = prog.black.completedDegrees || []; // Ensure array exists
   }
   user.progress.set(key, prog);
   await user.save();

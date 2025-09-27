@@ -1,15 +1,30 @@
 import mongoose from 'mongoose';
 
-const ProgressSchema = new mongoose.Schema({
-  level: { type: Number, required: true }, // 1..6 (colored), then black degrees stored separately
-  belt: { type: String, enum: ['white','yellow','green','blue','red','brown'], required: false },
+const BeltStatusSchema = new mongoose.Schema({
   completed: { type: Boolean, default: false },
   unlocked: { type: Boolean, default: false },
+}, { _id: false });
+
+const BlackProgressSchema = new mongoose.Schema({
+  unlocked: { type: Boolean, default: false },
+  completedDegrees: [{ type: Number }]
+}, { _id: false });
+
+const ProgressSchema = new mongoose.Schema({
+  level: { type: Number, required: true },
+  completed: { type: Boolean, default: false },
+  unlocked: { type: Boolean, default: false },
+
+  // FIX: Explicitly define fields for all belts to ensure they persist correctly
+  white: { type: BeltStatusSchema, default: {} },
+  yellow: { type: BeltStatusSchema, default: {} },
+  green: { type: BeltStatusSchema, default: {} },
+  blue: { type: BeltStatusSchema, default: {} },
+  red: { type: BeltStatusSchema, default: {} },
+  brown: { type: BeltStatusSchema, default: {} },
+  
   // black progression
-  black: {
-    unlocked: { type: Boolean, default: false },
-    completedDegrees: [{ type: Number }] // e.g., [1,2,3]
-  }
+  black: { type: BlackProgressSchema, default: {} },
 }, { _id: false });
 
 const DailyStatsSchema = new mongoose.Schema({

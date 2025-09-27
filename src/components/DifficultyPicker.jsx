@@ -50,25 +50,37 @@ const DifficultyPicker = () => {
   const unlockedMap = useMemo(() => {
     const lvlKey = `L${selectedTable}`;
     const map = {};
+    const levelProgress = tableProgress?.[lvlKey] || {};
     
-    // 1. Color Belts: unlocked if the current belt is explicitly marked unlocked
+    // L1 is always unlocked. L2+ is unlocked if L(n-1) Black Belt Degree 7 is completed.
+    const isLevelUnlocked = selectedTable === 1 || !!levelProgress.unlocked;
+
     COLOR_BELTS.forEach((belt, idx) => {
-        const ctx = tableProgress?.[lvlKey]?.[belt];
-        if (idx === 0) { 
-            // White belt for the current level is unlocked if the level entry exists or is L1
-            map[belt] = !!(tableProgress?.[lvlKey]?.unlocked || selectedTable === 1);
+        // White belt is unlocked if the entire level is unlocked
+        if (belt === 'white') { 
+            map[belt] = isLevelUnlocked;
         } else {
-            map[belt] = !!ctx?.unlocked;
+            // All other colored belts: unlocked if the previous belt is COMPLETED.
+            const prevBelt = COLOR_BELTS[idx - 1];
+            console.log('Checking unlock for', belt, 'prev:', prevBelt, 'levelProgress:', levelProgress);
+            const isPrevCompleted = !!levelProgress?.[prevBelt]?.completed;
+            
+            // Fallback: Also include the explicit 'unlocked' flag from the backend
+            // for resilience, but the primary mechanism is the previous belt's completion.
+            const isExplicitlyUnlocked = !!levelProgress?.[belt]?.unlocked;
+
+            map[belt] = isPrevCompleted || isExplicitlyUnlocked;
         }
     });
 
-    // 2. Black Belt: unlocked if the 'black' key exists and is marked unlocked
-    map.black = !!tableProgress?.[lvlKey]?.black?.unlocked;
+    // 2. Black Belt: unlocked if the 'brown' belt is completed.
+    const isBrownCompleted = !!levelProgress?.brown?.completed;
+    // Check brown completion OR if the black belt is explicitly marked unlocked (e.g., L1 after Brown completion).
+    map.black = isBrownCompleted || !!levelProgress?.black?.unlocked;
     
-    if (selectedTable === 1) map.white = true; 
-
     return map;
   }, [selectedTable, tableProgress]);
+
 
   const handlePick = (belt, locked) => {
     if (locked) return;
