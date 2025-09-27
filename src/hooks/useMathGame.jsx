@@ -11,8 +11,9 @@ import {
   quizStart,
   quizSubmitAnswer,
   quizHandleInactivity,
+  quizPracticeAnswer, // <--- Import for practice submission
   userGetProgress,
-  userGetDailyStats, // FIX: Import userGetDailyStats
+  userGetDailyStats, 
   mapQuestionToFrontend,
 } from '../api/mathApi.js';
 
@@ -38,7 +39,8 @@ const useMathGame = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [quizProgress, setQuizProgress] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0); // Daily total score
+  const [sessionCorrectCount, setSessionCorrectCount] = useState(0); // <--- ADDED: Session Score
   const [wrongCount, setWrongCount] = useState(0);
   const [questionTimes, setQuestionTimes] = useState([]);
   const [answerSymbols, setAnswerSymbols] = useState([]);
@@ -119,6 +121,7 @@ const useMathGame = () => {
     setQuizProgress(0);
     setAnswerSymbols([]);
     setCorrectCount(0);
+    setSessionCorrectCount(0); // <--- ADDED RESET
     setWrongCount(0);
     setQuestionTimes([]);
     setCurrentQuestion(null);
@@ -175,47 +178,6 @@ const useMathGame = () => {
     [childName, navigate, hardResetQuizState]
   );
 
-
-  // 1. Prepare (called from DifficultyPicker/BlackBeltPicker -> startQuizWithDifficulty)
-  const startQuizWithDifficulty = useCallback(
-    async (difficulty, table) => {
-      hardResetQuizState();
-      setSelectedDifficulty(difficulty);
-      setSelectedTable(table);
-      setPendingDifficulty(difficulty);
-      setMaxQuestions(determineMaxQuestions(difficulty));
-
-      try {
-        const { quizRunId: newRunId, practice: practiceItems } = await quizPrepare(
-          table,
-          difficulty,
-          childPin
-        );
-        
-        setQuizRunId(newRunId);
-        setPreQuizPracticeItems(practiceItems || []);
-
-        // Use a generic placeholder content since the actual facts are in practiceItems
-        const content = `${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} Belt Quiz at Level ${table}.`;
-        setLearningModuleContent(content);
-        
-        if (practiceItems && practiceItems.length > 0) {
-          setShowLearningModule(true);
-          navigate('/learning');
-        } else {
-          startActualQuiz(newRunId);
-        }
-        
-      } catch (e) {
-        console.error('Quiz Prepare failed:', e.message);
-        alert('Failed to prepare quiz: ' + e.message);
-        navigate('/belts');
-      }
-    },
-    [navigate, childPin, hardResetQuizState, determineMaxQuestions]
-  );
-  
-  // 2. Start (called from LearningModule after practice is completed)
   const startActualQuiz = useCallback(
     async (runId) => {
       try {
@@ -245,6 +207,52 @@ const useMathGame = () => {
     [navigate, childPin, quizRunId]
   );
 
+  // 1. Prepare (called from DifficultyPicker/BlackBeltPicker -> startQuizWithDifficulty)
+  const startQuizWithDifficulty = useCallback(
+    async (difficulty, table) => {
+      hardResetQuizState();
+      setSelectedDifficulty(difficulty);
+      setSelectedTable(table);
+      setPendingDifficulty(difficulty);
+      setMaxQuestions(determineMaxQuestions(difficulty));
+
+      try {
+        const { quizRunId: newRunId, practice: practiceItems } = await quizPrepare(
+          table,
+          difficulty,
+          childPin
+        );
+        
+        setQuizRunId(newRunId);
+        setPreQuizPracticeItems(practiceItems || []);
+
+        // Use a generic placeholder content since the actual facts are in practiceItems
+        const content = `${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} Belt Quiz at Level ${table}.`;
+        setLearningModuleContent(content);
+        
+        // FIX (B15): Implement Black Belt skip logic
+        const isBlackBelt = String(difficulty).startsWith('black');
+
+        if (!isBlackBelt && practiceItems && practiceItems.length > 0) {
+          setShowLearningModule(true);
+          navigate('/learning');
+        } else {
+          // Black Belt or no practice items, go straight to quiz start
+          startActualQuiz(newRunId);
+        }
+        
+      } catch (e) {
+        console.error('Quiz Prepare failed:', e.message);
+        alert('Failed to prepare quiz: ' + e.message);
+        navigate('/belts');
+      }
+    },
+    [navigate, childPin, hardResetQuizState, determineMaxQuestions, startActualQuiz]
+  );
+  
+  // 2. Start (called from LearningModule after practice is completed)
+  
+
   // 3. Answer
   const handleAnswer = useCallback(
     async (selectedAnswer) => {
@@ -270,7 +278,8 @@ const useMathGame = () => {
         else symbol = '❌'; // FIX: Set to red cross if correct but too slow (> 5s)
 
         audioManager.playCorrectSound();
-        setCorrectCount((c) => c + 1);
+        // The daily correct count update is handled by the backend API call,
+        // we update it from the full stats refetch on completion/inactivity.
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
       } else {
@@ -300,6 +309,9 @@ const useMathGame = () => {
                   setShowResult(true);
                   setIsAnimating(false);
                   
+                  // FIX (B14): Set session score from API response
+                  setSessionCorrectCount(out.sessionCorrectCount || 0); 
+
                   // FIX: Refetch progress & daily stats after completion/failure
                   const { progress } = await userGetProgress(childPin);
                   setTableProgress(progress || {}); 
@@ -308,7 +320,7 @@ const useMathGame = () => {
                   setCorrectCount(stats?.correctCount || 0); 
                   
                   // localStorage will be updated by the timer effect/cleanup
-                  navigate(out.passed ? '/results' : '/way-to-go');
+                  navigate(out.passed ? '/results' : '/way-to-go', { replace: true });
               }, 500);
           } else if (out.next) {
                setTimeout(() => {
@@ -339,7 +351,37 @@ const useMathGame = () => {
     [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions]
   );
   
-  // 4. Inactivity Timer Effect
+  // 4. Handle Practice Answer Submission (for LearningModule intervention)
+  const handlePracticeAnswer = useCallback(async (questionId, answer) => {
+    if (!quizRunId || !childPin) {
+      console.error('Quiz not active for practice answer.');
+      return { stillPracticing: true, completed: false };
+    }
+    
+    try {
+      const out = await quizPracticeAnswer(quizRunId, questionId, answer, childPin);
+      
+      if (out.resume) {
+        // Correct answer, quiz is resumed/cleared on backend.
+        setIsTimerPaused(false);
+        // Resume timer client-side by correcting quizStartTime
+        if (pausedTime) setQuizStartTime((prev) => (prev ? prev + (Date.now() - pausedTime) : prev));
+        setInterventionQuestion(null);
+        setShowLearningModule(false);
+      }
+
+      return out;
+    } catch (e) {
+      console.error('Practice submission failed:', e.message);
+      // If server failed for some reason, re-pause the timer and keep asking
+      setIsTimerPaused(true);
+      setPausedTime(Date.now());
+      return { stillPracticing: true, error: e.message };
+    }
+  }, [quizRunId, childPin, pausedTime]);
+
+
+  // 5. Inactivity Timer Effect
   useEffect(() => {
     if (!currentQuestion || isTimerPaused || showResult || !quizRunId) {
       if (inactivityTimeoutId.current) {
@@ -429,7 +471,7 @@ const useMathGame = () => {
     // after a successful quizPracticeAnswer API call.
   }, []);
 
-  // --- FIX 3: Define getQuizTimeLimit logic or a simple placeholder inside the hook ---
+  // --- Define getQuizTimeLimit logic ---
   const quizTimeLimit = (() => {
     if (!selectedDifficulty || !selectedDifficulty.startsWith('black')) {
       return 0;
@@ -459,7 +501,8 @@ const useMathGame = () => {
     isAnimating, setIsAnimating,
     showResult, setShowResult,
     quizProgress, setQuizProgress,
-    correctCount, setCorrectCount,
+    correctCount, setCorrectCount, // Daily total correct count
+    sessionCorrectCount, // Session correct count (for result screens)
     wrongCount, setWrongCount,
     answerSymbols, setAnswerSymbols,
     currentQuestion, setCurrentQuestion,
@@ -478,6 +521,7 @@ const useMathGame = () => {
     pendingDifficulty, setPendingDifficulty,
     preQuizPracticeItems, setPreQuizPracticeItems,
     interventionQuestion, setInterventionQuestion,
+    handlePracticeAnswer, // <--- NEW: Function for intervention practice submission
     resumeQuizAfterIntervention,
     // Identity & Settings
     childName, setChildName, handleNameChange,

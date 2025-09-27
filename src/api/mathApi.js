@@ -90,22 +90,8 @@ export function mapQuestionToFrontend(backendQuestion) {
   const b = backendQuestion.params?.b ?? '';
   let questionString = backendQuestion.question;
 
-  // FIX 1: Handle White Belt digit identification questions 
-  if (
-    backendQuestion.operation === 'add' &&
-    backendQuestion.level === 1 &&
-    backendQuestion.beltOrDegree === 'white'
-  ) {
-    if (a === 0 && b === 0 && !questionString) { // Check specifically for 0 + 0 case
-      // FIX: Force the question string to be '0 + 0' for the fact display
-      questionString = `${a} + ${b}`;
-    } else if (b === 0 && !questionString) {
-      // Digit recognition questions (d+0) - should show just the digit 'd'
-      questionString = String(a);
-    }
-  } else if (!questionString) {
-    // Default format if questionString is missing
-    questionString = `${a} + ${b}`; 
+  if (!questionString) { 
+    questionString = `${a} + ${b}`;
   }
   
   // FIX 2: Ensure 'answers' array is always present to prevent map() crash

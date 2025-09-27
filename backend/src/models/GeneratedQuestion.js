@@ -6,6 +6,7 @@ const GeneratedQuestionSchema = new mongoose.Schema({
   level: { type: Number, index: true },
   beltOrDegree: { type: String, index: true },
   params: { a: Number, b: Number },
+  question: { type: String }, 
   correctAnswer: { type: Number, required: true },
   choices: {
     type: [Number],

@@ -56,8 +56,8 @@ export async function buildQuizSet(operation, level, beltOrDegree){
   if (!isBlack(beltOrDegree) && level===1 && beltOrDegree==='white') {
     const out = [];
     // two new 0+0
-    out.push(await makeGenQuestion(operation, level, beltOrDegree, 0, 0, 'current'));
-    out.push(await makeGenQuestion(operation, level, beltOrDegree, 0, 0, 'current'));
+    out.push(await makeGenQuestion(operation, level, beltOrDegree, 0, 0, 'current','0 + 0'));
+    out.push(await makeGenQuestion(operation, level, beltOrDegree, 0, 0, 'current','0 + 0'));
     // eight digit recognition
     for (let i=0;i<8;i++){
       const d = Math.floor(Math.random()*10);
@@ -113,7 +113,7 @@ async function buildQuizForBlack(operation, level, beltOrDegree){
 }
 
 /* ---------- build helper questions ---------- */
-async function makeGenQuestion(operation, level, beltOrDegree, a, b, source){
+async function makeGenQuestion(operation, level, beltOrDegree, a, b, source, questionStringOverride = null){
   const correct = a+b;
   const choices = choiceSet(correct);
 
@@ -122,6 +122,7 @@ async function makeGenQuestion(operation, level, beltOrDegree, a, b, source){
     level,
     beltOrDegree,
     params: { a, b },
+    question: questionStringOverride, // <--- Use override if present
     correctAnswer: correct,
     choices,
     source,
@@ -133,16 +134,15 @@ async function makeDigitQuestion(level, beltOrDegree, d){
   const correct = d;
   const base = [correct, (correct+1)%10, (correct+2)%10, (correct+3)%10];
   const choices = shuffle([...new Set(base)]).slice(0,4);
-  return GeneratedQuestion.create({
-    operation: 'add',
-    level,
-    beltOrDegree,
-    params: { a: d, b: 0 }, // just for traceability
-    correctAnswer: correct,
-    choices,
-    source: 'previous',
-    seed: newSeed()
-  });
+ return makeGenQuestion(
+    'add', 
+    level, 
+    beltOrDegree, 
+    d, 
+    0, 
+    'previous', 
+    String(d) // <--- Use the digit 'd' as the question string
+  );
 }
 
 /* ---------- previous pool builders (frontend-compliant) ---------- */

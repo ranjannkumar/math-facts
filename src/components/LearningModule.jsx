@@ -1,8 +1,9 @@
+// ranjannkumar/math-facts/math-facts-53836cb507e63890a9c757d863525a6cb3341e86/src/components/LearningModule.jsx
 import React, { useEffect, useMemo, useState, useContext } from 'react';
 import { MathGameContext } from '../App.jsx';
 import { normalizeDifficulty } from '../utils/mathGameLogic.js';
 import audioManager from '../utils/audioUtils.js';
-import { quizPracticeAnswer, mapQuestionToFrontend } from '../api/mathApi.js';
+import { mapQuestionToFrontend } from '../api/mathApi.js'; // Removed unused quizPracticeAnswer import
 
 /**
  * Learning flow:
@@ -28,6 +29,7 @@ const LearningModule = () => {
     setCurrentQuestionIndex,
     setQuizProgress,
     maxQuestions,
+    handlePracticeAnswer, // <--- Import the new function from useMathGame
   } = useContext(MathGameContext);
 
   const diff = useMemo(() => normalizeDifficulty(pendingDifficulty), [pendingDifficulty]);
@@ -55,7 +57,7 @@ const LearningModule = () => {
     };
 
     if (isIntervention && interventionQuestion) {
-      // Intervention always starts with the Fact Screen (isShowingFact: true)
+      // Intervention flow: Always starts on the Fact Screen (isShowingFact: true)
       initializePractice(interventionQuestion);
       setIsShowingFact(true);
     } else if (isPreQuizFlow) {
@@ -86,7 +88,10 @@ const LearningModule = () => {
   // --- HELPERS ---
   const extractQuestion = (q) => {
     if (!q) return '—';
-    // Question string is now correctly formatted (e.g., "9" or "0 + 0") by mapQuestionToFrontend
+    // If the question field is just a digit (for L1 white belt), display it clearly
+    if (!isNaN(Number(q.question)) && q.question.length === 1 && q.question !== '0') {
+         return q.question;
+    }
     return q.question;
   }
   
@@ -94,31 +99,23 @@ const LearningModule = () => {
       if (!q) return '—';
       const questionPart = extractQuestion(q);
       
-      // If the question is a simple digit (like '9'), show '9 = 9' for the fact screen
-      if (questionPart.includes('+')) {
-          // Normal math fact: "A + B = C"
+      // Handle digit recognition case (e.g., Q: "9", Fact: "9 = 9")
+      if (!questionPart.includes('+') && !questionPart.includes('-') && !questionPart.includes('×') && !questionPart.includes('÷')) {
           return `${questionPart} = ${q.correctAnswer}`;
       }
-      // Otherwise, show the full equation
+      
+      // Otherwise, show the full equation (e.g., "A + B = C")
       return `${questionPart} = ${q.correctAnswer}`;
   }
 
 
   // --- NAVIGATION LOGIC ---
   const handleNext = () => {
-    // FIX: Only transition to practice screen if answers are available
+    // Only transition to practice screen if answers are available or if it's the intervention flow
     if (!practiceQ) return;
     audioManager.playButtonClick?.();
     setPracticeMsg('');
     setIsShowingFact(false); // Move from Fact Screen to Practice Screen
-
-    if (isPreQuizFlow && (!practiceQ.answers || practiceQ.answers.length === 0)) {
-        handleAdvancePreQuizFlow();
-    } else if (!isIntervention && !isPreQuizFlow) {
-        // If somehow triggered outside of flow
-        navigate('/belts');
-    }
-
   };
   
   // Handler for Pre-Quiz flow: moves to next fact or starts quiz
@@ -143,27 +140,16 @@ const LearningModule = () => {
   
   // Handler for Intervention flow: resumes the paused quiz
   const handleResumeIntervention = () => {
-    audioManager.playButtonClick?.();
-    
-    // Clear intervention state and resume timer/navigation
-    setIsTimerPaused(false);
-    if (pausedTime) setQuizStartTime((prev) => (prev ? prev + (Date.now() - pausedTime) : prev));
-    setInterventionQuestion(null);
+    // Resume logic is now fully managed within handlePracticeAnswer and the hook.
+    // This button should only appear if the attempt was successfully marked as practiced.
     setShowLearningModule(false);
-    
-    // Resume the quiz on the same question
-    navigate('/quiz'); 
+    navigate('/quiz', { replace: true });
   }
 
   const handlePracticeAnswerClick = async (answer) => {
-    if (selectedAnswer !== null) return;
+    if (selectedAnswer !== null || !practiceQ) return;
     
     setSelectedAnswer(answer);
-
-    if (!practiceQ || !practiceQ.id || !quizRunId || !childPin) {
-        setPracticeMsg('Error submitting practice: Practice question not found');
-        return;
-    }
 
     const isCorrect = answer === practiceQ.correctAnswer;
     
@@ -173,17 +159,19 @@ const LearningModule = () => {
       setShowAdvanceButton(true);
       
       try {
-        const out = await quizPracticeAnswer(quizRunId, practiceQ.id, answer, childPin); 
-        
-        if (isIntervention) {
-            // Check for quiz completion immediately after practice (rare, but possible)
-            if (out.completed) {
-                 setTimeout(() => navigate('/results', { replace: true }), 300);
-            }
+        const out = await handlePracticeAnswer(practiceQ.id, answer); // <--- Use the exposed function
+
+        // If in pre-quiz flow, we manually handle progression here
+        if (isPreQuizFlow) {
+             // The next button (Start Quiz / Next Fact) will be shown, handled by renderBody
+        } else if (isIntervention) {
+             // If intervention is resolved, the hook has cleared interventionQuestion and resumed the timer.
+             // We can now show the resume button.
+             // (The logic in handlePracticeAnswer handles the backend state and timer resume)
         }
 
       } catch (e) {
-        const msg = e.message || 'Error submitting practice: Not current question';
+        const msg = e.message || 'Error submitting practice.';
         console.error('Practice submission failed:', msg);
         setPracticeMsg('Error submitting practice: ' + msg);
       }
@@ -198,6 +186,37 @@ const LearningModule = () => {
       }, 1000);
     }
   };
+
+  const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
+      <>
+          <div className="grid grid-cols-2 gap-4 mt-4 w-full">
+              {answers.map((answer, index) => (
+                  <button
+                      key={index}
+                      onClick={() => handlePracticeAnswerClick(answer)}
+                      disabled={!!selectedAnswer}
+                      className={`py-4 rounded-xl text-2xl font-bold shadow-md transition-all duration-200
+                      ${
+                          selectedAnswer === null
+                              ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                              : answer === currentCorrectAnswer
+                                  ? 'bg-green-500 text-white'
+                                  : answer === selectedAnswer
+                                      ? 'bg-red-500 text-white'
+                                      : 'bg-gray-200 text-gray-800 opacity-50'
+                      }`}
+                  >
+                      {answer}
+                  </button>
+              ))}
+          </div>
+          {practiceMsg && (
+              <p className={`mt-4 font-semibold text-center ${practiceMsg.includes('Correct') ? 'text-green-700' : 'text-red-700'}`}>
+                  {practiceMsg}
+              </p>
+          )}
+      </>
+  );
 
   const renderBody = () => {
     if (!practiceQ) {
@@ -233,42 +252,19 @@ const LearningModule = () => {
           </>
         );
       } else {
-        // Practice screen (Intervention) || [];
-        const practiceAnswers = practiceQ.answers;
-        console.log('Practice Answers:', practiceAnswers);
+        // FIX: Practice screen (Intervention) - show interactive choices
+        const canResume = showAdvanceButton && interventionQuestion === null; // Check if hook cleared the question
+
         return (
           <>
             <h3 className="text-xl font-bold text-center text-red-700 mb-4">Practice Time</h3>
             <div className="text-4xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
               {extractQuestion(practiceQ)}
             </div>
-            <div className="grid grid-cols-2 gap-4 mt-4 w-full">
-              {practiceAnswers.map((answer, index) => (
-                <button
-                  key={index}
-                  onClick={() => handlePracticeAnswerClick(answer)}
-                  disabled={!!selectedAnswer}
-                  className={`py-4 rounded-xl text-2xl font-bold shadow-md transition-all duration-200
-                  ${
-                    selectedAnswer === null
-                      ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      : answer === currentCorrectAnswer
-                      ? 'bg-green-500 text-white'
-                      : answer === selectedAnswer
-                      ? 'bg-red-500 text-white'
-                      : 'bg-gray-200 text-gray-800 opacity-50'
-                  }`}
-                >
-                  {answer}
-                </button>
-              ))}
-            </div>
-            {practiceMsg && (
-              <p className={`mt-4 font-semibold text-center ${practiceMsg === 'Correct!' ? 'text-green-700' : 'text-red-700'}`}>
-                {practiceMsg}
-              </p>
-            )}
-            {showAdvanceButton && (
+            
+            {renderPracticeInteractions(practiceAnswers, currentCorrectAnswer)}
+
+            {canResume && (
                 <div className="flex justify-center mt-4">
                     <button
                         type="button"
@@ -317,32 +313,9 @@ const LearningModule = () => {
             <div className="text-4xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
               {extractQuestion(practiceQ)}
             </div>
-            <div className="grid grid-cols-2 gap-4 mt-4 w-full">
-              {practiceAnswers.map((answer, index) => (
-                <button
-                  key={index}
-                  onClick={() => handlePracticeAnswerClick(answer)}
-                  disabled={!!selectedAnswer}
-                  className={`py-4 rounded-xl text-2xl font-bold shadow-md transition-all duration-200
-                  ${
-                    selectedAnswer === null
-                      ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      : answer === currentCorrectAnswer
-                      ? 'bg-green-500 text-white'
-                      : answer === selectedAnswer
-                      ? 'bg-red-500 text-white'
-                      : 'bg-gray-200 text-gray-800 opacity-50'
-                  }`}
-                >
-                  {answer}
-                </button>
-              ))}
-            </div>
-            {practiceMsg && (
-              <p className={`mt-4 font-semibold text-center ${practiceMsg === 'Correct!' ? 'text-green-700' : 'text-red-700'}`}>
-                {practiceMsg}
-              </p>
-            )}
+
+            {renderPracticeInteractions(practiceAnswers, currentCorrectAnswer)}
+            
             {showAdvanceButton && (
                 <div className="flex justify-center mt-4">
                     <button

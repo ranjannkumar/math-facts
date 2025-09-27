@@ -50,6 +50,11 @@ export async function start(runId) {
 }
 
 // ------------- ANSWER -------------
+// ranjannkumar/math-facts/math-facts-53836cb507e63890a9c757d863525a6cb3341e86/backend/src/services/quiz.service.js
+
+// ... (existing imports, ensure incDaily and others are present)
+
+// ------------- ANSWER -------------
 export async function submitAnswer(runId, questionId, answer, responseMs) {
   const run = await QuizRun.findById(runId);
   if (!run) throw new Error('Quiz run not found');
@@ -63,6 +68,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
   }
 
   const item = run.items[run.currentIndex];
+  // Check if the submitted answer is for the current question
   if (!item || String(item.questionId) !== String(questionId)) {
     throw new Error('Not the current question');
   }
@@ -81,19 +87,19 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
   });
 
   if (!isCorrect) {
-    // pause timer & return same question as practice
-   pauseTimer(run);
-    run.stats.wrong += 1; // FIX: Track wrong answers for final summary
+    // Wrong answer: pause timer, set practice required, and return question for intervention.
+    pauseTimer(run);
+    run.stats.wrong += 1; 
     item.practiceRequired = true;
     // Do NOT advance index
     await run.save();
-    return { practice: q, reason: 'wrong' };
+    return { practice: q, reason: 'wrong' }; // <--- This triggers the LearningModule intervention
   }
 
-  // correct: advance
+  // Correct answer: advance
   run.stats.correct += 1;
-  // add to daily
-  await incDaily(run.user, 1, 0);
+  // add to daily (this is where the daily count increases)
+  await incDaily(run.user, 1, 0); //
 
   // next index
   run.currentIndex += 1;
@@ -103,22 +109,23 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     pauseTimer(run);
     run.status = 'completed';
     
-    // FIX: Determine pass status by comparing correct answers to total questions
+    // Determine pass status: requires a perfect score (all questions correct)
     const passed = run.stats.correct === run.items.length; 
 
     const summary = { 
         correct: run.stats.correct, 
         totalActiveMs: run.totalActiveMs,
-        level: run.level, // New field for progression
-        beltOrDegree: run.beltOrDegree // New field for progression
+        level: run.level,
+        beltOrDegree: run.beltOrDegree
     };
 
     
     await run.save();
-    return { completed: true, passed, summary };
+    // FIX (B14): Return sessionCorrectCount explicitly for front-end
+    return { completed: true, passed, summary, sessionCorrectCount: run.stats.correct };
   }
 
-  // continue: resume timer, return next
+  // continue: resume timer, return next question
   resumeTimer(run);
   await run.save();
   const nextQ = await GeneratedQuestion.findById(run.items[run.currentIndex].questionId);
