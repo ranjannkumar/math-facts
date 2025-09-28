@@ -6,7 +6,7 @@ import NameForm from './components/NameForm.jsx';
 import ThemePicker from './components/ThemePicker.jsx';
 import TablePicker from './components/TablePicker.jsx';
 import DifficultyPicker from './components/DifficultyPicker.jsx';
-import BlackBeltPicker from './components/BlackBeltPicker.jsx'; // ✅ NEW ROUTE TARGET
+import BlackBeltPicker from './components/BlackBeltPicker.jsx'; 
 import QuizScreen from './components/QuizScreen.jsx';
 import ResultsScreen from './components/ResultsScreen.jsx';
 import WayToGoScreen from './components/WayToGoScreen.jsx';
@@ -46,14 +46,15 @@ const App = () => {
         <Route path="/pre-test-popup" element={<PreTestPopup />} />
         <Route path="/pre-test" element={<PreTestScreen />} />
         <Route path="/theme" element={<ThemePicker />} />
+        <Route path="/results" element={<ResultsScreen />} />
+        <Route path="/way-to-go" element={<WayToGoScreen />} />
+
         <Route element={<MainLayout />}>
           <Route path="/levels" element={<TablePicker />} />
           <Route path="/belts" element={<DifficultyPicker />} />
           <Route path="/black" element={<BlackBeltPicker />} /> {/* ✅ BLACK ROUTE */}
           <Route path="/learning" element={<LearningModule />} />
           <Route path="/quiz" element={<QuizScreen />} />
-          <Route path="/results" element={<ResultsScreen />} />
-          <Route path="/way-to-go" element={<WayToGoScreen />} />
         </Route>
       </Routes>
 

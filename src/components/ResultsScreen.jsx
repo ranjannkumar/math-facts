@@ -61,15 +61,13 @@ const ResultsScreen = () => {
         return null;
     }
 
-    // ---- Time (read from LS set by hook) ----
     const [timeSecs, setTimeSecs] = useState(() => {
-        const ls = Number(localStorage.getItem('math-last-session-seconds') || 0);
+        const ls = Number(localStorage.getItem('math-last-quiz-duration') || 0);
         return Number.isFinite(ls) ? ls : 0;
     });
     // FIX: Format total time today in minutes and seconds
-    const sessionTimeSecs = Math.round(elapsedTime);
+    const sessionTimeSecs = Math.round(timeSecs);
     const timeLabel = `${Math.floor(sessionTimeSecs / 60)}m ${Math.floor(sessionTimeSecs % 60)}s`;  
-
     // --- Black Belt Degree 7 completion auto-nav ---
     useEffect(() => {
         if (isBlack && degree === 7 && allCorrect) {

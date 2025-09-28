@@ -5,6 +5,7 @@ import { practiceFactsForBelt, buildQuizSet } from './question.service.js';
 import { startTimer, pauseTimer, resumeTimer, isTimeUp } from './timer.service.js';
 import { getBlackTiming, isBlack } from '../utils/belts.js';
 import { incDaily } from './daily.service.js';
+import dayjs from 'dayjs';
 
 // ------------- PREPARE -------------
 export async function prepare(user, { level, beltOrDegree, operation }) {
@@ -18,7 +19,7 @@ export async function prepare(user, { level, beltOrDegree, operation }) {
     items: [],
     currentIndex: 0,
     totalActiveMs: 0,
-    stats: { correct: 0, wrong: 0 }, // FIX: Explicitly initialize stats
+    stats: { correct: 0, wrong: 0 }, //  Explicitly initialize stats
     timer: (() => {
       if (isBlack(beltOrDegree)) {
         const { limitMs } = getBlackTiming(beltOrDegree);
@@ -48,11 +49,6 @@ export async function start(runId) {
   const firstQ = await GeneratedQuestion.findById(run.items[0].questionId);
   return { run, question: firstQ };
 }
-
-// ------------- ANSWER -------------
-// ranjannkumar/math-facts/math-facts-53836cb507e63890a9c757d863525a6cb3341e86/backend/src/services/quiz.service.js
-
-// ... (existing imports, ensure incDaily and others are present)
 
 // ------------- ANSWER -------------
 export async function submitAnswer(runId, questionId, answer, responseMs) {
@@ -94,13 +90,20 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     // Do NOT advance index
     await run.save();
     const practiceQ = await GeneratedQuestion.findById(questionId).lean();
-    return { practice: practiceQ, reason: 'wrong' }; // <--- This triggers the LearningModule intervention
+    return { practice: practiceQ, reason: 'wrong' }; // This triggers the LearningModule intervention
   }
 
   // Correct answer: advance
   run.stats.correct += 1;
-  // add to daily (this is where the daily count increases)
-  await incDaily(run.user, 1, 0); //
+    // Accumulate time for the just-answered question locally in the run object ---
+  let timeDelta = 0;
+  if (run.startedAt) {
+      const now = dayjs();
+      timeDelta = now.diff(run.startedAt); // Time spent on current question
+      run.totalActiveMs += timeDelta;
+  }
+
+  const updatedDaily = await incDaily(run.user, 1, timeDelta);
 
   // next index
   run.currentIndex += 1;
@@ -113,6 +116,8 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     // Determine pass status: requires a perfect score (all questions correct)
     const passed = run.stats.wrong === 0; 
 
+    const finalDaily = updatedDaily;
+
     const summary = { 
         correct: run.stats.correct, 
         totalActiveMs: run.totalActiveMs,
@@ -120,17 +125,19 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
         beltOrDegree: run.beltOrDegree
     };
 
+    console.log('Quiz completed for user', run.user, 'Level:', run.level, 'Belt/Degree:', run.beltOrDegree, 'Passed:', passed, 'Summary:', summary);
+
     
     await run.save();
-    // FIX (B14): Return sessionCorrectCount explicitly for front-end
-    return { completed: true, passed, summary, sessionCorrectCount: run.stats.correct };
+    //  Return sessionCorrectCount explicitly for front-end
+    return { completed: true, passed, summary, sessionCorrectCount: run.stats.correct ,dailyStats: finalDaily};
   }
 
   // continue: resume timer, return next question
   resumeTimer(run);
   await run.save();
   const nextQ = await GeneratedQuestion.findById(run.items[run.currentIndex].questionId);
-  return { next: nextQ.toObject()  };
+  return { next: nextQ.toObject(),dailyStats: updatedDaily   };
 }
 
 // ------------- INACTIVITY -------------
@@ -165,7 +172,6 @@ export async function practiceAnswer(runId, questionId, answer) {
   if (!q) throw new Error('Practice question not found');
   const correct = Number(answer) === q.correctAnswer;
 
-  // --- MODIFIED LOGIC START ---
   if (run.status === 'in-progress') {
     // Intervention flow: check for index match
     const item = run.items[run.currentIndex];
@@ -176,8 +182,6 @@ export async function practiceAnswer(runId, questionId, answer) {
     // If not prepared and not in-progress, reject.
     throw new Error('Quiz run status not valid for practice');
   }
-  // --- MODIFIED LOGIC END ---
-
 
   // update last practice attempt
   await Attempt.create({
@@ -221,7 +225,10 @@ export async function complete(runId) {
     // if still in-progress, pause and mark completed by force
     // (frontend can call this at quiz end)
     pauseTimer(run);
+    const timeDelta = run.totalActiveMs - previousTotalActiveMs;
+
     run.status = 'completed';
+    await incDaily(run.user, 0, timeDelta);
   }
   await run.save();
 

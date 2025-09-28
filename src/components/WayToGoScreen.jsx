@@ -10,21 +10,20 @@ const WayToGoScreen = () => {
     const {
         selectedDifficulty,
         selectedTable,
+        sessionCorrectCount, 
         correctCount,
         startQuizWithDifficulty, // Use the new API-backed start flow
     } = useContext(MathGameContext);
 
     // This ensures the quiz restarts only once.
     const hasRestarted = useRef(false);
-
-    // Get time from LS set by hook
-    const [timeSecs] = useState(() => {
-        const ls = Number(localStorage.getItem('math-last-session-seconds') || 0);
-        return Number.isFinite(ls) ? ls : 0;
-    });
-    // FIX: Format total time today in minutes and seconds
-    const timeLabel = `${Math.floor(timeSecs / 60)}m ${Math.floor(timeSecs % 60)}s`; 
-
+    const [timeSecs, setTimeSecs] = useState(() => {
+            const ls = Number(localStorage.getItem('math-last-quiz-duration') || 0);
+            return Number.isFinite(ls) ? ls : 0;
+        });
+        // FIX: Format total time today in minutes and seconds
+    const sessionTimeSecs = Math.round(timeSecs);
+    const sessionTimeLabel = `${Math.floor(sessionTimeSecs / 60)}m ${Math.floor(sessionTimeSecs % 60)}s`; 
     useEffect(() => {
         audioManager.playWrongSound?.(); 
         if (hasRestarted.current) return;
@@ -104,12 +103,12 @@ const WayToGoScreen = () => {
 
                 <div className="grid grid-cols-2 gap-4 md:gap-6 justify-center max-w-xl mx-auto mb-8">
                     <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 md:p-5 shadow">
-                        <div className="text-gray-500 text-sm">Today&apos;s Score</div>
-                        <div className="wordart-number mt-1">{correctCount}</div>
+                        <div className="text-gray-500 text-sm">Session Score</div>
+                        <div className="wordart-number mt-1">{sessionCorrectCount}</div>
                     </div>
                     <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 md:p-5 shadow">
-                        <div className="text-gray-500 text-sm">Time Spent</div>
-                        <div className="wordart-number mt-1">{timeLabel}</div>
+                        <div className="text-gray-500 text-sm">Time Taken (Session)</div>
+                        <div className="wordart-number mt-1">{sessionTimeLabel}</div>
                     </div>
                 </div>
 

@@ -2,8 +2,6 @@
 import { useState, useEffect, useRef, useCallback, useContext} from 'react';
 import audioManager from '../utils/audioUtils.js';
 import { useNavigate } from 'react-router-dom';
-// const { getQuizTimeLimit } = useContext(MathGameContext);
-// import { buildQuizForBelt, getLearningModuleContent } from '../utils/mathGameLogic.js';
 // Import API functions
 import {
   authLogin,
@@ -11,7 +9,7 @@ import {
   quizStart,
   quizSubmitAnswer,
   quizHandleInactivity,
-  quizPracticeAnswer, // <--- Import for practice submission
+  quizPracticeAnswer,
   userGetProgress,
   userGetDailyStats, 
   mapQuestionToFrontend,
@@ -26,7 +24,7 @@ const useMathGame = () => {
   // ---------- global nav/state ----------
   const [selectedTable, setSelectedTable] = useState(null); // level (1..6)
   const [selectedDifficulty, setSelectedDifficulty] = useState(null); // belt or black-x
-  const [quizRunId, setQuizRunId] = useState(null); // ✅ NEW: Backend quiz run ID
+  const [quizRunId, setQuizRunId] = useState(null); //  Backend quiz run ID
 
   // Learning module/Practice state
   const [showLearningModule, setShowLearningModule] = useState(false);
@@ -40,7 +38,7 @@ const useMathGame = () => {
   const [showResult, setShowResult] = useState(false);
   const [quizProgress, setQuizProgress] = useState(0);
   const [correctCount, setCorrectCount] = useState(0); // Daily total score
-  const [sessionCorrectCount, setSessionCorrectCount] = useState(0); // <--- ADDED: Session Score
+  const [sessionCorrectCount, setSessionCorrectCount] = useState(0); // Session Score
   const [wrongCount, setWrongCount] = useState(0);
   const [questionTimes, setQuestionTimes] = useState([]);
   const [answerSymbols, setAnswerSymbols] = useState([]);
@@ -51,8 +49,8 @@ const useMathGame = () => {
   // Timers
   const [quizStartTime, setQuizStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [dailyTotalMs, setDailyTotalMs] = useState(0); // NEW: Base MS from backend (for daily total calculation)
-  const [totalTimeToday, setTotalTimeToday] = useState(0); // NEW: Total accumulated time in seconds
+  const [dailyTotalMs, setDailyTotalMs] = useState(0); //  Base MS from backend (for daily total calculation)
+  const [totalTimeToday, setTotalTimeToday] = useState(0); //  Total accumulated time in seconds
   const [pausedTime, setPausedTime] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
 
@@ -62,9 +60,6 @@ const useMathGame = () => {
   const [childAge, setChildAge] = useState(() => localStorage.getItem('math-child-age') || '');
   const [childPin, setChildPin] = useState(() => localStorage.getItem('math-child-pin') || '');
   const [tableProgress, setTableProgress] = useState({});
-  // const [unlockedDegrees, setUnlockedDegrees] = useState([]);
-  // const [completedBlackBeltDegrees, setCompletedBlackBeltDegrees] = useState([]);
-  // const [currentDegree, setCurrentDegree] = useState(1);
 
   // Misc UI
   const [showQuitModal, setShowQuitModal] = useState(false);
@@ -80,9 +75,7 @@ const useMathGame = () => {
   const [preTestResults, setPreTestResults] = useState(null);
   const [completedSections, setCompletedSections] = useState({});
   const [showPreTestPopup, setShowPreTestPopup] = useState(false);
-  // --- END ADDITIONS ---
   
-  // (omitted speed/pre-test state for brevity, keeping original structure)
   const [showSpeedTest] = useState(false);
   const [speedTestPopupVisible] = useState(false);
   const [speedTestPopupAnimation] = useState('animate-pop-in');
@@ -120,8 +113,8 @@ const useMathGame = () => {
     setPreQuizPracticeItems([]);
     setQuizProgress(0);
     setAnswerSymbols([]);
-    setCorrectCount(0);
-    setSessionCorrectCount(0); // <--- ADDED RESET
+    // setCorrectCount(0);
+    setSessionCorrectCount(0); 
     setWrongCount(0);
     setQuestionTimes([]);
     setCurrentQuestion(null);
@@ -156,8 +149,6 @@ const useMathGame = () => {
         localStorage.setItem('math-child-name', user.name);
         setChildName(user.name);
         
-        // --- CONSOLIDATED FETCHING LOGIC (FIX) ---
-        
         // 1. Fetch ALL progression data
         const { progress } = await userGetProgress(pinValue);
         setTableProgress(progress || {});
@@ -166,8 +157,6 @@ const useMathGame = () => {
         const stats = await userGetDailyStats(pinValue);
         setDailyTotalMs(stats?.totalActiveMs || 0); 
         setCorrectCount(stats?.correctCount || 0); 
-        
-        // --- END CONSOLIDATED LOGIC ---
 
         navigate('/pre-test-popup');
 
@@ -236,7 +225,7 @@ const useMathGame = () => {
         const content = `${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} Belt Quiz at Level ${table}.`;
         setLearningModuleContent(content);
         
-        // FIX (B15): Implement Black Belt skip logic
+        //  Implement Black Belt skip logic
         const isBlackBelt = String(difficulty).startsWith('black');
 
         if (!isBlackBelt && practiceItems && practiceItems.length > 0) {
@@ -256,9 +245,6 @@ const useMathGame = () => {
     [navigate, childPin, hardResetQuizState, determineMaxQuestions, startActualQuiz]
   );
   
-  // 2. Start (called from LearningModule after practice is completed)
-  
-
   // 3. Answer
   const handleAnswer = useCallback(
     async (selectedAnswer) => {
@@ -281,11 +267,8 @@ const useMathGame = () => {
         if (timeTaken <= 1.5) symbol = '⚡';
         else if (timeTaken <= 2) symbol = '⭐';
         else if (timeTaken <= 5) symbol = '✓';
-        else symbol = '❌'; // FIX: Set to red cross if correct but too slow (> 5s)
-
+        else symbol = '❌';
         audioManager.playCorrectSound();
-        // The daily correct count update is handled by the backend API call,
-        // we update it from the full stats refetch on completion/inactivity.
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
       } else {
@@ -308,27 +291,30 @@ const useMathGame = () => {
           );
 
           console.log('Quiz Submit Answer Response:', out);
-
           // Handle server response
           if (out.completed) {
+             localStorage.setItem('math-last-quiz-duration', elapsedTime);
               setTimeout(async () => {
                   setShowResult(true);
                   setIsAnimating(false);
+
+                  setQuizStartTime(null); // Stop the session timer interval
+                  setElapsedTime(0);  
                   
-                  // FIX (B14): Set session score from API response
+                  //Set session score from API response
                   setSessionCorrectCount(out.sessionCorrectCount || 0); 
 
-                  // FIX: Refetch progress & daily stats after completion/failure
+                  if (out.dailyStats) {
+                setCorrectCount(out.dailyStats.correctCount); // Update score instantly
+                setDailyTotalMs(out.dailyStats.totalActiveMs); // Update time base instantly
+            }
+
+                  //  Refetch progress & daily stats after completion/failure
                    if (out.updatedProgress) {
                       setTableProgress(out.updatedProgress);
                   }
-                  
-                  const stats = await userGetDailyStats(childPin);
-                  setDailyTotalMs(stats?.totalActiveMs || 0); 
-                  setCorrectCount(stats?.correctCount || 0); 
-                  
-                  // localStorage will be updated by the timer effect/cleanup
                   navigate(out.passed ? '/results' : '/way-to-go', { replace: true });
+
               }, 500);
           } else if (out.next) {
                setTimeout(() => {
@@ -438,11 +424,11 @@ const useMathGame = () => {
     if (!isTimerPaused && quizStartTime) {
       timer = setInterval(() => {
         const sessionElapsedMs = Date.now() - quizStartTime;
-        // FIX: Calculate total time by adding the base daily time (dailyTotalMs)
+        //  Calculate total time by adding the base daily time (dailyTotalMs)
         const totalElapsedSeconds = Math.floor((dailyTotalMs + sessionElapsedMs) / 1000); 
 
         setElapsedTime(sessionElapsedMs / 1000); // Current session elapsed time in seconds
-        setTotalTimeToday(totalElapsedSeconds); // NEW: Total accumulated time today in seconds
+        setTotalTimeToday(totalElapsedSeconds); // Total accumulated time today in seconds
 
         // Update local storage with the TOTAL accumulated time today
         localStorage.setItem('math-last-session-seconds', totalElapsedSeconds); 
@@ -453,7 +439,7 @@ const useMathGame = () => {
       // Ensure local storage captures final time when unmounting/cleanup occurs
       localStorage.setItem('math-last-session-seconds', totalTimeToday); 
     };
-  }, [isTimerPaused, quizStartTime, dailyTotalMs, totalTimeToday]); // FIX: Added dailyTotalMs, totalTimeToday to deps
+  }, [isTimerPaused, quizStartTime, dailyTotalMs, totalTimeToday]); //  Added dailyTotalMs, totalTimeToday to deps
 
 
   const handleConfirmQuit = useCallback(() => navigate('/'), [navigate]);
@@ -465,8 +451,6 @@ const useMathGame = () => {
     setChildName('');
     setChildAge('');
     setTableProgress({});
-    // setUnlockedDegrees([]); // Removed obsolete state update
-    // setCompletedBlackBeltDegrees([]); // Removed obsolete state update
     navigate('/');
   }, [navigate, hardResetQuizState]);
 
@@ -521,7 +505,7 @@ const useMathGame = () => {
     elapsedTime, setElapsedTime,
     pausedTime, setPausedTime,
     isTimerPaused, setIsTimerPaused,
-    totalTimeToday, // NEW: Export total time today for MainLayout/SessionTimer
+    totalTimeToday, //  Export total time today for MainLayout/SessionTimer
     getQuizTimeLimit: () => quizTimeLimit,
     // Learning/Practice
     showLearningModule, setShowLearningModule,
@@ -529,7 +513,7 @@ const useMathGame = () => {
     pendingDifficulty, setPendingDifficulty,
     preQuizPracticeItems, setPreQuizPracticeItems,
     interventionQuestion, setInterventionQuestion,
-    handlePracticeAnswer, // <--- NEW: Function for intervention practice submission
+    handlePracticeAnswer, //  Function for intervention practice submission
     resumeQuizAfterIntervention,
     // Identity & Settings
     childName, setChildName, handleNameChange,
@@ -541,9 +525,6 @@ const useMathGame = () => {
     showSettings, setShowSettings,
     // Progression Data
     tableProgress, setTableProgress,
-    // unlockedDegrees, setUnlockedDegrees,
-    // completedBlackBeltDegrees, setCompletedBlackBeltDegrees,
-    // Pre-test specific exports (re-add these)
     preTestSection, setPreTestSection,
     preTestQuestions, setPreTestQuestions,
     preTestCurrentQuestion, setPreTestCurrentQuestion,
@@ -553,15 +534,12 @@ const useMathGame = () => {
     preTestResults, setPreTestResults,
     completedSections,
     showPreTestPopup,
-    // Passthrough/Misc (omitted for brevity, keep for compatibility)
     navigate, lastQuestion,
     showQuitModal, setShowQuitModal, showSpeedTest,
     speedTestPopupVisible, speedTestPopupAnimation, speedTestNumbers,
     currentSpeedTestIndex, speedTestStartTime, speedTestTimes,
     speedTestComplete, speedTestStarted, speedTestCorrectCount,
     speedTestShowTick, studentReactionSpeed, selectedTheme,
-    // currentDegree, setLastQuestion,
-    // ... all other original exports ...
   };
 };
 
