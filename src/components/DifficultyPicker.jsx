@@ -131,12 +131,12 @@ const DifficultyPicker = () => {
           highlighted={belt === 'white'}
           stripColor={BELT_STRIP[belt]}
         >
-          <h3 className="text-[20px] leading-6 font-extrabold text-slate-800 mt-1 mb-2">
+          <h3 className="text-[25px] leading-6 font-extrabold text-slate-1000 mt-1 mb-2">
             {beltPretty(belt)} <span className="font-extrabold">Belt</span>
           </h3>
           <img src={beltImages[belt]} alt={`${belt} belt`} className="h-12 mx-auto my-1 drop-shadow" />
           <div className="text-[18px] mb-1">{hasCompleted ? '⭐' : '☆'}</div>
-          <div className="text-slate-700 text-[13px]">10 Questions</div>
+          <div className="text-slate-800 text-[20px]">10 Questions</div>
         </CardShell>
       </button>
     );

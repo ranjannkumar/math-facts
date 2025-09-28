@@ -196,13 +196,6 @@ const TablePicker = () => {
 
               {/* Stars */}
               <div className="text-2xl mt-2 text-center">{starDisplay}</div>
-
-              {/* Helper text */}
-              <div className="mt-1 text-center opacity-95">
-                {unlocked ? 
-                    <span>Select a belt</span> : 
-                    <span>Finish Level {levelNumber - 1} Black Belt to unlock</span>}
-              </div>
             </button>
           </div>
 

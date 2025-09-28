@@ -47,15 +47,6 @@ const LearningModule = () => {
   const isPreQuizFlow = !isIntervention && preQuizPracticeItems?.length > 0;
 
   const [isClosing, setIsClosing] = useState(false);
-
-
-    // --- NEW helper: always map before storing in state ---
-// const initializePractice = (rawQuestion) => {
-//   const mappedQ = mapQuestionToFrontend(rawQuestion);
-//   setPracticeQ(mappedQ);
-//   setSelectedAnswer(null);
-//   setPracticeMsg('');
-// };
   
   // --- INIT & RESET ---
   useEffect(() => {
@@ -65,7 +56,7 @@ const LearningModule = () => {
         const mappedQ = mapQuestionToFrontend(rawQuestion);
         console.log('Initialized Practice Question:', mappedQ);
         setPracticeQ(mappedQ);
-        setSelectedAnswer(null); // Reset selection
+        setSelectedAnswer(null); 
         setShowAdvanceButton(false);
         setPracticeMsg('');
     };
@@ -122,10 +113,7 @@ const LearningModule = () => {
       return `${questionPart} = ${q.correctAnswer}`;
   }
 
-
-  // --- NAVIGATION LOGIC ---
   const handleNext = () => {
-    // Only transition to practice screen if answers are available or if it's the intervention flow
     if (!practiceQ) return;
     audioManager.playButtonClick?.();
     setPracticeMsg('');
@@ -151,17 +139,6 @@ const LearningModule = () => {
         startActualQuiz(quizRunId);
     }
   };
-
-
-
-  
-  // Handler for Intervention flow: resumes the paused quiz
-  const handleResumeIntervention = () => {
-    // Resume logic is now fully managed within handlePracticeAnswer and the hook.
-    // This button should only appear if the attempt was successfully marked as practiced.
-    setShowLearningModule(false);
-    navigate('/quiz', { replace: true });
-  }
 
   const handlePracticeAnswerClick = async (answer) => {
     if (selectedAnswer !== null || !practiceQ) return;
@@ -231,11 +208,6 @@ const LearningModule = () => {
                   </button>
               ))}
           </div>
-          {practiceMsg && (
-              <p className={`mt-4 font-semibold text-center ${practiceMsg.includes('Correct') ? 'text-green-700' : 'text-red-700'}`}>
-                  {practiceMsg}
-              </p>
-          )}
       </>
   );
 
@@ -258,7 +230,6 @@ const LearningModule = () => {
         // Fact screen
         return (
           <>
-            <h3 className="text-xl font-bold text-center text-red-700 mb-4">You missed this fact:</h3>
             <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
               {extractFactDisplay(practiceQ)}
             </div>
@@ -273,29 +244,14 @@ const LearningModule = () => {
           </>
         );
       } else {
-        // FIX: Practice screen (Intervention) - show interactive choices
-        const canResume = showAdvanceButton && interventionQuestion === null; // Check if hook cleared the question
-
         return (
           <>
-            <h3 className="text-xl font-bold text-center text-red-700 mb-4">Practice Time</h3>
             <div className="text-4xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
               {extractQuestion(practiceQ)}
             </div>
             
             {renderPracticeInteractions(practiceAnswers, currentCorrectAnswer)}
 
-            {canResume && (
-                <div className="flex justify-center mt-4">
-                    <button
-                        type="button"
-                        onClick={handleResumeIntervention}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
-                    >
-                        Resume Quiz
-                    </button>
-                </div>
-            )}
           </>
         );
       }
@@ -304,13 +260,11 @@ const LearningModule = () => {
     // --- 2. Pre-Quiz Flow (Show Fact -> Practice -> Next Fact/Quiz) ---
     if (isPreQuizFlow) {
       const isLastFact = currentPracticeIndex === preQuizPracticeItems.length - 1;
-      const progressText = `Fact ${currentPracticeIndex + 1} of ${preQuizPracticeItems.length}`;
       
       if (isShowingFact) {
         // Fact screen
         return (
           <>
-            <h3 className="text-xl font-bold text-center text-blue-700 mb-4">{progressText}</h3>
             <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
               {extractFactDisplay(practiceQ)}
             </div>
@@ -326,11 +280,10 @@ const LearningModule = () => {
         );
       } else {
         // Practice screen (Pre-Quiz)
-        const buttonText = isLastFact ? 'Start Quiz' : 'Next Fact';
+        const buttonText = isLastFact ? 'Start Quiz' : 'Next';
 
         return (
           <>
-            <h3 className="text-xl font-bold text-center text-blue-700 mb-2">Practice Time ({progressText})</h3>
             <div className="text-4xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
               {extractQuestion(practiceQ)}
             </div>
