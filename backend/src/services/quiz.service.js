@@ -56,11 +56,13 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
   if (!run) throw new Error('Quiz run not found');
   if (run.status !== 'in-progress') throw new Error('Quiz not in progress');
 
+  const isBlackBeltRun = isBlack(run.beltOrDegree);
+
   if (isTimeUp(run)) {
     pauseTimer(run);
     run.status = 'failed';
     await run.save();
-    return { completed: true, passed: false, reason: 'timeup' };
+    return { completed: true, passed: false, reason: 'timeup',sessionCorrectCount: run.stats.correct};
   }
 
   const item = run.items[run.currentIndex];
@@ -90,6 +92,13 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     // Do NOT advance index
     await run.save();
     const practiceQ = await GeneratedQuestion.findById(questionId).lean();
+    // For Black Belt, a wrong answer means immediate failure (WayToGoScreen)
+    if (isBlackBeltRun) {
+        run.status = 'failed';
+        await run.save();
+        // Use 'wrong' reason for WayToGoScreen logic
+        return { completed: true, passed: false, reason: 'wrong', sessionCorrectCount: run.stats.correct };
+    }
     return { practice: practiceQ, reason: 'wrong' }; // This triggers the LearningModule intervention
   }
 
@@ -114,7 +123,20 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     run.status = 'completed';
     
     // Determine pass status: requires a perfect score (all questions correct)
-    const passed = run.stats.wrong === 0; 
+    let passed = run.stats.wrong === 0; 
+
+     // For Black Belt, also check the timer
+    if (isBlackBeltRun) {
+      const { limitMs } = getBlackTiming(run.beltOrDegree);
+      // Pass if perfect score AND totalActiveMs <= limitMs
+      passed = passed && (run.totalActiveMs <= limitMs);
+
+      // If failed due to time limit, change status to 'failed' for accurate records
+      if (isTimeUp(run) || (isBlackBeltRun && run.totalActiveMs > limitMs && passed)) {
+          run.status = 'failed'; // Mark as failed due to time
+          passed = false;
+      }
+    }
 
     const finalDaily = updatedDaily;
 

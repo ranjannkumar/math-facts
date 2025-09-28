@@ -14,7 +14,7 @@ const ResultsScreen = () => {
         selectedDifficulty,
         selectedTable,
         sessionCorrectCount, // FIX: Import session correct count
-        elapsedTime, // FIX: Import session elapsed time
+        //elapsedTime, // FIX: Import session elapsed time
         correctCount,
         setShowResult,
         quizRunId,
@@ -67,7 +67,9 @@ const ResultsScreen = () => {
     });
     // FIX: Format total time today in minutes and seconds
     const sessionTimeSecs = Math.round(timeSecs);
-    const timeLabel = `${Math.floor(sessionTimeSecs / 60)}m ${Math.floor(sessionTimeSecs % 60)}s`;  
+    const mins = Math.floor(sessionTimeSecs / 60); //
+    const secs = sessionTimeSecs % 60; //
+    const timeLabel = `${mins}m ${secs}s`; // 
     // --- Black Belt Degree 7 completion auto-nav ---
     useEffect(() => {
         if (isBlack && degree === 7 && allCorrect) {

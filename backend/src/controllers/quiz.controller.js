@@ -31,6 +31,12 @@ export async function answer(req, res, next) {
       );
       out.updatedProgress = Object.fromEntries(updatedUser.progress);
     }
+
+    // Ensure we pass back the session time from the quiz service response
+    if (out.completed && out.sessionTotalMs) {
+        // This is only needed by the client for display, so include it here.
+        out.summary.sessionTotalMs = out.sessionTotalMs; 
+    }
     res.json(out);
   } catch (e) { next(e); }
 }

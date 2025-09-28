@@ -293,7 +293,11 @@ const useMathGame = () => {
           console.log('Quiz Submit Answer Response:', out);
           // Handle server response
           if (out.completed) {
-             localStorage.setItem('math-last-quiz-duration', elapsedTime);
+            // Extract the total time in seconds from the response summary
+            const totalTimeMs = out.summary?.sessionTotalMs || (elapsedTime * 1000); 
+
+            //  localStorage.setItem('math-last-quiz-duration', elapsedTime);
+            localStorage.setItem('math-last-quiz-duration', totalTimeMs / 1000);
               setTimeout(async () => {
                   setShowResult(true);
                   setIsAnimating(false);
