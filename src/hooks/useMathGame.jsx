@@ -131,6 +131,15 @@ const useMathGame = () => {
 
   // --- API / LIFECYCLE ---
 
+   // FIX 1: Ensure totalTimeToday reflects the daily base time when no quiz is running.
+  useEffect(() => {
+      if (!quizStartTime) {
+          // When the quiz timer is off, totalTimeToday should equal the completed daily total.
+          setTotalTimeToday(Math.floor(dailyTotalMs / 1000));
+      }
+  }, [quizStartTime, dailyTotalMs]); // Triggers on login fetch or quiz completion update.
+
+
   const handlePinSubmit = useCallback(
     async (pinValue) => {
       const oldPin = localStorage.getItem('math-child-pin');
@@ -444,15 +453,15 @@ const useMathGame = () => {
         setTotalTimeToday(totalElapsedSeconds); // Total accumulated time today in seconds
 
         // Update local storage with the TOTAL accumulated time today
-        localStorage.setItem('math-last-session-seconds', totalElapsedSeconds); 
+        // localStorage.setItem('math-last-session-seconds', totalElapsedSeconds); 
       }, 1000);
     }
     return () => {
       clearInterval(timer);
       // Ensure local storage captures final time when unmounting/cleanup occurs
-      localStorage.setItem('math-last-session-seconds', totalTimeToday); 
+      // localStorage.setItem('math-last-session-seconds', totalTimeToday); 
     };
-  }, [isTimerPaused, quizStartTime, dailyTotalMs, totalTimeToday]); //  Added dailyTotalMs, totalTimeToday to deps
+  }, [isTimerPaused, quizStartTime, dailyTotalMs]); //  Added dailyTotalMs, totalTimeToday to deps
 
 
   const handleConfirmQuit = useCallback(() => navigate('/'), [navigate]);
