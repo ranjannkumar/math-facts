@@ -166,6 +166,18 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
 export async function inactivity(runId, questionId) {
   const run = await QuizRun.findById(runId);
   if (!run || run.status !== 'in-progress') throw new Error('Invalid run');
+
+   if (run.status !== 'in-progress') {
+    const isPassed = run.status === 'completed';
+    // Return a completion signal so the frontend can safely navigate away
+    // This immediately stops the frontend quiz and navigates based on final status.
+    return { 
+        completed: true, 
+        passed: isPassed, 
+        reason: 'late-inactivity', 
+        sessionCorrectCount: run.stats.correct || 0 
+    };
+  }
   const item = run.items[run.currentIndex];
   if (!item || String(item.questionId) !== String(questionId)) throw new Error('Not current question');
 
