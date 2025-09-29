@@ -78,7 +78,7 @@ const QuizScreen = () => {
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4">
           <div className="bg-white backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 border-2 border-gray-200 min-h-[200px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center">
             <div className="text-center mb-3 sm:mb-4 md:mb-6">
-              <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-blue-600 mb-1 sm:mb-2 drop-shadow-lg">
+              <h3 className="text-7xl font-extrabold text-green-600 mb-1 sm:mb-2 drop-shadow-lg">
                 {currentQuestion?.question || '1 + 1'}
               </h3>
             </div>

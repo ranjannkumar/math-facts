@@ -109,7 +109,7 @@ const DifficultyPicker = () => {
       <div className={`h-2 ${stripColor} rounded-t-2xl`} />
       <div className="absolute top-2 right-2">
         <div className="w-7 h-7 rounded-full bg-white/90 shadow flex items-center justify-center text-slate-700 text-[13px]">
-          {locked ? '🔒' : '🔓'}
+          {locked ? '🔒' : ''}
         </div>
       </div>
       <div className="p-5 flex flex-col items-center justify-start">{children}</div>
@@ -154,7 +154,7 @@ const DifficultyPicker = () => {
           <h3 className="text-[20px] leading-6 font-extrabold text-slate-800 mt-1 mb-2">Black Belt</h3>
           <img src={beltImages.black} alt="Black belt" className="h-12 mx-auto my-1 drop-shadow" />
           <div className="text-[18px] mb-1">{unlockedMap.black ? '🔓' : '☆'}</div> 
-          <div className="text-slate-700 text-[13px]">Degrees 1–7</div>
+          <div className="text-slate-800 text-[20px]">Degrees 1–7</div>
         </CardShell>
       </button>
     );

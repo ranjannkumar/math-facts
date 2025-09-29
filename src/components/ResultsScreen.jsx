@@ -69,7 +69,9 @@ const ResultsScreen = () => {
     const sessionTimeSecs = Math.round(timeSecs);
     const mins = Math.floor(sessionTimeSecs / 60); //
     const secs = sessionTimeSecs % 60; //
-    const timeLabel = `${mins}m ${secs}s`; // 
+    // const timeLabel = `${mins}m ${secs}s`; // 
+    const timeLabel = `${sessionTimeSecs}s`; // 
+
     // --- Black Belt Degree 7 completion auto-nav ---
     useEffect(() => {
         if (isBlack && degree === 7 && allCorrect) {
@@ -156,7 +158,7 @@ const ResultsScreen = () => {
                         <div className="wordart-number mt-1">{sessionCorrectCount}</div> {/* FIX: Display session score */}
                     </div>
                     <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 md:p-5 shadow">
-                        <div className="text-gray-500 text-sm">Time Taken (Session)</div>
+                        <div className="text-gray-500 text-sm">Time Taken</div>
                         <div className="wordart-number mt-1">{timeLabel}</div> {/* FIX: Display session time */}
                     </div>
                 </div>
@@ -171,7 +173,7 @@ const ResultsScreen = () => {
                 </div>
                 <div className="flex justify-center">
                     <button
-                        className="px-6 py-3 rounded-2xl bg-gray-900 text-white font-semibold hover:opacity-90 transition"
+                        className="px-6 py-3 rounded-2xl bg-green-600 text-white font-semibold hover:opacity-90 transition"
                         onClick={handlePrimary}
                     >
                         {isBlack ? 'Go to Degrees' : 'Go to Belts'}

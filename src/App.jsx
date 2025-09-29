@@ -45,9 +45,6 @@ const App = () => {
         <Route path="/name" element={<NameForm />} />
         <Route path="/pre-test-popup" element={<PreTestPopup />} />
         <Route path="/pre-test" element={<PreTestScreen />} />
-        <Route path="/theme" element={<ThemePicker />} />
-        <Route path="/results" element={<ResultsScreen />} />
-        <Route path="/way-to-go" element={<WayToGoScreen />} />
 
         <Route element={<MainLayout />}>
           <Route path="/levels" element={<TablePicker />} />
@@ -55,6 +52,12 @@ const App = () => {
           <Route path="/black" element={<BlackBeltPicker />} /> {/* ✅ BLACK ROUTE */}
           <Route path="/learning" element={<LearningModule />} />
           <Route path="/quiz" element={<QuizScreen />} />
+          <Route path="/way-to-go" element={<WayToGoScreen />} />
+          <Route path="/results" element={<ResultsScreen />} />
+          <Route path="/theme" element={<ThemePicker />} />
+
+
+
         </Route>
       </Routes>
 

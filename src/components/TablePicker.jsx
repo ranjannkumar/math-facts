@@ -201,7 +201,7 @@ const TablePicker = () => {
                   hover:shadow-2xl hover:-translate-y-0.5 transition-transform`}
                 aria-label={`Open Level ${levelNumber}`}
               >
-                <div className="absolute top-2 right-3 text-xl">{'🔓'}</div>
+                <div className="absolute top-2 right-3 text-xl">{''}</div>
 
                 {/* Emoji badge (pop-in) */}
                 <div className="w-20 h-20 bg-black/10 rounded-full shadow-md flex items-center justify-center text-4xl select-none animate-pop">

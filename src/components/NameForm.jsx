@@ -51,7 +51,7 @@ const NameForm = () => {
             value={childPin}
             onChange={handlePinChange}
             type="password"
-            placeholder="••••"
+            placeholder=""
             maxLength={4}
             autoComplete="off"
           />

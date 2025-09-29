@@ -230,7 +230,7 @@ const LearningModule = () => {
         // Fact screen
         return (
           <>
-            <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
+            <div className="text-8xl sm:text-10xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
               {extractFactDisplay(practiceQ)}
             </div>
             <div className="flex justify-center">
@@ -246,7 +246,7 @@ const LearningModule = () => {
       } else {
         return (
           <>
-            <div className="text-4xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
+            <div className="text-7xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
               {extractQuestion(practiceQ)}
             </div>
             
@@ -284,7 +284,7 @@ const LearningModule = () => {
 
         return (
           <>
-            <div className="text-4xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
+            <div className="text-7xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
               {extractQuestion(practiceQ)}
             </div>
 
@@ -295,7 +295,7 @@ const LearningModule = () => {
                     <button
                         type="button"
                         onClick={handleAdvancePreQuizFlow}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
+                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
                     >
                         {buttonText}
                     </button>
