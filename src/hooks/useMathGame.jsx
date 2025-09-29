@@ -398,6 +398,15 @@ const useMathGame = () => {
         ]);
         try {
             const out = await quizHandleInactivity(quizRunId, currentQuestion.id, childPin);
+
+             if (out.completed) { // <--- ADDED: Check for immediate completion flag
+                 // Black belt immediate failure due to inactivity/time up (handled by backend logic)
+                setQuizStartTime(null); // Stop timer
+                setSessionCorrectCount(out.sessionCorrectCount || 0);
+                // navigate to way-to-go on inactivity fail for black belt
+                navigate('/way-to-go', { replace: true });
+                return;
+            }
             
             if (out.practice) {
                 setIsTimerPaused(true);

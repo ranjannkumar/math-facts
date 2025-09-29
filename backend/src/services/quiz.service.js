@@ -171,6 +171,7 @@ export async function inactivity(runId, questionId) {
 
   pauseTimer(run);
   item.practiceRequired = true;
+  run.stats.wrong += 1; 
 
   // record attempt as inactivity trigger
   await Attempt.create({
@@ -179,7 +180,18 @@ export async function inactivity(runId, questionId) {
     triggeredPractice: true,
     reason: 'inactivity'
   });
+  
+  const isBlackBeltRun = isBlack(run.beltOrDegree);
 
+  // If Black Belt, inactivity is immediate failure (no intervention/practice)
+  if (isBlackBeltRun) {
+    run.status = 'failed';
+    await run.save();
+    // Return completion response to trigger WayToGoScreen on the frontend
+    return { completed: true, passed: false, reason: 'inactivity-fail', sessionCorrectCount: run.stats.correct };
+  }
+
+  // Colored belt: proceed to practice intervention
   await run.save();
   const q = await GeneratedQuestion.findById(questionId).lean();
   return { practice: q};
