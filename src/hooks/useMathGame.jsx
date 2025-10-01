@@ -290,7 +290,7 @@ const useMathGame = () => {
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
       } else {
-        symbol = ' ';
+        symbol = '';
         audioManager.playSoftClick(); 
         setWrongCount((w) => w + 1);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
@@ -382,6 +382,12 @@ const useMathGame = () => {
         setIsTimerPaused(false);
         // Resume timer client-side by correcting quizStartTime
         if (pausedTime) setQuizStartTime((prev) => (prev ? prev + (Date.now() - pausedTime) : prev));
+        if (out.next) {
+            setCurrentQuestion(mapQuestionToFrontend(out.next));
+            setCurrentQuestionIndex(prev => prev + 1); // Increment index to match the server
+            // Ensure timestamp is reset for the new question
+            questionStartTimestamp.current = Date.now();
+        }
         setInterventionQuestion(null);
         setShowLearningModule(false);
       }
@@ -412,8 +418,12 @@ const useMathGame = () => {
     inactivityTimeoutId.current = setTimeout(async () => {
       setAnswerSymbols((prev) => [
             ...prev, 
-            { symbol: '❌', isCorrect: false, timeTaken: INACTIVITY_TIMEOUT_MS / 1000, reason: 'inactivity' }
+            { symbol: '', isCorrect: false, timeTaken: INACTIVITY_TIMEOUT_MS / 1000, reason: 'inactivity' }
         ]);
+        if (inactivityTimeoutId.current) {
+            clearTimeout(inactivityTimeoutId.current);
+            inactivityTimeoutId.current = null;
+        }
         try {
             const out = await quizHandleInactivity(quizRunId, currentQuestion.id, childPin);
 
