@@ -1,3 +1,4 @@
+// src/components/SettingsModal.jsx
 import React, { useState, useContext } from 'react';
 import { MathGameContext } from '../App.jsx';
 
@@ -37,7 +38,10 @@ const SettingsModal = () => {
                 </button>
                 <button
                     className="kid-btn bg-yellow-500 hover:bg-yellow-600 text-white mb-4 w-full transform transition-transform hover:scale-105"
-                    onClick={handleQuit}
+                    onClick={() => { // Part 6: Triggers the quit confirmation modal and closes settings.
+                        handleQuit(); 
+                        handleCloseSettings(); 
+                    }}
                     style={{
                         boxShadow: '0 4px 10px rgba(0,0,0,0.15), 0 -2px 0 rgba(255,255,255,0.3) inset'
                     }}

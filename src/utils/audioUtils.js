@@ -66,17 +66,21 @@ class AudioManager {
 
   // Sound effects -------------------------------------------------------------
 
+  // Legacy correct sound: Kept as a general function but replaced in usage.
   playCorrectSound() {
-    // little rising triad
     this.playTone(523.25, 0.12, 'sine', 0.18); // C5
     setTimeout(() => this.playTone(659.25, 0.12, 'sine', 0.18), 110); // E5
     setTimeout(() => this.playTone(783.99, 0.16, 'sine', 0.18), 220); // G5
   }
 
+  // UPDATED (Part 1): Wrong answer now plays a soft click
   playWrongSound() {
-    this.playTone(330, 0.12, 'triangle', 0.16);   // E4
-    setTimeout(() => this.playTone(294, 0.12, 'triangle', 0.16), 90); // D4
-    setTimeout(() => this.playTone(262, 0.18, 'triangle', 0.16), 180); // C4
+    this.playSoftClick();
+  }
+  
+  // NEW (Part 1): Soft click sound for wrong answers
+  playSoftClick() {
+    this.playTone(400, 0.05, 'square', 0.08); // Low frequency, short duration, quiet
   }
 
   playButtonClick() {
@@ -89,6 +93,26 @@ class AudioManager {
     setTimeout(() => this.playTone(659.25, 0.15, 'sine', 0.2), 150);
     setTimeout(() => this.playTone(783.99, 0.25, 'sine', 0.2), 300);
   }
+  
+  // NEW (Part 2): Sounds for specific correct symbols
+  playLightningSound() {
+      // Fast, high-pitched (⚡)
+      this.playTone(1200, 0.08, 'triangle', 0.2);
+      setTimeout(() => this.playTone(1400, 0.08, 'triangle', 0.2), 50);
+  }
+  
+  playStarSound() {
+      // Warbly, medium pitch (⭐)
+      this.playTone(880, 0.1, 'sawtooth', 0.15);
+      setTimeout(() => this.playTone(1046.5, 0.1, 'sawtooth', 0.15), 100);
+  }
+  
+  playCheckSound() {
+      // Simple, clean tone (✓)
+      this.playTone(523.25, 0.1, 'sine', 0.15);
+      setTimeout(() => this.playTone(783.99, 0.15, 'sine', 0.15), 100);
+  }
+
 
   // Stop and cleanup ----------------------------------------------------------
 

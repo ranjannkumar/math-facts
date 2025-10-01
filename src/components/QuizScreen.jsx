@@ -57,9 +57,13 @@ const QuizScreen = () => {
                     ? 'text-yellow-500'
                     : answer.symbol === '✓'
                     ? 'text-green-500'
-                    : 'text-red-500'
+                    // Part 1: If symbol is ' ' (wrong answer), make it transparent
+                    : answer.symbol.trim() === ''
+                    ? 'text-transparent' 
+                    : 'text-red-500' // Fallback (for old '❌' if somehow present)
                 }`}
                 title={`${answer.timeTaken.toFixed(1)}s - ${answer.isCorrect ? 'Correct' : 'Wrong'}`}
+                style={{ minWidth: answer.symbol.trim() === '' ? '1.2em' : 'auto' }}
               >
                 {answer.symbol}
               </span>

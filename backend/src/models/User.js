@@ -36,7 +36,7 @@ const DailyStatsSchema = new mongoose.Schema({
 const UserSchema = new mongoose.Schema({
   pin: { type: String, required: true, unique: true, index: true },
   name: { type: String },
-  theme: { type: String, default: 'default' },
+  theme: { type: String, default: 'animals' },
   progress: {
     type: Map,
     of: ProgressSchema, // key like "L1", "L2"

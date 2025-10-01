@@ -58,6 +58,7 @@ function resolveThemeKey(preferredFromContext) {
       if (themeConfigs[candidate]) return candidate;
     }
   }
+  // Fallback to the first theme defined if no preference found
   return keys[0];
 }
 
@@ -81,53 +82,17 @@ const TablePicker = () => {
     return list;
   }, [tableProgress]);
 
-  // 2. Use index into the unlocked list, and default to the last unlocked item
+  // Part 7: Always focus on the highest unlocked level.
   const maxUnlockedIndex = unlockedLevelsList.length > 0 ? unlockedLevelsList.length - 1 : 0;
+  // State variables for sliding animation and index selection are removed.
+  // The effective level is always the highest unlocked one.
+  const levelNumber = unlockedLevelsList[maxUnlockedIndex] || 1; // Default to Level 1
+  const unlocked = !!levelNumber; 
   
-
-  // one-at-a-time nav + animation direction
- // RENAME: activeIdx -> unlockedLevelIndex
-  const [unlockedLevelIndex, setUnlockedLevelIndex] = useState(maxUnlockedIndex);
-  const [animDir, setAnimDir] = useState(null); // 'left' | 'right' | null
-
-  // Sync state if progress changes (e.g., a new level unlocks)
-  useEffect(() => {
-    // If a new level unlocks, move the user to the newest (last) one in the list
-    if (unlockedLevelIndex !== maxUnlockedIndex) {
-      setUnlockedLevelIndex(maxUnlockedIndex);
-    }
-  // This hook should run whenever the list of unlocked levels changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unlockedLevelsList.length]);
+  // The rest of the state and handlers for navigation (goPrev/goNext) are removed.
   
-  // const maxIdx = TOTAL_LEVELS - 1;
-
-  const goPrev = () => {
-    if (unlockedLevelIndex === 0) return;
-    setAnimDir('left');
-    setUnlockedLevelIndex((i) => Math.max(0, i - 1));
-  };
-  const goNext = () => {
-    if (unlockedLevelIndex === maxUnlockedIndex) return;
-    setAnimDir('right');
-    setUnlockedLevelIndex((i) => Math.min(maxUnlockedIndex, i + 1));
-  };
-
-
-   // Clear the slide animation class shortly after index changes
-    useEffect(() => {
-    if (!animDir) return;
-    const t = setTimeout(() => setAnimDir(null), 320);
-    return () => clearTimeout(t);
-   }, [unlockedLevelIndex, animDir]);
-
-   // 3. Get the current level number and properties from the unlocked list
-  const levelNumber = unlockedLevelsList[unlockedLevelIndex];
-  const unlocked = !!levelNumber; // True if a number exists, false only if unlockedLevelsList is empty
-
   const completedBelts = countCompletedBelts(levelNumber, tableProgress);
   const starDisplay = '⭐'.repeat(completedBelts) + '☆'.repeat(COLOR_BELTS.length - completedBelts);
-  // Theme-driven visuals for THIS level (index 0..5)
   // Theme-driven visuals for THIS level (index is levelNumber - 1)
   const themeIdx = levelNumber > 0 ? levelNumber - 1 : 0;
   const emojiForLevel = currentTheme?.tableEmojis?.[themeIdx] ?? '⭐';
@@ -140,7 +105,7 @@ const TablePicker = () => {
   const ringCls = 'ring-yellow-300';
 
   const handleSelect = () => {
-    if (!unlocked) return; // Safeguard, should always be true here
+    if (!unlocked) return; // Safeguard
     setSelectedTable(levelNumber);
     navigate('/belts');
   };
@@ -175,28 +140,16 @@ const TablePicker = () => {
           Welcome, {childName || ''}!
         </h1>
 
+        {/* Part 7: Removed side buttons. Only the card wrapper remains. */}
         <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={goPrev}
-            disabled={unlockedLevelIndex === 0} // Disabled if at the first unlocked level
-            className="px-4 py-2 rounded-full bg-white/90 shadow-lg border border-gray-300 disabled:opacity-50 active:scale-95 transition-transform"
-            aria-label="Previous Level"
-          >
-            ◀
-          </button>
-
-          {/* Animated card wrapper */}
+          
           <div
-            className={`transition-transform ${
-              animDir === 'left' ? 'animate-slide-left' : animDir === 'right' ? 'animate-slide-right' : ''
-            }`}
+            className={`transition-transform`}
             key={`card-${levelNumber}`}
           >
-            {/* Only render the current unlocked level */}
             {levelNumber ? ( 
               <button
                 onClick={handleSelect}
-                // No grayscale/opacity needed as we only display unlocked levels
                 className={`relative rounded-2xl p-6 ${cardBgCls} text-white shadow-xl min-w-[280px] sm:min-w-[380px] ring-4 ${ringCls} 
                   hover:shadow-2xl hover:-translate-y-0.5 transition-transform`}
                 aria-label={`Open Level ${levelNumber}`}
@@ -204,7 +157,7 @@ const TablePicker = () => {
                 <div className="absolute top-2 right-3 text-xl">{''}</div>
 
                 {/* Emoji badge (pop-in) */}
-                  <div className="w-20 h-20 bg-black/10 rounded-full shadow-md flex items-center justify-center text-5xl select-none animate-pop mx-auto">
+                  <div className="w-20 h-20 bg-black/10 rounded-full shadow-md flex items-center justify-center text-5xl select-none mx-auto">
                     <span aria-hidden="true" className="leading-none">
                       {emojiForLevel}
                     </span>
@@ -226,15 +179,6 @@ const TablePicker = () => {
                 </div>
             )}
           </div>
-
-          <button
-            onClick={goNext}
-            disabled={unlockedLevelIndex === maxUnlockedIndex} // Disabled if at the last unlocked level
-            className="px-4 py-2 rounded-full bg-white/90 shadow-lg border border-gray-300 disabled:opacity-50 active:scale-95 transition-transform"
-            aria-label="Next Level"
-          >
-            ▶
-          </button>
         </div>
       </div>
     </div>

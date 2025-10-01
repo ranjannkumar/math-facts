@@ -62,16 +62,15 @@ const App = () => {
       </Routes>
 
       {/* Optional overlays kept here if you use them */}
-      {ctx.showSpeedTest && <SpeedTestScreen />}
       {ctx.showQuitModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fade-in">
           <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-lg w-full flex flex-col items-center animate-pop-in">
             <h2 className="text-xl font-bold mb-4">Are you sure you want to quit?</h2>
             <button className="kid-btn bg-red-400 hover:bg-red-500 text-white mb-4" onClick={ctx.handleConfirmQuit}>
-              Quit
+              Yes, Quit
             </button>
             <button className="kid-btn bg-gray-300 hover:bg-gray-400 text-gray-800" onClick={ctx.handleCancelQuit}>
-              Cancel
+              No, Resume
             </button>
           </div>
         </div>

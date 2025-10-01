@@ -23,7 +23,7 @@ const WayToGoScreen = () => {
         });
         // FIX: Format total time today in minutes and seconds
     const sessionTimeSecs = Math.round(timeSecs);
-    const timeLabel = `${sessionTimeSecs}s`;
+    const sessionTimeLabel = `${sessionTimeSecs}s`;
     // const sessionTimeLabel = `${Math.floor(sessionTimeSecs / 60)}m ${Math.floor(sessionTimeSecs % 60)}s`; 
     useEffect(() => {
         audioManager.playWrongSound?.(); 

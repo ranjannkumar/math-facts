@@ -1,3 +1,4 @@
+// backend/src/controllers/auth.controller.js
 import User from '../models/User.js';
 
 export async function loginPin(req, res, next) {
@@ -17,7 +18,8 @@ export async function loginPin(req, res, next) {
       });
       await user.save();
     }
-    res.json({ user, token: pin }); // simple: frontend sends x-pin header with this pin
+    // Part 3: Return user object including theme
+    res.json({ user: { ...user.toObject(), theme: user.theme }, token: pin }); 
   } catch (e) {
     next(e);
   }

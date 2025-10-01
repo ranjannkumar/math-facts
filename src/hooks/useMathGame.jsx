@@ -273,17 +273,25 @@ const useMathGame = () => {
       // Update client-side UI first (optimistic symbol)
       const timeTaken = responseMs / 1000;
       let symbol;
-      if (isCorrect) {
-        if (timeTaken <= 1.5) symbol = '⚡';
-        else if (timeTaken <= 2) symbol = '⭐';
-        else if (timeTaken <= 5) symbol = '✓';
-        else symbol = '❌';
-        audioManager.playCorrectSound();
+       if (isCorrect) {
+        if (timeTaken <= 1.5) {
+            symbol = '⚡';
+            audioManager.playLightningSound(); // Part 2
+        } else if (timeTaken <= 2) {
+            symbol = '⭐';
+            audioManager.playStarSound(); // Part 2
+        } else if (timeTaken <= 5) {
+            symbol = '✓';
+            audioManager.playCheckSound(); // Part 2
+        } else {
+            symbol = '✓'; 
+            audioManager.playCheckSound();
+        }
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
       } else {
-        symbol = '❌';
-        audioManager.playWrongSound();
+        symbol = ' ';
+        audioManager.playSoftClick(); 
         setWrongCount((w) => w + 1);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
       }
