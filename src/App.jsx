@@ -43,8 +43,8 @@ const App = () => {
       <Routes>
         <Route path="/" element={<StartScreen />} />
         <Route path="/name" element={<NameForm />} />
-        <Route path="/pre-test-popup" element={<PreTestPopup />} />
-        <Route path="/pre-test" element={<PreTestScreen />} />
+        {/* <Route path="/pre-test-popup" element={<PreTestPopup />} /> */}
+        {/* <Route path="/pre-test" element={<PreTestScreen />} /> */}
 
         <Route element={<MainLayout />}>
           <Route path="/levels" element={<TablePicker />} />

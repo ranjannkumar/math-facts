@@ -204,9 +204,12 @@ const TablePicker = () => {
                 <div className="absolute top-2 right-3 text-xl">{''}</div>
 
                 {/* Emoji badge (pop-in) */}
-                <div className="w-20 h-20 bg-black/10 rounded-full shadow-md flex items-center justify-center text-4xl select-none animate-pop">
-                  <span aria-hidden="true">{emojiForLevel}</span>
-                </div>
+                  <div className="w-20 h-20 bg-black/10 rounded-full shadow-md flex items-center justify-center text-5xl select-none animate-pop mx-auto">
+                    <span aria-hidden="true" className="leading-none">
+                      {emojiForLevel}
+                    </span>
+                  </div>
+
 
                 {/* Themed table name */}
                 <div className="text-3xl font-extrabold drop-shadow-sm text-center">{nameForLevel}</div>

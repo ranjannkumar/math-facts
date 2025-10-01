@@ -23,7 +23,8 @@ const WayToGoScreen = () => {
         });
         // FIX: Format total time today in minutes and seconds
     const sessionTimeSecs = Math.round(timeSecs);
-    const sessionTimeLabel = `${Math.floor(sessionTimeSecs / 60)}m ${Math.floor(sessionTimeSecs % 60)}s`; 
+    const timeLabel = `${sessionTimeSecs}s`;
+    // const sessionTimeLabel = `${Math.floor(sessionTimeSecs / 60)}m ${Math.floor(sessionTimeSecs % 60)}s`; 
     useEffect(() => {
         audioManager.playWrongSound?.(); 
         if (hasRestarted.current) return;
@@ -97,9 +98,9 @@ const WayToGoScreen = () => {
                     </h2>
                 </div>
 
-                <p className="text-red-600 font-semibold mb-6">
+                {/* <p className="text-red-600 font-semibold mb-6">
                     Keep practicing, you'll get it next time!
-                </p>
+                </p> */}
 
                 <div className="grid grid-cols-2 gap-4 md:gap-6 justify-center max-w-xl mx-auto mb-8">
                     <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 md:p-5 shadow">
@@ -107,7 +108,7 @@ const WayToGoScreen = () => {
                         <div className="wordart-number mt-1">{sessionCorrectCount}</div>
                     </div>
                     <div className="bg-white rounded-2xl border-2 border-gray-200 p-4 md:p-5 shadow">
-                        <div className="text-gray-500 text-sm">Time Taken (Session)</div>
+                        <div className="text-gray-500 text-sm">Time Taken </div>
                         <div className="wordart-number mt-1">{sessionTimeLabel}</div>
                     </div>
                 </div>

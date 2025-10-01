@@ -167,7 +167,8 @@ const useMathGame = () => {
         setDailyTotalMs(stats?.totalActiveMs || 0); 
         setCorrectCount(stats?.correctCount || 0); 
 
-        navigate('/pre-test-popup');
+        // navigate('/pre-test-popup');
+        navigate('/theme')
 
       } catch (e) {
         throw new Error(e.message || 'Login failed.');

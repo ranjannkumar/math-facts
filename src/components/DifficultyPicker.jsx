@@ -100,7 +100,7 @@ const DifficultyPicker = () => {
     <div
       className={[
         'relative rounded-2xl shadow-xl border border-slate-300',
-        'w-[220px] h-[260px]',
+        'w-[180px] h-[200px]',
         'bg-slate-100 hover:bg-slate-50 transition',
         highlighted ? 'ring-2 ring-white' : '',
         locked ? 'opacity-70' : '',
@@ -108,7 +108,7 @@ const DifficultyPicker = () => {
     >
       <div className={`h-2 ${stripColor} rounded-t-2xl`} />
       <div className="absolute top-2 right-2">
-        <div className="w-7 h-7 rounded-full bg-white/90 shadow flex items-center justify-center text-slate-700 text-[13px]">
+        <div className=" shadow flex items-center justify-center text-slate-700 text-[13px]">
           {locked ? '🔒' : ''}
         </div>
       </div>
