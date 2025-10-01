@@ -63,7 +63,7 @@ const QuizScreen = () => {
                     : 'text-red-500' // Fallback (for old '❌' if somehow present)
                 }`}
                 title={`${answer.timeTaken.toFixed(1)}s - ${answer.isCorrect ? 'Correct' : 'Wrong'}`}
-                style={{ minWidth: answer.symbol.trim() === '' ? '1.2em' : 'auto' }}
+                style={{ minWidth: answer.symbol.trim() === '' ? '0' : 'auto' }}
               >
                 {answer.symbol}
               </span>
