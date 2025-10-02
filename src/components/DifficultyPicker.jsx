@@ -134,7 +134,7 @@ const DifficultyPicker = () => {
           <h3 className="text-[25px] leading-6 font-extrabold text-slate-1000 mt-1 mb-2">
             {beltPretty(belt)} <span className="font-extrabold">Belt</span>
           </h3>
-          <img src={beltImages[belt]} alt={`${belt} belt`} className="h-12 mx-auto my-1 drop-shadow" />
+          <img src={beltImages[belt]} alt={`${belt} belt`} className="h-8 mx-auto my-1 drop-shadow" />
           <div className="text-[18px] mb-1">{hasCompleted ? '⭐' : '☆'}</div>
           <div className="text-slate-800 text-[20px]">10 Questions</div>
         </CardShell>
@@ -152,7 +152,7 @@ const DifficultyPicker = () => {
       >
         <CardShell locked={locked} stripColor={BELT_STRIP.black}>
           <h3 className="text-[20px] leading-6 font-extrabold text-slate-800 mt-1 mb-2">Black Belt</h3>
-          <img src={beltImages.black} alt="Black belt" className="h-12 mx-auto my-1 drop-shadow" />
+          <img src={beltImages.black} alt="Black belt" className="h-8 mx-auto my-1 drop-shadow" />
           <div className="text-[18px] mb-1">{unlockedMap.black ? '🔓' : '☆'}</div> 
           <div className="text-slate-800 text-[20px]">Degrees 1–7</div>
         </CardShell>
