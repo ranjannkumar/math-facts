@@ -50,7 +50,7 @@ const NameForm = () => {
     <button
         type="button"
         onClick={() => handleKeypadInput(value)}
-        className="w-full h-16 sm:h-20 bg-green-700/80 hover:bg-green-600 text-white font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md"
+        className="w-full h-16 sm:h-20 bg-green-700/80 hover:bg-green-600 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md"
         tabIndex="-1" 
     >
         {label || value}
@@ -71,11 +71,11 @@ const NameForm = () => {
 
         <form onSubmit={onSubmit} className="w-full flex flex-col items-center">
           <label className="text-lg sm:text-xl md:text-2xl font-comic text-white font-bold mb-1 sm:mb-2">
-            PIN
+             ENTER PIN
           </label>
 
           <input
-            className="w-full max-w-[180px] mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl opacity-80 text-white font-bold text-center tracking-widest transition-all duration-200 bg-gray-800/50 outline-none focus:ring focus:ring-white/40 placeholder-white/60"
+            className="w-full max-w-[180px] mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl opacity-80 text-white font-bold text-center tracking-widest transition-all duration-200 bg-gray-800/50 outline-none focus:ring focus:ring-white/40"
             value={childPin}
             readOnly 
             type="password"
@@ -89,8 +89,8 @@ const NameForm = () => {
               <KeypadButton key={num} value={String(num)} />
             ))}
             {/* Clear, 0, Backspace */}
-            <KeypadButton value="C" label="clear" />
             <KeypadButton value="0" />
+            <KeypadButton value="C" label="clear"  />
             <KeypadButton value="<" label="⌫" />
           </div>
 

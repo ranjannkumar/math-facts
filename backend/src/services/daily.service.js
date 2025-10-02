@@ -26,3 +26,14 @@ export async function getGrandTotalCorrect(userId) {
   ]);
   return result[0]?.grandTotal || 0;
 }
+
+export async function getDailySummariesForYesterday() {
+  const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+  
+  // Populate the 'user' field to include the user's name and pin
+  const summaries = await DailySummary.find({ date: yesterday })
+      .populate('user', 'name pin') 
+      .lean(); 
+
+  return summaries;
+}

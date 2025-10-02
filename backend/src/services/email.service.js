@@ -1,0 +1,93 @@
+// backend/src/services/email.service.js
+
+import dotenv from 'dotenv';
+dotenv.config();
+
+import dayjs from 'dayjs';
+import nodemailer from 'nodemailer'; 
+import { getDailySummariesForYesterday } from './daily.service.js';
+
+// Configuration from environment variables
+const REPORT_RECIPIENT = process.env.DAILY_REPORT_EMAIL;
+const GMAIL_USER = process.env.GMAIL_USER;
+const GMAIL_PASS = process.env.GMAIL_PASS;
+
+// Setup Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: GMAIL_USER,
+        pass: GMAIL_PASS, // App Password
+    }
+});
+
+/**
+ * Sends an email report using Nodemailer.
+ */
+export async function sendDailyReport() {
+    if (!REPORT_RECIPIENT || !GMAIL_USER || !GMAIL_PASS) {
+        console.warn('Skipping daily report email: Email credentials or recipient missing in environment variables.');
+        return;
+    }
+    
+    console.log(`--- Starting Daily Report Job for ${REPORT_RECIPIENT} ---`);
+
+    const yesterday = dayjs().subtract(1, 'day');
+    const summaries = await getDailySummariesForYesterday();
+
+    if (summaries.length === 0) {
+        console.log('No activity recorded yesterday. Email not sent.');
+        return;
+    }
+    
+    // Build email content (both plain text and HTML)
+    let reportBody = `Daily Math Facts Summary Report - ${yesterday.format('YYYY-MM-DD')}\n\n`;
+    let htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <h2 style="color: #4CAF50;">Daily Math Facts Report</h2>
+            <p>Date: <strong>${yesterday.format('YYYY-MM-DD')}</strong></p>
+            <p>Below is a summary of the math quiz activity from your child(ren):</p>
+            <hr style="border: 0; border-top: 1px solid #eee;">
+    `;
+    
+    summaries.forEach(summary => {
+        const userName = summary.user?.name || 'Unknown User';
+        const userPin = summary.user?.pin || 'N/A';
+        const timeInMinutes = (summary.totalActiveMs / 60000).toFixed(2);
+        
+        reportBody += `Child: ${userName} (PIN: ${userPin})\n`;
+        reportBody += `  Correct Answers: ${summary.correctCount}\n`;
+        reportBody += `  Active Time: ${timeInMinutes} minutes\n\n`;
+
+        htmlBody += `
+            <div style="margin-bottom: 15px; padding: 10px; border-left: 4px solid #2196F3; background-color: #f9f9f9;">
+                <p style="margin: 0;"><strong>Child: ${userName}</strong> (PIN: ${userPin})</p>
+                <ul style="list-style-type: none; padding: 0; margin-top: 5px;">
+                    <li>✅ Correct Answers: <strong style="color: #4CAF50;">${summary.correctCount}</strong></li>
+                    <li>⏱️ Active Time: <strong style="color: #FF9800;">${timeInMinutes} minutes</strong></li>
+                </ul>
+            </div>
+        `;
+    });
+    
+    htmlBody += `<p style="margin-top: 20px; font-size: 0.8em; color: #777;">Report automatically generated. Please do not reply to this email.</p></div>`;
+
+
+    const mailOptions = {
+        from: `Maths-Fact Report <${GMAIL_USER}>`,
+        to: REPORT_RECIPIENT, 
+        subject: `Daily Math Report for ${yesterday.format('YYYY-MM-DD')}`,
+        text: reportBody,
+        html: htmlBody,
+    };
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log('✅ Email sent successfully!');
+        console.log('Message ID:', info.messageId);
+    } catch (error) {
+        console.error('❌ Error sending email:', error.message);
+        // Throwing the error ensures the job is retried later if the server is running
+        throw new Error('Nodemailer failed to send email. Check your GMAIL_PASS (App Password) and GMAIL_USER credentials.');
+    }
+}
