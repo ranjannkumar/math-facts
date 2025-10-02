@@ -2,7 +2,7 @@ import { useContext } from 'react';
 import { MathGameContext } from '../../App.jsx';
 
 const DailyStatsCounter = ({ style }) => {
-    const { correctCount: dailyCorrect } = useContext(MathGameContext);
+    const { correctCount: dailyCorrect,grandTotalCorrect  } = useContext(MathGameContext);
 
     return (
       <div style={style}>

@@ -283,13 +283,13 @@ const useMathGame = () => {
        if (isCorrect) {
         if (timeTaken <= 1.5) {
             symbol = '⚡';
-            audioManager.playLightningSound(); // Part 2
+            audioManager.playLightningSound(); 
         } else if (timeTaken <= 2) {
             symbol = '⭐';
-            audioManager.playStarSound(); // Part 2
+            audioManager.playStarSound(); 
         } else if (timeTaken <= 5) {
             symbol = '✓';
-            audioManager.playCheckSound(); // Part 2
+            audioManager.playCheckSound(); 
         } else {
             symbol = '✓'; 
             audioManager.playCheckSound();
@@ -354,6 +354,13 @@ const useMathGame = () => {
                   setCurrentQuestionIndex(prev => prev + 1);
                   questionStartTimestamp.current = Date.now();
                   setIsAnimating(false);
+                   if (out.dailyStats) {
+                    setCorrectCount(out.dailyStats.correctCount);
+                    setDailyTotalMs(out.dailyStats.totalActiveMs);
+                    if (out.dailyStats.grandTotal !== undefined) {
+                        setGrandTotalCorrect(out.dailyStats.grandTotal); 
+                    }
+                  }
               }, 500);
           } else if (out.practice) {
               setTimeout(() => {
