@@ -41,7 +41,8 @@ const LearningModule = () => {
   const [practiceQ, setPracticeQ] = useState(null); 
   const [practiceMsg, setPracticeMsg] = useState('');
   const [showAdvanceButton, setShowAdvanceButton] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState(null); // Tracks the button click answer
+  const [selectedAnswer, setSelectedAnswer] = useState(null); // Tracks the button click answer //
+  const [isStartingQuiz, setIsStartingQuiz] = useState(false); // Prevent double starts //
 
   const isIntervention = !!interventionQuestion;
   const isPreQuizFlow = !isIntervention && preQuizPracticeItems?.length > 0;
@@ -135,6 +136,7 @@ const LearningModule = () => {
         setSelectedAnswer(null);
     } else {
         // Last practice item is done, start quiz
+        setIsStartingQuiz(true);
         setShowLearningModule(false);
         startActualQuiz(quizRunId);
     }
@@ -295,6 +297,7 @@ const LearningModule = () => {
                     <button
                         type="button"
                         onClick={handleAdvancePreQuizFlow}
+                        disabled={isStartingQuiz}
                         className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
                     >
                         {buttonText}
