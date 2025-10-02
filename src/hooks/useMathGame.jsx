@@ -155,19 +155,24 @@ const useMathGame = () => {
       setChildPin(pinValue);
 
       try {
-        const { user } = await authLogin(pinValue, childName.trim() || 'Player');
-        localStorage.setItem('math-child-name', user.name);
-        setChildName(user.name);
-        
-        // 1. Fetch ALL progression data
-        const { progress } = await userGetProgress(pinValue);
-        setTableProgress(progress || {});
+        // 1. Login first to get user data
+        const loginResponse = await authLogin(pinValue, childName.trim() || 'Player');
 
-        // 2. Fetch daily stats (score and total active time)
-        const stats = await userGetDailyStats(pinValue);
+        localStorage.setItem('math-child-name', loginResponse.user.name);
+        setChildName(loginResponse.user.name);
+        
+        // 2. Fetch progression data and daily stats CONCURRENTLY
+        const [progressResponse, stats] = await Promise.all([
+          userGetProgress(pinValue),
+          userGetDailyStats(pinValue)
+        ]);
+        
+        // 3. Process results
+        setTableProgress(progressResponse.progress || {});
+        
         setDailyTotalMs(stats?.totalActiveMs || 0); 
-        setCorrectCount(stats?.correctCount || 0);  
-        setGrandTotalCorrect(stats?.grandTotal || 0); // Set grand total from stats
+        setCorrectCount(stats?.correctCount || 0); 
+        setGrandTotalCorrect(stats?.grandTotal || 0); // Store Grand Total
 
         // navigate('/pre-test-popup');
         navigate('/theme')

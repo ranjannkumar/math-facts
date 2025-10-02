@@ -5,8 +5,13 @@ export async function getToday(req, res, next) {
   try {
     const todayDoc = await getTodaySvc(req.user._id);
     const grandTotal = await getGrandTotalCorrectSvc(req.user._id); // Fetch grand total
+    // Check if todayDoc is a Mongoose document before calling toObject()
+    const todayData = todayDoc.toObject 
+        ? todayDoc.toObject() 
+        : todayDoc;
+        
     res.json({ 
-        ...todayDoc.toObject(), // Spread existing fields (correctCount, totalActiveMs)
+        ...todayData, // Use the extracted data
         grandTotal: grandTotal // Add grand total
     });
   } catch (e) { next(e); }
