@@ -50,7 +50,7 @@ const NameForm = () => {
     <button
         type="button"
         onClick={() => handleKeypadInput(value)}
-        className="w-full h-16 sm:h-20 bg-green-700/80 hover:bg-green-600 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md"
+        className="h-16 w-16 sm:h-20 sm:w-20 bg-green-700/80 hover:bg-green-600 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md"
         tabIndex="-1" 
     >
         {label || value}
@@ -84,7 +84,7 @@ const NameForm = () => {
             inputMode="none" 
           />
 
-          <div className="grid grid-cols-4 gap-3 w-full max-w-[400px] mb-4">
+          <div className="grid grid-cols-4 gap-3 mb-4 mx-auto justify-items-center">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <KeypadButton key={num} value={String(num)} />
             ))}
