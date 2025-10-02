@@ -39,6 +39,7 @@ const useMathGame = () => {
   const [quizProgress, setQuizProgress] = useState(0);
   const [correctCount, setCorrectCount] = useState(0); // Daily total score
   const [sessionCorrectCount, setSessionCorrectCount] = useState(0); // Session Score
+  const [grandTotalCorrect, setGrandTotalCorrect] = useState(0); // New Grand Total Score
   const [wrongCount, setWrongCount] = useState(0);
   const [questionTimes, setQuestionTimes] = useState([]);
   const [answerSymbols, setAnswerSymbols] = useState([]);
@@ -165,7 +166,8 @@ const useMathGame = () => {
         // 2. Fetch daily stats (score and total active time)
         const stats = await userGetDailyStats(pinValue);
         setDailyTotalMs(stats?.totalActiveMs || 0); 
-        setCorrectCount(stats?.correctCount || 0); 
+        setCorrectCount(stats?.correctCount || 0);  
+        setGrandTotalCorrect(stats?.grandTotal || 0); // Set grand total from stats
 
         // navigate('/pre-test-popup');
         navigate('/theme')
@@ -329,7 +331,10 @@ const useMathGame = () => {
                   if (out.dailyStats) {
                 setCorrectCount(out.dailyStats.correctCount); // Update score instantly
                 setDailyTotalMs(out.dailyStats.totalActiveMs); // Update time base instantly
-            }
+                if (out.dailyStats.grandTotal !== undefined) { //  Update grand total
+                        setGrandTotalCorrect(out.dailyStats.grandTotal); 
+                    }
+           }  
 
                   //  Refetch progress & daily stats after completion/failure
                    if (out.updatedProgress) {
@@ -536,6 +541,7 @@ const useMathGame = () => {
     quizProgress, setQuizProgress,
     correctCount, setCorrectCount, // Daily total correct count
     sessionCorrectCount, // Session correct count (for result screens)
+    grandTotalCorrect, // New Grand Total Correct Count
     wrongCount, setWrongCount,
     answerSymbols, setAnswerSymbols,
     currentQuestion, setCurrentQuestion,
