@@ -8,7 +8,8 @@ export async function incDaily(userId, addCorrect = 0, addActiveMs = 0) {
     { $inc: { correctCount: addCorrect, totalActiveMs: addActiveMs } },
     { upsert: true, new: true }
   );
-  return doc;
+  const grandTotal = await getGrandTotalCorrect(userId);
+  return { ...doc.toObject(), grandTotal }; 
 }
 
 export async function getToday(userId) {

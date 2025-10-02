@@ -1,36 +1,8 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { useContext } from 'react';
 import { MathGameContext } from '../../App.jsx';
-import { userGetDailyStats } from '../../api/mathApi.js';
 
 const DailyStatsCounter = ({ style }) => {
-    const { childPin } = useContext(MathGameContext);
-    const [dailyCorrect, setDailyCorrect] = useState(0);
-
-    // FIX 1: Wrap updateCount in useCallback to prevent recreation on every render
-    const updateCount = useCallback(async () => {
-        if (!childPin) {
-            setDailyCorrect(0);
-            return;
-        }
-        
-        try {
-            // NOTE: Assuming userGetDailyStats accepts PIN/ID and returns { correctCount }
-            const stats = await userGetDailyStats(childPin);
-            setDailyCorrect(stats?.correctCount || 0);
-        } catch (e) {
-            console.error('Error fetching daily stats:', e.message);
-            setDailyCorrect(0);
-        }
-    }, [childPin]); // Depend only on childPin
-
-    useEffect(() => {
-      // FIX 2: Call the stable function
-      updateCount();
-      
-      // Poll every 5 seconds to keep the counter somewhat fresh during a session
-      // const intervalId = setInterval(updateCount, 5000); 
-      // return () => clearInterval(intervalId);
-    }, [childPin, updateCount]); // FIX 3: Include updateCount in the dependency array
+    const { correctCount: dailyCorrect } = useContext(MathGameContext);
 
     return (
       <div style={style}>
