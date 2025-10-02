@@ -90,7 +90,7 @@ const NameForm = () => {
             ))}
             {/* Clear, 0, Backspace */}
             <KeypadButton value="0" />
-            <KeypadButton value="C" label="clear"  />
+            <KeypadButton value="C" label="C"  />
             <KeypadButton value="<" label="⌫" />
           </div>
 
