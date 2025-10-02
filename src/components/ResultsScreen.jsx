@@ -149,7 +149,7 @@ const ResultsScreen = () => {
                         CONGRATULATIONS
                     </h2>
                 </div>
-                <p className="text-green-600 font-semibold mb-6">
+                <p className="text-green-600 text-3xl font-bold mb-6">
                     You earned <span className="font-bold">+{pointsEarned}</span> points
                 </p>
                 <div className="grid grid-cols-2 gap-4 md:gap-6 justify-center max-w-xl mx-auto mb-8">

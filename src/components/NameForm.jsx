@@ -26,6 +26,37 @@ const NameForm = () => {
     }
   };
 
+  /**
+   * Handles button clicks from the custom keypad to update the PIN.
+   * It simulates an event object expected by handlePinChange.
+   */
+  const handleKeypadInput = (key) => {
+    let newPin = childPin;
+    
+    if (key === 'C') {
+        newPin = ''; // Clear
+    } else if (key === '<') {
+        newPin = childPin.slice(0, -1); // Backspace
+    } else if (childPin.length < 4) {
+        // Append number (1-9, 0)
+        newPin = childPin + key;
+    }
+
+    // Call the original handler in context with a synthetic event object
+    handlePinChange({ target: { value: newPin } });
+  };
+  
+  const KeypadButton = ({ value, label }) => (
+    <button
+        type="button"
+        onClick={() => handleKeypadInput(value)}
+        className="w-full h-16 sm:h-20 bg-green-700/80 hover:bg-green-600 text-white font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md"
+        tabIndex="-1" 
+    >
+        {label || value}
+    </button>
+  );
+
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center px-4"
@@ -37,9 +68,6 @@ const NameForm = () => {
       }}
     >
       <div className="bg-white/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-full flex flex-col items-center relative z-10 mx-2 sm:mx-4 w-full max-w-sm backdrop-blur-md">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-baloo text-white mb-3 sm:mb-4 drop-shadow-lg">
-          Let&apos;s Get Started!
-        </h1>
 
         <form onSubmit={onSubmit} className="w-full flex flex-col items-center">
           <label className="text-lg sm:text-xl md:text-2xl font-comic text-white font-bold mb-1 sm:mb-2">
@@ -49,12 +77,22 @@ const NameForm = () => {
           <input
             className="w-full max-w-[180px] mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl opacity-80 text-white font-bold text-center tracking-widest transition-all duration-200 bg-gray-800/50 outline-none focus:ring focus:ring-white/40 placeholder-white/60"
             value={childPin}
-            onChange={handlePinChange}
+            readOnly 
             type="password"
-            placeholder=""
             maxLength={4}
             autoComplete="off"
+            inputMode="none" 
           />
+
+          <div className="grid grid-cols-4 gap-3 w-full max-w-[400px] mb-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+              <KeypadButton key={num} value={String(num)} />
+            ))}
+            {/* Clear, 0, Backspace */}
+            <KeypadButton value="C" label="clear" />
+            <KeypadButton value="0" />
+            <KeypadButton value="<" label="⌫" />
+          </div>
 
           {error && (
             <div className="text-red-300 text-sm mb-2 text-center">
@@ -64,7 +102,7 @@ const NameForm = () => {
 
           <button
             type="submit"
-            className="bg-green-800 hover:bg-green-900 text-white font-bold py-1.5 sm:py-2 px-6 sm:px-8 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
+            className="bg-green-800 hover:bg-green-900 text-white font-bold py-1.5 sm:py-2 px-6 sm:px-8 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg mt-2"
           >
             Start
           </button>
