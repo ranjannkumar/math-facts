@@ -3,14 +3,13 @@ import React, { useEffect, useMemo, useState, useContext } from 'react';
 import { MathGameContext } from '../App.jsx';
 import { normalizeDifficulty } from '../utils/mathGameLogic.js';
 import audioManager from '../utils/audioUtils.js';
-import { mapQuestionToFrontend } from '../api/mathApi.js'; // Removed unused quizPracticeAnswer import
+import { mapQuestionToFrontend } from '../api/mathApi.js'; 
 
 /**
  * Learning flow:
  * Pre-Quiz: Fact#1 (from /prepare) -> Practice#1 -> Fact#2 -> Practice#2 -> Start Quiz
  * Intervention: Intervention Question -> Practice -> Resume Quiz
  */
-
 
 const LearningModule = () => {
   const {
@@ -31,7 +30,7 @@ const LearningModule = () => {
     setCurrentQuestionIndex,
     setQuizProgress,
     maxQuestions,
-    handlePracticeAnswer, // <--- Import the new function from useMathGame
+    handlePracticeAnswer, 
   } = useContext(MathGameContext);
 
   const diff = useMemo(() => normalizeDifficulty(pendingDifficulty), [pendingDifficulty]);
@@ -41,8 +40,8 @@ const LearningModule = () => {
   const [practiceQ, setPracticeQ] = useState(null); 
   const [practiceMsg, setPracticeMsg] = useState('');
   const [showAdvanceButton, setShowAdvanceButton] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState(null); // Tracks the button click answer //
-  const [isStartingQuiz, setIsStartingQuiz] = useState(false); // Prevent double starts //
+  const [selectedAnswer, setSelectedAnswer] = useState(null); // Tracks the button click answer
+  const [isStartingQuiz, setIsStartingQuiz] = useState(false); // Prevent double starts 
 
   const isIntervention = !!interventionQuestion;
   const isPreQuizFlow = !isIntervention && preQuizPracticeItems?.length > 0;
@@ -104,13 +103,6 @@ const LearningModule = () => {
   const extractFactDisplay = (q) => {
       if (!q) return '—';
       const questionPart = extractQuestion(q);
-      
-      // Handle digit recognition case (e.g., Q: "9", Fact: "9 = 9")
-      if (!questionPart.includes('+') && !questionPart.includes('-') && !questionPart.includes('×') && !questionPart.includes('÷')) {
-          return `${questionPart} = ${q.correctAnswer}`;
-      }
-      
-      // Otherwise, show the full equation (e.g., "A + B = C")
       return `${questionPart} = ${q.correctAnswer}`;
   }
 
@@ -119,6 +111,10 @@ const LearningModule = () => {
     audioManager.playButtonClick?.();
     setPracticeMsg('');
     setIsShowingFact(false); // Move from Fact Screen to Practice Screen
+
+    // UPDATE: make sure the Start Quiz / advance button is never visible when entering practice
+    setShowAdvanceButton(false);
+     setSelectedAnswer(null);  
   };
   
   // Handler for Pre-Quiz flow: moves to next fact or starts quiz
@@ -152,18 +148,44 @@ const LearningModule = () => {
     if (isCorrect) {
         audioManager.playCorrectSound?.();
         setPracticeMsg('Correct!');
-        setShowAdvanceButton(true);
 
         try {
           const out = await handlePracticeAnswer(practiceQ.id, answer);
 
           if (isPreQuizFlow) {
-            // Pre-quiz: let the advance button control flow
+            const nextIndex = currentPracticeIndex + 1;
+            const isLastFact = nextIndex >= preQuizPracticeItems.length;
+
+            if (isLastFact) {
+              // This was the final practice. Now we show the Start Quiz button.
+              setShowAdvanceButton(true);
+            } else {
+              // Not the last one — do NOT flash the Start Quiz button.
+              setShowAdvanceButton(false);
+
+              const mappedQ = mapQuestionToFrontend(preQuizPracticeItems[nextIndex]);
+
+              // Small delay to let the green "Correct!" feedback register, but without showing any button
+              setTimeout(() => {
+                setCurrentPracticeIndex(nextIndex);
+                setPracticeQ(mappedQ);
+                setIsShowingFact(true);          // back to Fact for the next item
+                setSelectedAnswer(null);
+                setPracticeMsg('');
+                setShowAdvanceButton(false);      // ensure it's still hidden upon showing next fact
+              }, 500);
+            }
             return;
           }
 
           if (isIntervention) {
-            // FIX: If API confirmed resume, navigate immediately.
+            if (out.completed) {
+                setIsClosing(true);
+                setInterventionQuestion(null);
+                setShowLearningModule(false);
+                navigate('/way-to-go', { replace: true });
+                return;
+            }
             if (out.resume) {
               setIsClosing(true);                 
               setInterventionQuestion(null);      
@@ -180,8 +202,10 @@ const LearningModule = () => {
       } else {
         audioManager.playWrongSound?.();
         setPracticeMsg('Wrong! Try again.');
+        setShowAdvanceButton(false);  
         setTimeout(() => {
           setSelectedAnswer(null);
+          setIsShowingFact(true); 
           setPracticeMsg('');
         }, 1000);
       }
@@ -195,16 +219,18 @@ const LearningModule = () => {
                       key={index}
                       onClick={() => handlePracticeAnswerClick(answer)}
                       disabled={!!selectedAnswer}
-                      className={`py-4 rounded-xl text-2xl font-bold shadow-md transition-all duration-200
-                      ${
-                          selectedAnswer === null
-                              ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                              : answer === currentCorrectAnswer
-                                  ? 'bg-green-500 text-white'
-                                  : answer === selectedAnswer
-                                      ? 'bg-red-500 text-white'
-                                      : 'bg-gray-200 text-gray-800 opacity-50'
-                      }`}
+                      className="py-4 rounded-xl text-2xl font-bold shadow-md transition-all duration-200 
+                         bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50"
+                      // className={`py-4 rounded-xl text-2xl font-bold shadow-md transition-all duration-200
+                      // ${
+                      //     selectedAnswer === null
+                      //         ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                      //         : answer === currentCorrectAnswer
+                      //             ? 'bg-green-500 text-white'
+                      //             : answer === selectedAnswer
+                      //                 ? 'bg-red-500 text-white'
+                      //                 : 'bg-gray-200 text-gray-800 opacity-50'
+                      // }`}
                   >
                       {answer}
                   </button>
@@ -282,7 +308,7 @@ const LearningModule = () => {
         );
       } else {
         // Practice screen (Pre-Quiz)
-        const buttonText = isLastFact ? 'Start Quiz' : 'Next';
+        const buttonText = 'Start Quiz';
 
         return (
           <>
