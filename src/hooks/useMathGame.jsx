@@ -284,10 +284,12 @@ const useMathGame = () => {
         if (timeTaken <= 1.5) {
             symbol = '⚡';
             audioManager.playLightningSound(); 
-        } else if (timeTaken <= 2) {
-            symbol = '⭐';
-            audioManager.playStarSound(); 
-        } else if (timeTaken <= 5) {
+        } 
+        // else if (timeTaken <= 2) {
+        //     symbol = '⭐';
+        //     audioManager.playStarSound(); 
+        // } 
+        else if (timeTaken <= 5) {
             symbol = '✓';
             audioManager.playCheckSound(); 
         } else {

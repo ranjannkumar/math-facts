@@ -50,7 +50,7 @@ const NameForm = () => {
     <button
         type="button"
         onClick={() => handleKeypadInput(value)}
-        className="h-16 w-16 sm:h-20 sm:w-20 bg-green-700/80 hover:bg-green-600 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md"
+        className="h-16 w-16 sm:h-20 sm:w-20 bg-green-700/80 hover:bg-green-600 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center"
         tabIndex="-1" 
     >
         {label || value}
@@ -90,8 +90,8 @@ const NameForm = () => {
             ))}
             {/* Clear, 0, Backspace */}
             <KeypadButton value="0" />
-            <KeypadButton value="C" label="C"  />
-            <KeypadButton value="<" label="⌫" />
+            <KeypadButton value="C" label={<span className="text-sm">CLEAR</span>} />
+            {/* <KeypadButton value="<" label="⌫" /> */}
           </div>
 
           {error && (

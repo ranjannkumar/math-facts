@@ -168,7 +168,7 @@ const ResultsScreen = () => {
                         <div className="wordart-number text-2xl sm:text-4xl mt-1">{correctCount}</div>
                     </div>
                     <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
-                        <div className="text-gray-500 text-xs sm:text-sm">Grand Total</div>
+                        <div className="text-gray-500 text-xs sm:text-sm">Total Score</div>
                         <div className="wordart-number text-2xl sm:text-4xl mt-1">{grandTotalCorrect}</div>
                     </div>
                 </div>
