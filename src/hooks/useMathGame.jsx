@@ -303,7 +303,7 @@ const useMathGame = () => {
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
       } else {
         symbol = '';
-        audioManager.playSoftClick(); 
+        audioManager.playWrongSound();
         setWrongCount((w) => w + 1);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
       }

@@ -1,14 +1,14 @@
 // src/utils/audioUtils.js
 // Centralized audio manager for the app. Handles creation and cleanup of all WebAudio nodes
-// so screens can safely call audioManager.stopAll() without crashing in browsers that block
-// autoplay until a user gesture.
 
 class AudioManager {
   constructor() {
     this.audioContext = null;
-    this.activeOscillators = new Set();  // currently playing oscillators
+    this.activeOscillators = new Set();
     this.activeGains = new Set();
+    this.audioBuffers = {}; // Store loaded audio buffers
     this._ensureContext();
+    this._loadAllAudio(); // Load all audio files on initialization
   }
 
   _ensureContext() {
@@ -21,7 +21,54 @@ class AudioManager {
     }
     return this.audioContext;
   }
+  
+  // New method to load audio files
+  async _loadAudio(name, path) {
+    const ctx = this._ensureContext();
+    if (!ctx) return;
+    
+    try {
+        const response = await fetch(path);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+        this.audioBuffers[name] = audioBuffer;
+    } catch (e) {
+        console.error(`Error loading audio file ${path}:`, e);
+    }
+  }
 
+  _loadAllAudio() {
+      // Assuming 'flash_sound.mp3' and 'start+next.mp3' are in the public folder
+      this._loadAudio('flash', '/flash_sound.mp3');
+      this._loadAudio('startNext', '/start+next.mp3');
+  }
+
+  // New method to play an audio buffer
+  _playBuffer(name, volume = 0.15) {
+    const ctx = this._ensureContext();
+    const buffer = this.audioBuffers[name];
+    if (!ctx || !buffer) return;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const gain = ctx.createGain();
+    gain.gain.value = volume;
+
+    source.connect(gain);
+    gain.connect(ctx.destination);
+
+    // Playback and cleanup
+    const stop = () => {
+      try { source.stop(); } catch { /* already stopped */ }
+      try { source.disconnect(); } catch {}
+      try { gain.disconnect(); } catch {}
+    };
+
+    source.onended = stop;
+    try { source.start(); } catch {}
+  }
+  
   // Some browsers start in "suspended" state until there is a user gesture.
   resume() {
     const ctx = this._ensureContext();
@@ -31,7 +78,7 @@ class AudioManager {
     return Promise.resolve();
   }
 
-  // Low level tone helper used by the UI sound effects.
+  // Low level tone helper (kept just in case, but no longer used for new sounds)
   playTone(frequency = 440, duration = 0.2, type = 'sine', volume = 0.15) {
     const ctx = this._ensureContext();
     if (!ctx) return;
@@ -46,7 +93,6 @@ class AudioManager {
     osc.connect(gain);
     gain.connect(ctx.destination);
 
-    // Track to allow global stop
     this.activeOscillators.add(osc);
     this.activeGains.add(gain);
 
@@ -66,28 +112,27 @@ class AudioManager {
 
   // Sound effects -------------------------------------------------------------
 
-  // Legacy correct sound: Kept as a general function but replaced in usage.
+  // Replaced with generic tick/flash sound
   playCorrectSound() {
-    this.playTone(523.25, 0.12, 'sine', 0.18); // C5
-    setTimeout(() => this.playTone(659.25, 0.12, 'sine', 0.18), 110); // E5
-    setTimeout(() => this.playTone(783.99, 0.16, 'sine', 0.18), 220); // G5
+    this._playBuffer('flash', 0.8); // Use flash_sound.mp3 for a general "correct" sound
   }
 
-  // UPDATED (Part 1): Wrong answer now plays a soft click
+  // Replaced with soft click (using start+next.mp3 as a generic tick/next sound)
   playWrongSound() {
-    this.playSoftClick();
+    this._playBuffer('startNext', 0.5); // Use a low volume, quick sound for wrong answer feedback
   }
   
-  // NEW (Part 1): Soft click sound for wrong answers
+  // Used for wrong answers and as a general quick "next" sound
   playSoftClick() {
-    this.playTone(400, 0.05, 'square', 0.08); // Low frequency, short duration, quiet
+     this._playBuffer('startNext', 0.5); // Use start+next.mp3 as the generic "tick" or soft sound
   }
 
+  // Used for button clicks like Next/Start
   playButtonClick() {
-    this.playTone(700, 0.06, 'square', 0.12);
-    setTimeout(() => this.playTone(500, 0.05, 'square', 0.10), 50);
+    this._playBuffer('startNext', 0.8); 
   }
 
+  // General quiz complete sound (can keep as tone or use an MP3 if available)
   playCompleteSound() {
     this.playTone(523.25, 0.15, 'sine', 0.2);
     setTimeout(() => this.playTone(659.25, 0.15, 'sine', 0.2), 150);
@@ -96,28 +141,25 @@ class AudioManager {
   
   // NEW (Part 2): Sounds for specific correct symbols
   playLightningSound() {
-      // Fast, high-pitched (⚡)
-      this.playTone(1200, 0.08, 'triangle', 0.2);
-      setTimeout(() => this.playTone(1400, 0.08, 'triangle', 0.2), 50);
+      // flash_sound.mp3
+      this._playBuffer('flash', 0.9); 
   }
   
   playStarSound() {
-      // Warbly, medium pitch (⭐)
-      this.playTone(880, 0.1, 'sawtooth', 0.15);
-      setTimeout(() => this.playTone(1046.5, 0.1, 'sawtooth', 0.15), 100);
+      // Using flash_sound.mp3 for green tick
+      this._playBuffer('flash', 0.7); 
   }
   
   playCheckSound() {
-      // Simple, clean tone (✓)
-      this.playTone(523.25, 0.1, 'sine', 0.15);
-      setTimeout(() => this.playTone(783.99, 0.15, 'sine', 0.15), 100);
+      // Using start+next.mp3 for simple tick
+      this._playBuffer('startNext', 0.6); 
   }
 
 
   // Stop and cleanup ----------------------------------------------------------
 
   stopAll() {
-    // Gracefully stop any active oscillators.
+    // Gracefully stop any active oscillators (if tones are still used).
     for (const osc of Array.from(this.activeOscillators)) {
       try { osc.stop(); } catch {}
       try { osc.disconnect(); } catch {}
