@@ -115,8 +115,14 @@ class AudioManager {
   // Sound effects -------------------------------------------------------------
 
   // Replaced with generic tick/flash sound
+  // playCorrectSound() {
+  //   this._playBuffer('green', 0.8); // Use flash_sound.mp3 for a general "correct" sound
+  // }
+
   playCorrectSound() {
-    this._playBuffer('green', 0.8); // Use flash_sound.mp3 for a general "correct" sound
+    this.playTone(523.25, 0.12, 'sine', 0.18); // C5
+    setTimeout(() => this.playTone(659.25, 0.12, 'sine', 0.18), 110); // E5
+    setTimeout(() => this.playTone(783.99, 0.16, 'sine', 0.18), 220); // G5
   }
 
   // Replaced with soft click (using start+next.mp3 as a generic tick/next sound)
