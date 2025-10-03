@@ -22,14 +22,6 @@ const LearningModule = () => {
     setInterventionQuestion,
     preQuizPracticeItems, 
     quizRunId,
-    childPin,
-    setIsTimerPaused,
-    setQuizStartTime,
-    pausedTime,
-    setCurrentQuestion,
-    setCurrentQuestionIndex,
-    setQuizProgress,
-    maxQuestions,
     handlePracticeAnswer, 
   } = useContext(MathGameContext);
 

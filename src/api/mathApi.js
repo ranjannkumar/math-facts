@@ -71,6 +71,11 @@ export const quizComplete = async (quizRunId, pin) => {
   return callApi('/quiz/complete', 'POST', { quizRunId }, pin);
 };
 
+export const userResetProgress = async (pin) => {
+  return callApi('/user/reset', 'POST', {}, pin);
+};
+
+
 export const userGetDailyStats = async (pin) => {
   return callApi('/user/daily', 'GET', null, pin);
 };

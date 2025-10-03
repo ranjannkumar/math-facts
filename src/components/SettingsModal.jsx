@@ -29,18 +29,21 @@ const SettingsModal = () => {
                 </h2>
                 <button
                     className="kid-btn bg-red-400 hover:bg-red-500 text-white mb-4 w-full transform transition-transform hover:scale-105"
-                    onClick={handleResetProgress}
+                    onClick={() => {
+                        handleResetProgress(); // Triggers the confirmation modal
+                        handleCloseSettings(); // Close settings modal
+                    }}
                     style={{
                         boxShadow: '0 4px 10px rgba(0,0,0,0.15), 0 -2px 0 rgba(255,255,255,0.3) inset'
                     }}
                 >
                     Reset Progress
                 </button>
-                <button
+                 <button
                     className="kid-btn bg-yellow-500 hover:bg-yellow-600 text-white mb-4 w-full transform transition-transform hover:scale-105"
-                    onClick={() => { // Part 6: Triggers the quit confirmation modal and closes settings.
-                        handleQuit(); 
-                        handleCloseSettings(); 
+                    onClick={() => { 
+                        handleQuit(); // Triggers the quit confirmation modal
+                        handleCloseSettings(); // Close settings modal
                     }}
                     style={{
                         boxShadow: '0 4px 10px rgba(0,0,0,0.15), 0 -2px 0 rgba(255,255,255,0.3) inset'

@@ -1,5 +1,6 @@
 // src/controllers/user.controller.js
 import { getToday as getTodaySvc, getGrandTotalCorrect as getGrandTotalCorrectSvc } from '../services/daily.service.js';
+import { resetAllProgress as resetAllProgressSvc } from '../services/progression.service.js';
 
 export async function getToday(req, res, next) {
   try {
@@ -21,4 +22,15 @@ export async function getProgress(req, res, next) {
   try {
     res.json({ progress: Object.fromEntries(req.user.progress) });
   } catch (e) { next(e); }
+}
+
+// --- ADD THIS FUNCTION ---
+export async function resetProgress(req, res, next) {
+  try {
+    const updatedUser = await resetAllProgressSvc(req.user);
+    // Respond with a 204 No Content or success message
+    res.status(200).json({ success: true, message: 'Progress reset successfully.', user: updatedUser });
+  } catch (e) { 
+    next(e); 
+  }
 }

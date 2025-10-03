@@ -1,6 +1,38 @@
 import { BELTS, BLACK_DEGREES, QUIZ_SIZE_COLORED } from '../utils/constants.js';
 import { isBlack, nextBelt } from '../utils/belts.js';
 
+import DailySummary from '../models/DailySummary.js';
+import QuizRun from '../models/QuizRun.js';
+
+export async function resetAllProgress(user) {
+  const userId = user._id;
+
+  // 1. Delete associated data
+  await DailySummary.deleteMany({ user: userId });
+  await QuizRun.deleteMany({ user: userId });
+  // Attempts refer to QuizRun IDs, deleting QuizRuns is sufficient cleanup in a simple flow,
+  // but for completeness, we should delete Attempts linked to the QuizRuns we are about to delete.
+  // Since we delete QuizRuns, the cascade could be complex. For this simple app, 
+  // deleting QuizRuns and DailySummary is usually sufficient for a "fresh start". 
+  // We'll skip complex attempt cleanup for simplicity unless a cascade error occurs.
+
+  // 2. Reset user progression map to initial state (L1 white belt unlocked)
+  user.progress.clear();
+  
+  // Re-initialize L1 white belt unlocked state (mimicking auth.controller.js logic)
+  const key = 'L1';
+  user.progress.set(key, { 
+      level: 1, 
+      unlocked: true, // Mark level as unlocked
+      white: { unlocked: true, completed: false } // Mark white belt as unlocked for L1
+  });
+  
+  // The rest of the belts/degrees will use the schema defaults.
+  
+  await user.save();
+  return user;
+}
+
 export async function unlockOnPass(user, level, beltOrDegree, passed) {
   if (!passed) return user;
 

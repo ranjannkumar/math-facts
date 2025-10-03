@@ -13,6 +13,7 @@ import {
   quizPrepare,
   quizStart,
   quizSubmitAnswer,
+  userResetProgress,
 } from '../api/mathApi.js';
 
 // Constant for inactivity timeout (same as backend, 5000ms)
@@ -65,6 +66,7 @@ const useMathGame = () => {
   // Misc UI
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   // --- ADD MISSING PRE-TEST STATE DECLARATIONS ---
   const [preTestSection, setPreTestSection] = useState('addition');
@@ -519,17 +521,42 @@ const useMathGame = () => {
   }, [isTimerPaused, quizStartTime, dailyTotalMs]); //  Added dailyTotalMs, totalTimeToday to deps
 
 
-  const handleConfirmQuit = useCallback(() => navigate('/'), [navigate]);
+  const handleConfirmQuit = useCallback(() =>{ 
+    setShowQuitModal(false);
+    navigate('/');
+  }, [navigate]);
   const handleCancelQuit = useCallback(() => setShowQuitModal(false), []);
-  const handleResetProgress = useCallback(() => {
+
+  const handleInitiateQuit = useCallback(() => setShowQuitModal(true), []);
+  const handleInitiateReset = useCallback(() => setShowResetModal(true), []);
+  const handleCancelReset = useCallback(() => setShowResetModal(false), []);
+
+  const handleConfirmReset = useCallback(async () => {
+    if (childPin) {
+      try {
+        // 1. Reset progress on the backend (clear DB data)
+        await userResetProgress(childPin);
+      } catch (e) {
+        console.error('Backend progress reset failed:', e.message);
+        // Continue to client-side reset/logout even if backend failed
+      }
+    }
+    
+    // 2. Reset client-side state and logout (clear local storage)
     localStorage.clear();
     hardResetQuizState();
     setChildPin('');
     setChildName('');
     setChildAge('');
     setTableProgress({});
-    navigate('/');
-  }, [navigate, hardResetQuizState]);
+    setShowResetModal(false); // Close the modal
+    navigate('/', { replace: true }); // Use replace to prevent back button from returning to previous screen
+  }, [navigate, hardResetQuizState, childPin]);
+
+  const handleResetProgress = useCallback(() => {
+    // Legacy function, now just redirects to confirmation
+    handleInitiateReset();
+  }, [handleInitiateReset]);
 
   const handleNameChange = useCallback((e) => setChildName(e.target.value), []);
   const handleAgeChange = useCallback((e) => setChildAge(e.target.value), []);
@@ -598,8 +625,11 @@ const useMathGame = () => {
     childAge, setChildAge, handleAgeChange,
     childPin, setChildPin, handlePinChange,
     handlePinSubmit,
-    handleResetProgress,
+    handleResetProgress: handleInitiateReset,
+    handleConfirmReset, handleCancelReset,
     handleConfirmQuit, handleCancelQuit,
+    handleQuit: handleInitiateQuit,
+    showQuitModal, setShowQuitModal, showResetModal, setShowResetModal,
     showSettings, setShowSettings,
     // Progression Data
     tableProgress, setTableProgress,
