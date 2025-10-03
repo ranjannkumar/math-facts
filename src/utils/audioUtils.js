@@ -41,6 +41,8 @@ class AudioManager {
       // Assuming 'flash_sound.mp3' and 'start+next.mp3' are in the public folder
       this._loadAudio('flash', '/flash_sound.mp3');
       this._loadAudio('startNext', '/start+next.mp3');
+      this._loadAudio('wrong', '/wrong_sound.mp3');
+      this._loadAudio('green', '/green_tick_sound.mp3');
   }
 
   // New method to play an audio buffer
@@ -114,17 +116,17 @@ class AudioManager {
 
   // Replaced with generic tick/flash sound
   playCorrectSound() {
-    this._playBuffer('flash', 0.8); // Use flash_sound.mp3 for a general "correct" sound
+    this._playBuffer('green', 0.8); // Use flash_sound.mp3 for a general "correct" sound
   }
 
   // Replaced with soft click (using start+next.mp3 as a generic tick/next sound)
   playWrongSound() {
-    this._playBuffer('startNext', 0.5); // Use a low volume, quick sound for wrong answer feedback
+    this._playBuffer('wrong', 0.5); // Use a low volume, quick sound for wrong answer feedback
   }
   
   // Used for wrong answers and as a general quick "next" sound
   playSoftClick() {
-     this._playBuffer('startNext', 0.5); // Use start+next.mp3 as the generic "tick" or soft sound
+     this._playBuffer('wrong', 0.5); // Use wrong.mp3 as the generic "tick" or soft sound
   }
 
   // Used for button clicks like Next/Start
@@ -152,7 +154,7 @@ class AudioManager {
   
   playCheckSound() {
       // Using start+next.mp3 for simple tick
-      this._playBuffer('startNext', 0.6); 
+      this._playBuffer('green', 0.6); 
   }
 
 

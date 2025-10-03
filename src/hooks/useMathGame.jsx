@@ -299,7 +299,7 @@ const useMathGame = () => {
             audioManager.playCheckSound(); 
         } else {
             symbol = '✓'; 
-            audioManager.playCheckSound();
+            audioManager.playWrongSound();
         }
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
