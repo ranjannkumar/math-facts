@@ -1,5 +1,5 @@
 // src/components/DifficultyPicker.jsx
-import React, { useContext, useMemo, useEffect, useState } from 'react';
+import React, { useContext, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { MathGameContext } from '../App.jsx';
@@ -34,10 +34,6 @@ const DifficultyPicker = () => {
     tableProgress,
     startQuizWithDifficulty,
   } = useContext(MathGameContext);
-
-  const [isLoading, setIsLoading] = useState(false);
-
-
 
   useEffect(() => {
     if (!selectedTable) {
@@ -87,16 +83,9 @@ const DifficultyPicker = () => {
 
 
   const handlePick = (belt, locked) => {
-    if (locked || isLoading) return;
-    setIsLoading(true);
-    if (belt === 'black') {
-      navigate('/black');
-       setIsLoading(false);
-    }
-     else {
-        startQuizWithDifficulty(belt, selectedTable)
-            .finally(() => setIsLoading(false)); // Ensure loading stops on completion/failure
-    }
+    if (locked) return;
+    if (belt === 'black') navigate('/black');
+    else startQuizWithDifficulty(belt, selectedTable);
   };
 
   const getBeltProgress = (belt) => {
@@ -107,14 +96,14 @@ const DifficultyPicker = () => {
     return { hasCompleted, hasPerfect };
   };
 
-  const CardShell = ({ children, locked, stripColor, highlighted, isDisabled }) => (
+  const CardShell = ({ children, locked, stripColor, highlighted }) => (
     <div
       className={[
         'relative rounded-2xl shadow-xl border border-slate-300',
         'w-[180px] h-[200px]',
         'bg-slate-100 hover:bg-slate-50 transition',
         highlighted ? 'ring-2 ring-white' : '',
-        locked || isDisabled ? 'opacity-70 cursor-not-allowed' : '', 
+        locked ? 'opacity-70' : '',
       ].join(' ')}
     >
       <div className={`h-2 ${stripColor} rounded-t-2xl`} />
@@ -130,20 +119,17 @@ const DifficultyPicker = () => {
   const renderCard = (belt) => {
     const locked = !unlockedMap[belt];
     const { hasCompleted } = getBeltProgress(belt);
-    const isDisabled = isLoading || locked;
 
     return (
       <button
         key={belt}
         onClick={() => handlePick(belt, locked)}
         className="text-center"
-        disabled={isDisabled}
       >
         <CardShell
           locked={locked}
           highlighted={belt === 'white'}
           stripColor={BELT_STRIP[belt]}
-          isDisabled={isDisabled}
         >
           <h3 className="text-[25px] leading-6 font-extrabold text-slate-1000 mt-1 mb-2">
             {beltPretty(belt)} <span className="font-extrabold">Belt</span>
@@ -158,15 +144,13 @@ const DifficultyPicker = () => {
 
   const renderBlackBeltCard = () => {
     const locked = !unlockedMap.black;
-    const isDisabled = isLoading || locked;
     return (
       <button
         key="black"
         onClick={() => handlePick('black', locked)}
         className="text-center md:col-start-2 lg:col-start-2 justify-self-center"
-        disabled={isDisabled}
       >
-        <CardShell locked={locked} stripColor={BELT_STRIP.black} isDisabled={isDisabled}>
+        <CardShell locked={locked} stripColor={BELT_STRIP.black}>
           <h3 className="text-[20px] leading-6 font-extrabold text-slate-800 mt-1 mb-2">Black Belt</h3>
           <img src={beltImages.black} alt="Black belt" className="h-8 mx-auto my-1 drop-shadow" />
           <div className="text-[18px] mb-1">{unlockedMap.black ? '🔓' : '☆'}</div> 
@@ -195,7 +179,6 @@ const DifficultyPicker = () => {
         }}
         onClick={() => navigate('/levels')}
         aria-label="Back"
-        disabled={isLoading}
       >
         <FaArrowLeft size={24} />
       </button>

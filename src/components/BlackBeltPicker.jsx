@@ -1,5 +1,5 @@
 // src/components/BlackBeltPicker.jsx
-import React, { useContext, useMemo, useEffect,useState } from 'react';
+import React, { useContext, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MathGameContext } from '../App.jsx';
 
@@ -12,8 +12,6 @@ const BlackBeltPicker = () => {
     startQuizWithDifficulty,
     tableProgress,
   } = useContext(MathGameContext);
-
-  const [isLoading, setIsLoading] = useState(false);
 
   // Guard direct entry
   useEffect(() => {
@@ -47,10 +45,9 @@ const BlackBeltPicker = () => {
   const isCompleted = (deg) => completedSet.has(deg);
 
   const handlePick = (deg) => {
-   if (!isUnlocked(deg) || isLoading) return;
-   setIsLoading(true);
-    startQuizWithDifficulty(`black-${deg}`, selectedTable)
-      .finally(() => setIsLoading(false));
+    if (!isUnlocked(deg)) return;
+    startQuizWithDifficulty(`black-${deg}`, selectedTable);
+    // navigate('/quiz');
   };
 
   return (
@@ -68,7 +65,6 @@ const BlackBeltPicker = () => {
           <button
             className="bg-white/80 hover:bg-white text-gray-800 font-semibold px-4 py-2 rounded-xl shadow transition"
             onClick={() => navigate('/belts')}
-            disabled={isLoading}
           >
             ⟵ Belts
           </button>
@@ -81,14 +77,12 @@ const BlackBeltPicker = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {degrees.map((deg) => {
             const locked = !isUnlocked(deg);
-             const isDisabled = locked || isLoading;
             return (
               <button
                 key={deg}
                 onClick={() => handlePick(deg)}
-                disabled={isDisabled}
                 className={`relative rounded-2xl p-6 bg-white/90 shadow-xl hover:bg-white transition
-                  ${isDisabled ? 'opacity-60 grayscale cursor-not-allowed' : ''}`}
+                  ${locked ? 'opacity-60 grayscale cursor-not-allowed' : ''}`}
               >
                 <div className="absolute top-2 right-3 text-xl">
                   {locked ? '🔒' : '🔓'}
