@@ -62,7 +62,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     pauseTimer(run);
     run.status = 'failed';
     await run.save();
-    return { completed: true, passed: false, reason: 'timeup',sessionCorrectCount: run.stats.correct};
+    return { completed: true, passed: false, reason: 'timeup',sessionCorrectCount:  Number(run.stats.correct)};
   }
 
   const item = run.items[run.currentIndex];
@@ -97,7 +97,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
         run.status = 'failed';
         await run.save();
         // Use 'wrong' reason for WayToGoScreen logic
-        return { completed: true, passed: false, reason: 'wrong', sessionCorrectCount: run.stats.correct };
+        return { completed: true, passed: false, reason: 'wrong', sessionCorrectCount:  Number(run.stats.correct) };
     }
     return { practice: practiceQ, reason: 'wrong' }; // This triggers the LearningModule intervention
   }
@@ -152,7 +152,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     
     await run.save();
     //  Return sessionCorrectCount explicitly for front-end
-    return { completed: true, passed, summary, sessionCorrectCount: run.stats.correct ,dailyStats: finalDaily};
+    return { completed: true, passed, summary, sessionCorrectCount:  Number(run.stats.correct) ,dailyStats: finalDaily};
   }
 
   // continue: resume timer, return next question
@@ -200,7 +200,7 @@ export async function inactivity(runId, questionId) {
     run.status = 'failed';
     await run.save();
     // Return completion response to trigger WayToGoScreen on the frontend
-    return { completed: true, passed: false, reason: 'inactivity-fail', sessionCorrectCount: run.stats.correct };
+    return { completed: true, passed: false, reason: 'inactivity-fail', sessionCorrectCount:  Number(run.stats.correct)};
   }
 
   // Colored belt: proceed to practice intervention
@@ -278,7 +278,7 @@ export async function practiceAnswer(runId, questionId, answer) {
         
         await run.save();
         // Return completion signal
-        return { completed: true, passed: false, summary, sessionCorrectCount: run.stats.correct }; 
+        return { completed: true, passed: false, summary, sessionCorrectCount:  Number(run.stats.correct)}; 
     }
 
     // Continue to next question

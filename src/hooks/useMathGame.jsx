@@ -393,6 +393,20 @@ const useMathGame = () => {
     
     try {
       const out = await quizPracticeAnswer(quizRunId, questionId, answer, childPin);
+
+       if (out.completed) { 
+        // This path is triggered when the practice answer is correct on the *last* question,
+        // leading to quiz failure/completion (WayToGoScreen navigation) on the backend.
+        
+        setQuizStartTime(null); // Stop timer
+        setIsTimerPaused(false);
+        setElapsedTime(0);
+        
+        // CRITICAL: Update session score from backend response before LearningModule navigates
+        setSessionCorrectCount(out.sessionCorrectCount || 0); 
+        
+        return out; 
+      } 
       
       if (out.resume) {
         // Correct answer, quiz is resumed/cleared on backend.
