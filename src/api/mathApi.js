@@ -13,27 +13,52 @@ async function callApi(endpoint, method = 'GET', body = null, pin = null) {
   const headers = {
     'Content-Type': 'application/json',
   };
+  if (pin) headers['x-pin'] = pin;
 
-  if (pin) {
-    headers['x-pin'] = pin;
+  const url = `${API_BASE_URL}${endpoint}`;
+
+  // Abort if API is slow (8s) and retry once quickly.
+  const MAX_TIME_MS = 12000;
+  const RETRIES = 1;
+
+  let lastError;
+  for (let attempt = 0; attempt <= RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), MAX_TIME_MS);
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : null,
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+
+      clearTimeout(timer);
+
+      const data = response.status !== 204 ? await response.json() : {};
+      if (!response.ok) {
+        throw new Error(data?.error?.message || `API call failed: ${response.status} ${response.statusText}`);
+      }
+      return data;
+    } catch (err) {
+      clearTimeout(timer);
+      lastError = err;
+      // Only retry on network/abort errors
+      const isAbort = err?.name === 'AbortError';
+      const isNetwork = err?.message?.includes('Failed to fetch');
+      if (attempt < RETRIES && (isAbort || isNetwork)) {
+        // Tiny backoff
+        await new Promise(r => setTimeout(r, 250));
+        continue;
+      }
+      throw err;
+    }
   }
-
-  const config = {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : null,
-  };
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-
-  const data = response.status !== 204 ? await response.json() : {};
-
-  if (!response.ok) {
-    throw new Error(data.error?.message || `API call failed: ${response.statusText}`);
-  }
-
-  return data;
+  throw lastError;
 }
+
 
 export const authLogin = async (pin, name = 'Player') => {
   return callApi('/auth/login-pin', 'POST', { pin, name });
