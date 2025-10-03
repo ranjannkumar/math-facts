@@ -1,5 +1,5 @@
 export const BELTS = ['white','yellow','green','blue','red','brown'];
-export const LEVELS = [1,2,3,4,5,6];
+export const LEVELS = [1,2,3,4,5,6,7,8,9,10,11,12];
 
 export const BLACK_DEGREES = [
   { degree: 1, questions: 20, seconds: 60 },

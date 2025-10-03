@@ -57,6 +57,54 @@ const SPEC = {
     red:   [4,6],
     brown: [5,5],
   },
+  7: {
+    white: [0,11],
+    yellow:[0,12],
+    green: [0,13],
+    blue:  [0,14],
+    red:   [0,15],
+    brown: [1,10],
+  },
+  8: {
+    white: [1,11],
+    yellow:[1,12],
+    green: [1,13],
+    blue:  [1,14],
+    red:   [2,9],
+    brown: [2,10],
+  },
+  9: {
+    white: [2,11],
+    yellow:[2,12],
+    green: [2,13],
+    blue:  [3,8],
+    red:   [3,9],
+    brown: [3,10],
+  },
+  10: {
+    white: [3,11],
+    yellow:[3,12],
+    green: [4,7],
+    blue:  [4,8],
+    red:   [4,9],
+    brown: [4,10],
+  },
+  11: {
+    white: [4,11],
+    yellow:[5,6],
+    green: [5,7],
+    blue:  [5,8],
+    red:   [5,9],
+    brown: [5,10],
+  },
+  12: {
+    white: [6,6],
+    yellow:[6,7],
+    green: [6,8],
+    blue:  [6,9],
+    red:   [7,7],
+    brown: [7,8],
+  },
 };
 
 const ADD = 'add';
@@ -95,9 +143,9 @@ async function seedLevel(level) {
 
 (async () => {
   await connectDB();
-  for (let lvl=1; lvl<=6; lvl++) {
+  for (let lvl=1; lvl<=12; lvl++) {
     await seedLevel(lvl);
   }
-  console.log('✅ Seeded one canonical (a,b) per belt for levels 1..6 (addition)');
+  console.log('✅ Seeded one canonical (a,b) per belt for levels 1..12 (addition)');
   await mongoose.disconnect();
 })();

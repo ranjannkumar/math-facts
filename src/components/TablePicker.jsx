@@ -5,7 +5,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { MathGameContext } from '../App.jsx';
 import { themeConfigs } from '../utils/mathGameLogic.js';
 
-const TOTAL_LEVELS = 6; // only 6 levels as required
+const TOTAL_LEVELS = 12; // only 12 levels as required
 const COLOR_BELTS = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
 
 /* ----------------- Progress helpers (Updated to rely on Context/Hook) ----------------- */
