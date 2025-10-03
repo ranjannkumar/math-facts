@@ -643,7 +643,7 @@ const useMathGame = () => {
     completedSections,
     showPreTestPopup,
     navigate, lastQuestion,
-    showQuitModal, setShowQuitModal, showSpeedTest,
+    showSpeedTest,
     speedTestPopupVisible, speedTestPopupAnimation, speedTestNumbers,
     currentSpeedTestIndex, speedTestStartTime, speedTestTimes,
     speedTestComplete, speedTestStarted, speedTestCorrectCount,

@@ -5,7 +5,7 @@ dotenv.config();
 
 import dayjs from 'dayjs';
 import nodemailer from 'nodemailer'; 
-import { getDailySummariesForYesterday } from './daily.service.js';
+import { getDailySummariesForYesterday,getGrandTotalCorrect,isReportSent,setReportSent } from './daily.service.js';
 
 // Configuration from environment variables
 const REPORT_RECIPIENT = process.env.DAILY_REPORT_EMAIL;
@@ -33,39 +33,55 @@ export async function sendDailyReport() {
     console.log(`--- Starting Daily Report Job for ${REPORT_RECIPIENT} ---`);
 
     const yesterday = dayjs().subtract(1, 'day');
+    const yesterdayFormatted = yesterday.format('YYYY-MM-DD');
+     // --- FIX: Persistent check to prevent double-send on server restart ---
+    if (await isReportSent(yesterdayFormatted)) {
+        console.log(`Daily report already sent for ${yesterdayFormatted}. Skipping.`);
+        return; 
+    }
+    console.log(`--- Starting Daily Report Job for ${REPORT_RECIPIENT} ---`);
     const summaries = await getDailySummariesForYesterday();
 
     if (summaries.length === 0) {
         console.log('No activity recorded yesterday. Email not sent.');
+        await setReportSent(yesterdayFormatted);
         return;
     }
+
+    // --- FEATURE: Build array of augmented summaries including Grand Total ---
+    const augmentedSummaries = await Promise.all(summaries.map(async (summary) => {
+        const grandTotal = await getGrandTotalCorrect(summary.user._id);
+        return { ...summary, grandTotal };
+    }));
     
     // Build email content (both plain text and HTML)
-    let reportBody = `Daily Math Facts Summary Report - ${yesterday.format('YYYY-MM-DD')}\n\n`;
+    let reportBody = `Daily Math Facts Summary Report - ${yesterdayFormatted}\n\n`;
     let htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
             <h2 style="color: #4CAF50;">Daily Math Facts Report</h2>
-            <p>Date: <strong>${yesterday.format('YYYY-MM-DD')}</strong></p>
+            <p>Date: <strong>${yesterdayFormatted}</strong></p>
             <p>Below is a summary of the math quiz activity from your child(ren):</p>
             <hr style="border: 0; border-top: 1px solid #eee;">
     `;
     
-    summaries.forEach(summary => {
+    augmentedSummaries.forEach(summary => { 
         const userName = summary.user?.name || 'Unknown User';
         const userPin = summary.user?.pin || 'N/A';
         const timeInMinutes = (summary.totalActiveMs / 60000).toFixed(2);
+        const grandTotal = summary.grandTotal || 0; 
         
         reportBody += `Child: ${userName} (PIN: ${userPin})\n`;
-        reportBody += `  Correct Answers: ${summary.correctCount}\n`;
-        reportBody += `  Active Time: ${timeInMinutes} minutes\n\n`;
+        reportBody += `  Correct Answers (Today): ${summary.correctCount}\n`;
+        reportBody += `  Active Time: ${timeInMinutes} minutes\n`;
+        reportBody += `  Grand Total Score: ${grandTotal}\n\n`; // <-- ADDED Grand Total to Text
 
         htmlBody += `
             <div style="margin-bottom: 15px; padding: 10px; border-left: 4px solid #2196F3; background-color: #f9f9f9;">
                 <p style="margin: 0;"><strong>Child: ${userName}</strong> (PIN: ${userPin})</p>
                 <ul style="list-style-type: none; padding: 0; margin-top: 5px;">
-                    <li>✅ Correct Answers: <strong style="color: #4CAF50;">${summary.correctCount}</strong></li>
+                    <li>✅ Correct Answers (Today): <strong style="color: #4CAF50;">${summary.correctCount}</strong></li>
                     <li>⏱️ Active Time: <strong style="color: #FF9800;">${timeInMinutes} minutes</strong></li>
-                </ul>
+                    <li>🏆 Grand Total Score: <strong style="color: #FFD700;">${grandTotal}</strong></li> </ul>
             </div>
         `;
     });
@@ -73,10 +89,10 @@ export async function sendDailyReport() {
     htmlBody += `<p style="margin-top: 20px; font-size: 0.8em; color: #777;">Report automatically generated. Please do not reply to this email.</p></div>`;
 
 
-    const mailOptions = {
+     const mailOptions = {
         from: `Maths-Fact Report <${GMAIL_USER}>`,
         to: REPORT_RECIPIENT, 
-        subject: `Daily Math Report for ${yesterday.format('YYYY-MM-DD')}`,
+        subject: `Daily Math Report for ${yesterdayFormatted}`,
         text: reportBody,
         html: htmlBody,
     };
@@ -85,9 +101,11 @@ export async function sendDailyReport() {
         const info = await transporter.sendMail(mailOptions);
         console.log('✅ Email sent successfully!');
         console.log('Message ID:', info.messageId);
+        // --- FIX: Set persistence flag after successful send ---
+        await setReportSent(yesterdayFormatted);
+        // --- END FIX ---
     } catch (error) {
         console.error('❌ Error sending email:', error.message);
-        // Throwing the error ensures the job is retried later if the server is running
         throw new Error('Nodemailer failed to send email. Check your GMAIL_PASS (App Password) and GMAIL_USER credentials.');
     }
 }

@@ -37,25 +37,25 @@ app.options('*', cors());
 
 // --- DAILY REPORT SCHEDULING ---
 const REPORT_HOUR = 1; // Run the check after 1 AM
-let lastRunDate = null; // Track when it last successfully ran
+// let lastRunDate = null; // Track when it last successfully ran
 
 const startDailyReportScheduler = () => {
   const checkAndRun = async () => {
     const now = dayjs();
-    const todayFormatted = now.format('YYYY-MM-DD');
-
-    // Only run if it's past 2 AM AND hasn't run today yet
-    if (now.hour() >= REPORT_HOUR && lastRunDate !== todayFormatted) {
-      console.log(`Attempting scheduled report run for ${todayFormatted}...`);
+    
+    // Only attempt the run if it's past the scheduled hour. 
+    // The persistence check (was it already sent?) is handled inside sendDailyReport.
+    if (now.hour() >= REPORT_HOUR) { 
+      console.log(`Attempting scheduled report run for yesterday's data...`);
       try {
-        await sendDailyReport();
-        lastRunDate = todayFormatted; // Mark as run for today
-        console.log('Scheduled report run complete.');
+        await sendDailyReport(); 
+        console.log('Scheduled report run check complete.');
       } catch (error) {
-        console.error('Daily report job failed, will try again later.');
+        console.error('Daily report job failed, will retry later.', error.message);
         // Note: The error is logged but not re-thrown to keep the server running.
-        // lastRunDate is intentionally NOT updated so it retries tomorrow or on the next check.
       }
+    } else {
+        console.log(`It's before ${REPORT_HOUR} AM. Skipping daily report check.`);
     }
   };
 
@@ -64,6 +64,7 @@ const startDailyReportScheduler = () => {
   // Set an hourly interval.
   setInterval(checkAndRun, 1000 * 60 * 60); 
 };
+
 
 await connectDB();
 const server = createServer(app);
