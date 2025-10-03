@@ -155,35 +155,34 @@ const useMathGame = () => {
       setChildPin(pinValue);
 
       try {
-      // 1) Login first (only await this)
-      const loginResponse = await authLogin(pinValue, childName.trim() || 'Player');
-      localStorage.setItem('math-child-name', loginResponse.user.name);
-      setChildName(loginResponse.user.name);
+        // 1. Login first to get user data
+        const loginResponse = await authLogin(pinValue, childName.trim() || 'Player');
 
-      // 2) Navigate immediately to reduce perceived latency
-      navigate('/theme');
+        localStorage.setItem('math-child-name', loginResponse.user.name);
+        setChildName(loginResponse.user.name);
+        
+        // 2. Fetch progression data and daily stats CONCURRENTLY
+        const [progressResponse, stats] = await Promise.all([
+          userGetProgress(pinValue),
+          userGetDailyStats(pinValue)
+        ]);
+        
+        // 3. Process results
+        setTableProgress(progressResponse.progress || {});
+        
+        setDailyTotalMs(stats?.totalActiveMs || 0); 
+        setCorrectCount(stats?.correctCount || 0); 
+        setGrandTotalCorrect(stats?.grandTotal || 0); // Store Grand Total
 
-      // 3) Then fetch progression + daily stats in the background (non-blocking)
-      Promise.all([
-        userGetProgress(pinValue),
-        userGetDailyStats(pinValue)
-      ])
-        .then(([progressResponse, stats]) => {
-          setTableProgress(progressResponse?.progress || {});
-          setDailyTotalMs(stats?.totalActiveMs || 0);
-          setCorrectCount(stats?.correctCount || 0);
-          setGrandTotalCorrect(stats?.grandTotal || 0);
-        })
-        .catch((err) => {
-          console.error('Post-login data fetch failed:', err);
-        });
-    } catch (error) {
-      // surface error to the caller UI
-      throw error;
-    }
-  },
-  [childName, hardResetQuizState, navigate, setTableProgress, setDailyTotalMs, setCorrectCount, setGrandTotalCorrect]
-);
+        // navigate('/pre-test-popup');
+        navigate('/theme')
+
+      } catch (e) {
+        throw new Error(e.message || 'Login failed.');
+      }
+    },
+    [childName, navigate, hardResetQuizState]
+  );
 
   const startActualQuiz = useCallback(
     async (runId) => {
