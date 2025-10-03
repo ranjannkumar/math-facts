@@ -255,13 +255,14 @@ const useMathGame = () => {
           navigate('/learning');
         } else {
           // Black Belt or no practice items, go straight to quiz start
-          startActualQuiz(newRunId);
+          await startActualQuiz(newRunId);
         }
         
       } catch (e) {
         console.error('Quiz Prepare failed:', e.message);
         alert('Failed to prepare quiz: ' + e.message);
         navigate('/belts');
+        throw e;
       }
     },
     [navigate, childPin, hardResetQuizState, determineMaxQuestions, startActualQuiz]
