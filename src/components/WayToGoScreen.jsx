@@ -20,29 +20,41 @@ const WayToGoScreen = () => {
             const ls = Number(localStorage.getItem('math-last-quiz-duration') || 0);
             return Number.isFinite(ls) ? ls : 0;
         });
+
+         // --- ADDED: Countdown state ---
+    const [countdown, setCountdown] = useState(5); 
         
     const sessionTimeSecs = Math.round(timeSecs);
     // Using seconds format as per previous context to fit tiles better on mobile
     const sessionTimeLabel = `${sessionTimeSecs}s`; 
 
     useEffect(() => {
-        // audioManager.playWrongSound?.(); // Assuming audio manager is available and handles sound logic
-        if (hasRestarted.current) return;
-        
-        const timer = setTimeout(() => {
+     if (hasRestarted.current || !selectedTable || !selectedDifficulty) return;
+        let intervalId;
+        if (countdown > 0) {
+            // Start the decrementing interval
+            intervalId = setInterval(() => {
+                setCountdown((prev) => prev - 1);
+            }, 1000);
+        } else if (countdown === 0) {
+            // Countdown finished, execute navigation/restart
+            hasRestarted.current = true;
             if (selectedTable && selectedDifficulty) {
                 // Call the API-backed quiz start flow. 
                 startQuizWithDifficulty(selectedDifficulty, selectedTable); 
             } else {
                 navigate('/belts');
             }
-            hasRestarted.current = true;
-        }, 5000); 
-        
-        return () => clearTimeout(timer);
-    }, [navigate, selectedDifficulty, selectedTable, startQuizWithDifficulty]);
+        }
+        // Cleanup function
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    // Re-run the effect when countdown changes (to trigger the final action at 0)
+    }, [countdown, navigate, selectedDifficulty, selectedTable, startQuizWithDifficulty]);
     
     const handleBackToBelts = () => {
+        hasRestarted.current = true;
         navigate('/belts');
     };
 
@@ -125,7 +137,9 @@ const WayToGoScreen = () => {
                     </button>
                 </div>
                 
-                <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Restarting in 5 seconds...</p>
+                 <p className="text-gray-600 mb-4 sm:mb-6 text-xl sm:text-2xl font-bold">
+                    Restarting in <span className="font-extrabold text-red-600">{countdown}</span> seconds...
+                </p>
 
                 <div className="flex justify-center">
                     <button
