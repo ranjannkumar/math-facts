@@ -1,9 +1,9 @@
 // ranjannkumar/math-facts/math-facts-53836cb507e63890a9c757d863525a6cb3341e86/src/components/LearningModule.jsx
-import React, { useEffect, useMemo, useState, useContext } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { mapQuestionToFrontend } from '../api/mathApi.js';
 import { MathGameContext } from '../App.jsx';
-import { normalizeDifficulty } from '../utils/mathGameLogic.js';
 import audioManager from '../utils/audioUtils.js';
-import { mapQuestionToFrontend } from '../api/mathApi.js'; 
+import { normalizeDifficulty } from '../utils/mathGameLogic.js';
 
 /**
  * Learning flow:

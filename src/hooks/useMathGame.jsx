@@ -1,18 +1,18 @@
 // src/hooks/useMathGame.jsx
-import { useState, useEffect, useRef, useCallback, useContext} from 'react';
-import audioManager from '../utils/audioUtils.js';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import audioManager from '../utils/audioUtils.js';
 // Import API functions
 import {
   authLogin,
-  quizPrepare,
-  quizStart,
-  quizSubmitAnswer,
-  quizHandleInactivity,
-  quizPracticeAnswer,
   // userGetProgress,
   // userGetDailyStats, 
   mapQuestionToFrontend,
+  quizHandleInactivity,
+  quizPracticeAnswer,
+  quizPrepare,
+  quizStart,
+  quizSubmitAnswer,
 } from '../api/mathApi.js';
 
 // Constant for inactivity timeout (same as backend, 5000ms)
@@ -147,7 +147,7 @@ const useMathGame = () => {
       if (oldPin !== pinValue) {
         // Reset local state for new user
         hardResetQuizState();
-        setTableProgress({});
+        // setTableProgress({});
         // Local storage clear is handled in handleResetProgress, but we clear the pin here.
       }
       
