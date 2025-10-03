@@ -10,8 +10,8 @@ import {
   quizSubmitAnswer,
   quizHandleInactivity,
   quizPracticeAnswer,
-  userGetProgress,
-  userGetDailyStats, 
+  // userGetProgress,
+  // userGetDailyStats, 
   mapQuestionToFrontend,
 } from '../api/mathApi.js';
 
@@ -162,13 +162,16 @@ const useMathGame = () => {
         setChildName(loginResponse.user.name);
         
         // 2. Fetch progression data and daily stats CONCURRENTLY
-        const [progressResponse, stats] = await Promise.all([
-          userGetProgress(pinValue),
-          userGetDailyStats(pinValue)
-        ]);
+        // const [progressResponse, stats] = await Promise.all([
+        //   userGetProgress(pinValue),
+        //   userGetDailyStats(pinValue)
+        // ]);
+        const progressResponse = loginResponse.user.progress || {};
+        const stats = loginResponse.user.dailyStats || {};
+
         
         // 3. Process results
-        setTableProgress(progressResponse.progress || {});
+        setTableProgress(progressResponse);
         
         setDailyTotalMs(stats?.totalActiveMs || 0); 
         setCorrectCount(stats?.correctCount || 0); 

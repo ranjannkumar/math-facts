@@ -1,5 +1,6 @@
 // backend/src/controllers/auth.controller.js
 import User from '../models/User.js';
+import { getToday as getTodaySvc, getGrandTotalCorrect as getGrandTotalCorrectSvc } from '../services/daily.service.js';
 
 export async function loginPin(req, res, next) {
   try {
@@ -18,8 +19,27 @@ export async function loginPin(req, res, next) {
       });
       await user.save();
     }
-    // Part 3: Return user object including theme
-    res.json({ user: { ...user.toObject(), theme: user.theme }, token: pin }); 
+
+     // --- PERFORMANCE FIX: Fetch required daily stats and embed into single response ---
+    const todayDoc = await getTodaySvc(user._id); 
+    const grandTotal = await getGrandTotalCorrectSvc(user._id);
+
+    // Part 3: Return user object including theme, progress, and dailyStats in one payload
+    res.json({ 
+      user: { 
+        ...user.toObject(), 
+        theme: user.theme,
+        // Embed progress data (converted from Mongoose Map)
+        progress: Object.fromEntries(user.progress), 
+        // Embed daily stats data
+        dailyStats: { 
+          correctCount: todayDoc.correctCount || 0,
+          totalActiveMs: todayDoc.totalActiveMs || 0,
+          grandTotal: grandTotal || 0,
+        }
+      }, 
+      token: pin 
+    }); 
   } catch (e) {
     next(e);
   }
