@@ -296,16 +296,16 @@ const useMathGame = () => {
         // } 
         else if (timeTaken <= 5) {
             symbol = '✓';
-            audioManager.playCheckSound(); 
+            audioManager.playCompleteSound(); 
         } else {
             symbol = '✓'; 
-            audioManager.playWrongSound();
+            audioManager.playSoftClick();
         }
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
       } else {
         symbol = '';
-        audioManager.playWrongSound();
+        audioManager.playSoftClick();
         setWrongCount((w) => w + 1);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
       }
@@ -454,6 +454,7 @@ const useMathGame = () => {
     if (inactivityTimeoutId.current) clearTimeout(inactivityTimeoutId.current);
 
     inactivityTimeoutId.current = setTimeout(async () => {
+      audioManager.playSoftClick();
       setAnswerSymbols((prev) => [
             ...prev, 
             { symbol: '', isCorrect: false, timeTaken: INACTIVITY_TIMEOUT_MS / 1000, reason: 'inactivity' }

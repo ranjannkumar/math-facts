@@ -46,16 +46,18 @@ const NameForm = () => {
     handlePinChange({ target: { value: newPin } });
   };
   
-  const KeypadButton = ({ value, label }) => (
-    <button
-        type="button"
-        onClick={() => handleKeypadInput(value)}
-        className="h-16 w-16 sm:h-20 sm:w-20 bg-green-700/80 hover:bg-green-600 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center"
-        tabIndex="-1" 
-    >
-        {label || value}
-    </button>
-  );
+  // FINAL KeypadButton Component Update
+const KeypadButton = ({ value, label, className }) => (
+    <button
+        type="button"
+        onClick={() => handleKeypadInput(value)}
+        // Fixed widths removed, now using w-full and applying the passed className
+        className={`h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center ${className || ''}`}
+        tabIndex="-1" 
+    >
+        {label || value}
+    </button>
+);
 
   return (
     <div
@@ -70,12 +72,12 @@ const NameForm = () => {
       <div className="bg-white/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-full flex flex-col items-center relative z-10 mx-2 sm:mx-4 w-full max-w-sm backdrop-blur-md">
 
         <form onSubmit={onSubmit} className="w-full flex flex-col items-center">
-          <label className="text-lg sm:text-xl md:text-2xl font-comic text-white font-bold mb-1 sm:mb-2">
-             ENTER PIN
+          <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
+             Log In With Your Student Number
           </label>
 
           <input
-            className="w-full max-w-[180px] mb-3 sm:mb-4 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl opacity-80 text-white font-bold text-center tracking-widest transition-all duration-200 bg-gray-800/50 outline-none focus:ring focus:ring-white/40"
+            className="w-full max-w-[380px] mb-4 sm:mb-6 px-4 sm:px-6 py-2 sm:py-2 rounded-xl sm:rounded-2xl opacity-80 text-white font-bold text-center text-4xl tracking-widest transition-all duration-200 bg-gray-800/50 outline-none focus:ring focus:ring-white/40"
             value={childPin}
             readOnly 
             type="password"
@@ -90,7 +92,11 @@ const NameForm = () => {
             ))}
             {/* Clear, 0, Backspace */}
             <KeypadButton value="0" />
-            <KeypadButton value="C" label={<span className="text-sm">CLEAR</span>} />
+            <KeypadButton 
+              value="C" 
+              className="col-span-2" 
+              label={<span className="text-lg w-full text-center">CLEAR</span>} 
+/>
             {/* <KeypadButton value="<" label="⌫" /> */}
           </div>
 

@@ -135,9 +135,9 @@ const ResultsScreen = () => {
                 ].join(" ")}
             >
                 <div
-                    className="mx-auto mb-4 sm:mb-6 rounded-xl px-4 py-2 sm:px-6 sm:py-3 celebration-animation" // Responsive padding
+                    className="mx-auto mb-4 sm:mb-6 rounded-xl px-4 py-2 sm:px-6 sm:py-2 celebration-animation" // Responsive padding
                     style={{
-                        maxWidth: 520,
+                        maxWidth: 400,
                         background:
                             "linear-gradient(90deg, #8BEC98 0%, #FFB703 100%)",
                         boxShadow: "0 8px 24px rgba(0,0,0,.12)"
@@ -150,9 +150,12 @@ const ResultsScreen = () => {
                         CONGRATULATIONS
                     </h2>
                 </div>
-                <p className="text-green-600 font-semibold mb-4 sm:mb-6 text-3xl ">
-                    You earned <span className="font-bold">+{pointsEarned}</span> points
-                </p>
+                {/* 👇 NEW Wrapper DIV for the Popup Box Style */}
+                  <div className="bg-green-100/70 border-2 border-green-300 rounded-2xl py-2 sm:py-6 px-2 mb-6 sm:mb-8 mx-auto max-w-md w-full shadow-lg">
+                    <p className="text-green-700 font-extrabold text-2xl sm:text-3xl md:text-4xl">
+                        You earned <span className="font-extrabold text-green-1000">{pointsEarned}</span> points!
+                    </p>
+                </div>
                  {/* Adjusted grid to ensure tiles fit well on mobile (text size clamp will handle width) */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 justify-center max-w-xl mx-auto mb-6 sm:mb-8">
                     <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
@@ -172,13 +175,13 @@ const ResultsScreen = () => {
                         <div className="wordart-number text-2xl sm:text-4xl mt-1">{grandTotalCorrect}</div>
                     </div>
                 </div>
-                <div className="mb-4 sm:mb-6">
+                <div className=" mb-4 sm:mb-6">
                     <button
                         type="button"
-                        className="kid-btn animate-fade-in-up text-base sm:text-lg md:text-xl px-4 sm:px-6 py-2 sm:py-3" // Responsive button size
+                        className=" bg-green-100/70 kid-btn animate-fade-in-up text-base sm:text-lg md:text-xl px-4 sm:px-6 py-2 sm:py-3" // Responsive button size
                         aria-label="belt-earned"
                     >
-                        🎉 Amazing! You got the {beltName} Belt!
+                        🎉 You earned the {beltName} Belt!
                     </button>
                 </div>
                 <div className="flex justify-center">

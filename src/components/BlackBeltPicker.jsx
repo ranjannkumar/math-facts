@@ -85,7 +85,7 @@ const BlackBeltPicker = () => {
                   ${locked ? 'opacity-60 grayscale cursor-not-allowed' : ''}`}
               >
                 <div className="absolute top-2 right-3 text-xl">
-                  {locked ? '🔒' : '🔓'}
+                  {locked ? '🔒' : ''}
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-extrabold">Degree {deg}</div>

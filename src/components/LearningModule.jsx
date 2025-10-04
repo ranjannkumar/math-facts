@@ -300,7 +300,7 @@ const LearningModule = () => {
         );
       } else {
         // Practice screen (Pre-Quiz)
-        const buttonText = 'Start Quiz';
+        const buttonText = 'Start Game';
 
         return (
           <>

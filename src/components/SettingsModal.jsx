@@ -27,7 +27,7 @@ const SettingsModal = () => {
                 <h2 className="text-2xl font-bold mb-6 text-center font-baloo text-white drop-shadow-md">
                     Settings
                 </h2>
-                <button
+                {/* <button
                     className="kid-btn bg-red-400 hover:bg-red-500 text-white mb-4 w-full transform transition-transform hover:scale-105"
                     onClick={() => {
                         handleResetProgress(); // Triggers the confirmation modal
@@ -38,7 +38,7 @@ const SettingsModal = () => {
                     }}
                 >
                     Reset Progress
-                </button>
+                </button> */}
                  <button
                     className="kid-btn bg-yellow-500 hover:bg-yellow-600 text-white mb-4 w-full transform transition-transform hover:scale-105"
                     onClick={() => { 
