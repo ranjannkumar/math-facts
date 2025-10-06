@@ -14,17 +14,20 @@ const WayToGoScreen = () => {
         startQuizWithDifficulty,
     } = useContext(MathGameContext);
 
-    // This ensures the quiz restarts only once.
+    const [displaySessionScore] = useState(sessionCorrectCount); //
+
+    const [displayTimeSecs] = useState(() => { //
+        const ls = Number(localStorage.getItem('math-last-quiz-duration') || 0); //
+        return Number.isFinite(ls) ? ls : 0; //
+    });
+
     const hasRestarted = useRef(false);
-    const [timeSecs, setTimeSecs] = useState(() => {
-            const ls = Number(localStorage.getItem('math-last-quiz-duration') || 0);
-            return Number.isFinite(ls) ? ls : 0;
-        });
+
 
          // --- ADDED: Countdown state ---
     const [countdown, setCountdown] = useState(5); 
         
-    const sessionTimeSecs = Math.round(timeSecs);
+    const sessionTimeSecs = Math.round(displayTimeSecs);
     // Using seconds format as per previous context to fit tiles better on mobile
     const sessionTimeLabel = `${sessionTimeSecs}s`; 
 
@@ -111,7 +114,7 @@ const WayToGoScreen = () => {
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 justify-center max-w-xl mx-auto mb-6 sm:mb-8">
                     <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
                         <div className="text-gray-500 text-xs sm:text-sm">Session Score</div>
-                        <div className="wordart-number text-3xl sm:text-4xl mt-1">{sessionCorrectCount}</div>
+                        <div className="wordart-number text-3xl sm:text-4xl mt-1">{displaySessionScore}</div>
                     </div>
                     <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
                         <div className="text-gray-500 text-xs sm:text-sm">Time Taken </div>
