@@ -97,7 +97,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
         run.status = 'failed';
         await run.save();
         // Use 'wrong' reason for WayToGoScreen logic
-        return { completed: true, passed: false, reason: 'wrong', sessionCorrectCount:  Number(run.stats.correct) };
+        return { completed: true, passed: false, reason: 'wrong', sessionCorrectCount:  Number(run.stats.correct), summary: { totalActiveMs: run.totalActiveMs } };
     }
     return { practice: practiceQ, reason: 'wrong' }; // This triggers the LearningModule intervention
   }
@@ -200,7 +200,7 @@ export async function inactivity(runId, questionId) {
     run.status = 'failed';
     await run.save();
     // Return completion response to trigger WayToGoScreen on the frontend
-    return { completed: true, passed: false, reason: 'inactivity-fail', sessionCorrectCount:  Number(run.stats.correct)};
+    return { completed: true, passed: false, reason: 'inactivity-fail', sessionCorrectCount:  Number(run.stats.correct), summary: { totalActiveMs: run.totalActiveMs }};
   }
 
   // Colored belt: proceed to practice intervention
