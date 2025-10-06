@@ -57,10 +57,9 @@ const QuizScreen = () => {
                     ? 'text-yellow-500'
                     : answer.symbol === '✓'
                     ? 'text-green-500'
-                    // Part 1: If symbol is ' ' (wrong answer), make it transparent
                     : answer.symbol.trim() === ''
-                    ? 'text-transparent' 
-                    : 'text-red-500' // Fallback (for old '❌' if somehow present)
+                    ? 'text-transparent'
+                    : 'text-red-500'
                 }`}
                 title={`${answer.timeTaken.toFixed(1)}s - ${answer.isCorrect ? 'Correct' : 'Wrong'}`}
                 style={{ minWidth: answer.symbol.trim() === '' ? '0' : 'auto' }}
@@ -74,7 +73,7 @@ const QuizScreen = () => {
             <div
               className="bg-green-500 h-full rounded-full transition-all duration-500 ease-out shadow-sm"
               style={{ width: `${quizProgress}%` }}
-            ></div>
+            />
           </div>
           {/* <div className="text-center mt-1 text-xs text-gray-300">{answerSymbols.length}/{maxQuestions}</div> */}
         </div>
@@ -94,9 +93,24 @@ const QuizScreen = () => {
                   ref={answerRefs.current[index]}
                   onClick={() => handleAnswer(answer, index)}
                   disabled={isAnimating || !currentQuestion || showResult || isTimerPaused}
-                  className={`w-full bg-gray-200/80 border-gray-300/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border-2 no-transition ${
-                    isAnimating || !currentQuestion || showResult || isTimerPaused ? 'opacity-50 cursor-not-allowed' : ''
-                  }focus:outline-none focus:ring-0 active:outline-none active:ring-0`}
+                  className={
+                    [
+                      // Base look
+                      'w-full bg-gray-200/80 border-gray-300/80 backdrop-blur-sm rounded-lg sm:rounded-xl',
+                      'p-3 sm:p-4 md:p-6 border-2',
+                      // Freeze visuals completely
+                      'transition-none select-none',
+                      // Keep identical look even when disabled
+                      'disabled:bg-gray-200/80 disabled:opacity-100 disabled:cursor-default disabled:shadow-none',
+                      // Remove focus/active visual artifacts
+                      'focus:outline-none focus:ring-0 active:outline-none active:ring-0'
+                    ].join(' ')
+                  }
+                  style={{
+                    WebkitTapHighlightColor: 'transparent' // prevent mobile tap highlight
+                  }}
+                  // Prevents some browsers from applying :active styles visually
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <div
                     className="text-xl sm:text-2xl md:text-3xl font-baloo text-gray-800 drop-shadow-md"

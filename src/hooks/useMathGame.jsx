@@ -369,7 +369,7 @@ const useMathGame = () => {
                     }
                     setQuizStartTime(Date.now());
                   }
-              }, 10);
+              }, 1);
           } else if (out.practice) {
               setTimeout(() => {
                   setIsTimerPaused(true);
@@ -378,7 +378,7 @@ const useMathGame = () => {
                   setShowLearningModule(true);
                   navigate('/learning');
                   setIsAnimating(false);
-              }, 10);
+              }, 1);
           }else {
              setIsAnimating(false);
           }

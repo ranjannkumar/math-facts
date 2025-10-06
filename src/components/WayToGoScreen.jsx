@@ -41,6 +41,7 @@ const WayToGoScreen = () => {
             }, 1000);
         } else if (countdown === 0) {
             // Countdown finished, execute navigation/restart
+            if (hasRestarted.current) return; 
             hasRestarted.current = true;
             if (selectedTable && selectedDifficulty) {
                 // Call the API-backed quiz start flow. 
