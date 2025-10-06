@@ -165,7 +165,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
 // ------------- INACTIVITY -------------
 export async function inactivity(runId, questionId) {
   const run = await QuizRun.findById(runId);
-  if (!run || run.status !== 'in-progress') throw new Error('Invalid run');
+  if (!run) throw new Error('Quiz run not found');
 
    if (run.status !== 'in-progress') {
     const isPassed = run.status === 'completed';

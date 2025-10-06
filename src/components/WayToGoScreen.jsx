@@ -61,6 +61,17 @@ const WayToGoScreen = () => {
         navigate('/belts');
     };
 
+    // const handleBackToBelts = () => {
+    //     hasRestarted.current = true;
+    //     // FIX: Navigate to the appropriate picker screen based on difficulty
+    //     const isBlackBelt = String(selectedDifficulty).startsWith('black');
+    //     if (isBlackBelt) {
+    //         navigate('/black'); // Go back to Black Belt Degrees screen
+    //     } else {
+    //         navigate('/belts'); // Go back to colored belts screen
+    //     }
+    // }
+
     const beltName = String(selectedDifficulty).startsWith('black') 
         ? `Black (Degree ${selectedDifficulty.split('-')[1]})` 
         : selectedDifficulty?.charAt(0).toUpperCase() + selectedDifficulty?.slice(1);
