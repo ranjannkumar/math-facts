@@ -354,7 +354,7 @@ const useMathGame = () => {
                   }
                   navigate(out.passed ? '/results' : '/way-to-go', { replace: true,state: { sessionTimeSeconds } });
 
-              }, 50);
+              }, 1);
           } else if (out.next) {
                setTimeout(() => {
                   setCurrentQuestion(mapQuestionToFrontend(out.next));
@@ -520,8 +520,9 @@ const useMathGame = () => {
 
   const handleConfirmQuit = useCallback(() =>{ 
     setShowQuitModal(false);
+    hardResetQuizState();
     navigate('/');
-  }, [navigate]);
+  }, [navigate, hardResetQuizState]);
   const handleCancelQuit = useCallback(() => setShowQuitModal(false), []);
 
   const handleInitiateQuit = useCallback(() => setShowQuitModal(true), []);
@@ -550,10 +551,6 @@ const useMathGame = () => {
     navigate('/', { replace: true }); // Use replace to prevent back button from returning to previous screen
   }, [navigate, hardResetQuizState, childPin]);
 
-  const handleResetProgress = useCallback(() => {
-    // Legacy function, now just redirects to confirmation
-    handleInitiateReset();
-  }, [handleInitiateReset]);
 
   const handleNameChange = useCallback((e) => setChildName(e.target.value), []);
   const handleAgeChange = useCallback((e) => setChildAge(e.target.value), []);

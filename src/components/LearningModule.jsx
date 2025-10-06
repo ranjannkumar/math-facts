@@ -157,15 +157,12 @@ const LearningModule = () => {
 
               const mappedQ = mapQuestionToFrontend(preQuizPracticeItems[nextIndex]);
 
-              // Small delay to let the green "Correct!" feedback register, but without showing any button
-              setTimeout(() => {
                 setCurrentPracticeIndex(nextIndex);
                 setPracticeQ(mappedQ);
                 setIsShowingFact(true);          // back to Fact for the next item
                 setSelectedAnswer(null);
                 setPracticeMsg('');
-                setShowAdvanceButton(false);      // ensure it's still hidden upon showing next fact
-              }, 10);
+                setShowAdvanceButton(false);
             }
             return;
           }
@@ -199,37 +196,37 @@ const LearningModule = () => {
           setSelectedAnswer(null);
           setIsShowingFact(true); 
           setPracticeMsg('');
-        }, 10);
+        }, 5);
       }
     };
 
-  const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
-      <>
-          <div className="grid grid-cols-2 gap-4 mt-4 w-full">
-              {answers.map((answer, index) => (
-                  <button
-                      key={index}
-                      onClick={() => handlePracticeAnswerClick(answer)}
-                      disabled={!!selectedAnswer}
-                      className="py-4 rounded-xl text-2xl font-bold shadow-md transition-all duration-200 
-                         bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50"
-                      // className={`py-4 rounded-xl text-2xl font-bold shadow-md transition-all duration-200
-                      // ${
-                      //     selectedAnswer === null
-                      //         ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      //         : answer === currentCorrectAnswer
-                      //             ? 'bg-green-500 text-white'
-                      //             : answer === selectedAnswer
-                      //                 ? 'bg-red-500 text-white'
-                      //                 : 'bg-gray-200 text-gray-800 opacity-50'
-                      // }`}
-                  >
-                      {answer}
-                  </button>
-              ))}
-          </div>
-      </>
-  );
+const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
+  <>
+    <div className="grid grid-cols-2 gap-4 mt-4 w-full">
+      {answers.map((answer, index) => (
+        <button
+          key={index}
+          onClick={() => handlePracticeAnswerClick(answer)}
+          disabled={!!selectedAnswer}
+          className={[
+            'py-4 rounded-xl text-2xl font-bold shadow-md',
+            'bg-gray-200 text-gray-800 border-2 border-gray-300',
+            'transition-none select-none',
+            'disabled:bg-gray-200 disabled:text-gray-800 disabled:opacity-100 disabled:cursor-default',
+            'focus:outline-none focus:ring-0 active:outline-none active:ring-0'
+          ].join(' ')}
+          style={{
+            WebkitTapHighlightColor: 'transparent'
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {answer}
+        </button>
+      ))}
+    </div>
+  </>
+);
+
 
   const renderBody = () => {
     if (!practiceQ) {

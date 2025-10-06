@@ -9,22 +9,24 @@ const WayToGoScreen = () => {
         selectedDifficulty,
         selectedTable,
         sessionCorrectCount, 
-        correctCount, // <-- Daily total correct score
-        grandTotalCorrect, // <-- Grand total correct score
+        correctCount, 
+        grandTotalCorrect, 
         startQuizWithDifficulty,
+        setQuizRunId, 
+        setSelectedDifficulty,
+        setSelectedTable,
     } = useContext(MathGameContext);
 
-    const [displaySessionScore] = useState(sessionCorrectCount); //
+    const [displaySessionScore] = useState(sessionCorrectCount); 
 
-    const [displayTimeSecs] = useState(() => { //
-        const ls = Number(localStorage.getItem('math-last-quiz-duration') || 0); //
-        return Number.isFinite(ls) ? ls : 0; //
+    const [displayTimeSecs] = useState(() => { 
+        const ls = Number(localStorage.getItem('math-last-quiz-duration') || 0); 
+        return Number.isFinite(ls) ? ls : 0; 
     });
 
     const hasRestarted = useRef(false);
 
 
-         // --- ADDED: Countdown state ---
     const [countdown, setCountdown] = useState(5); 
         
     const sessionTimeSecs = Math.round(displayTimeSecs);
@@ -57,13 +59,10 @@ const WayToGoScreen = () => {
     // Re-run the effect when countdown changes (to trigger the final action at 0)
     }, [countdown, navigate, selectedDifficulty, selectedTable, startQuizWithDifficulty]);
     
-    // const handleBackToBelts = () => {
-    //     hasRestarted.current = true;
-    //     navigate('/belts');
-    // };
-
     const handleBackToBelts = () => {
         hasRestarted.current = true;
+        setQuizRunId(null);
+        setSelectedDifficulty(null);
         // FIX: Navigate to the appropriate picker screen based on difficulty
         const isBlackBelt = String(selectedDifficulty).startsWith('black');
         if (isBlackBelt) {

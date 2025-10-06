@@ -138,7 +138,7 @@ const ThemePicker = () => {
             >
               <div className="flex flex-col items-center">
                 <div
-                  className="relative rounded-2xl bg-black/10 flex items-center justify-center shadow-2xl w-full"
+                  className="relative rounded-2xl overflow-hidden shadow-2xl w-full"
                   style={{
                     height: 'clamp(150px, 35vh, 520px)',
                   }}
@@ -147,7 +147,7 @@ const ThemePicker = () => {
                     <img
                       src={currentTheme.image}
                       alt={currentTheme.key}
-                      className="rounded-2xl object-contain w-full h-full"
+                      className="rounded-2xl object-cover w-full h-full"
                     />
                   ) : (
                     // Fallback visual if image missing
