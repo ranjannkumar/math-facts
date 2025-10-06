@@ -77,7 +77,7 @@ const ThemePicker = () => {
           : 'justify-center overflow-hidden'
       }`}
       style={{
-        background: 'linear-gradient(135deg, #23272f 0%, #18181b 60%, #111113 100%)',
+        background: "url('/night_sky_landscape.jpg')",
         width: '100vw',
         minHeight: '100vh',
         paddingTop: 'max(env(safe-area-inset-top), 1rem)',
