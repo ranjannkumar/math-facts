@@ -56,21 +56,21 @@ const WayToGoScreen = () => {
     // Re-run the effect when countdown changes (to trigger the final action at 0)
     }, [countdown, navigate, selectedDifficulty, selectedTable, startQuizWithDifficulty]);
     
-    const handleBackToBelts = () => {
-        hasRestarted.current = true;
-        navigate('/belts');
-    };
-
     // const handleBackToBelts = () => {
     //     hasRestarted.current = true;
-    //     // FIX: Navigate to the appropriate picker screen based on difficulty
-    //     const isBlackBelt = String(selectedDifficulty).startsWith('black');
-    //     if (isBlackBelt) {
-    //         navigate('/black'); // Go back to Black Belt Degrees screen
-    //     } else {
-    //         navigate('/belts'); // Go back to colored belts screen
-    //     }
-    // }
+    //     navigate('/belts');
+    // };
+
+    const handleBackToBelts = () => {
+        hasRestarted.current = true;
+        // FIX: Navigate to the appropriate picker screen based on difficulty
+        const isBlackBelt = String(selectedDifficulty).startsWith('black');
+        if (isBlackBelt) {
+            navigate('/black'); // Go back to Black Belt Degrees screen
+        } else {
+            navigate('/belts'); // Go back to colored belts screen
+        }
+    }
 
     const beltName = String(selectedDifficulty).startsWith('black') 
         ? `Black (Degree ${selectedDifficulty.split('-')[1]})` 
