@@ -19,6 +19,7 @@ const ResultsScreen = () => {
         setShowResult,
         quizRunId,
         childPin,
+       setQuizRunId, 
     } = useContext(MathGameContext);
 
     // --- Quiz Info ---
@@ -100,6 +101,7 @@ const ResultsScreen = () => {
         setShowResult(false);
         clearShootingStars();
         setLeaving(true);
+       setQuizRunId(null); 
         if (isBlack) navigate('/black', { replace: true });
         else if (selectedDifficulty === 'brown') navigate('/black', { replace: true });
         else navigate('/belts', { replace: true });

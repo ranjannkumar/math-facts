@@ -13,10 +13,6 @@ const BlackBeltPicker = () => {
     tableProgress,
   } = useContext(MathGameContext);
 
-  // Guard direct entry
-  // useEffect(() => {
-  //   if (!selectedTable) navigate('/belts');
-  // }, [selectedTable, navigate]);
 
   useEffect(() => {
     if (!selectedTable) {
@@ -25,7 +21,7 @@ const BlackBeltPicker = () => {
   }, [selectedTable, navigate]);
 
 // 
-  // if (!selectedTable) return null;
+  if (!selectedTable) return null;
 
 
   // Compute EFFECTIVE unlocks from state (based on backend source of truth)
