@@ -354,7 +354,7 @@ const useMathGame = () => {
                   }
                   navigate(out.passed ? '/results' : '/way-to-go', { replace: true });
 
-              }, 500);
+              }, 50);
           } else if (out.next) {
                setTimeout(() => {
                   setCurrentQuestion(mapQuestionToFrontend(out.next));
@@ -368,7 +368,7 @@ const useMathGame = () => {
                         setGrandTotalCorrect(out.dailyStats.grandTotal); 
                     }
                   }
-              }, 500);
+              }, 10);
           } else if (out.practice) {
               setTimeout(() => {
                   setIsTimerPaused(true);
@@ -377,7 +377,7 @@ const useMathGame = () => {
                   setShowLearningModule(true);
                   navigate('/learning');
                   setIsAnimating(false);
-              }, 500);
+              }, 10);
           }else {
              setIsAnimating(false);
           }

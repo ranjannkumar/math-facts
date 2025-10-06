@@ -96,7 +96,7 @@ const QuizScreen = () => {
                   disabled={isAnimating || !currentQuestion || showResult || isTimerPaused}
                   className={`w-full bg-gray-200/80 border-gray-300/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 border-2 no-transition ${
                     isAnimating || !currentQuestion || showResult || isTimerPaused ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
+                  }focus:outline-none focus:ring-0 active:outline-none active:ring-0`}
                 >
                   <div
                     className="text-xl sm:text-2xl md:text-3xl font-baloo text-gray-800 drop-shadow-md"

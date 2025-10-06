@@ -165,7 +165,7 @@ const LearningModule = () => {
                 setSelectedAnswer(null);
                 setPracticeMsg('');
                 setShowAdvanceButton(false);      // ensure it's still hidden upon showing next fact
-              }, 500);
+              }, 10);
             }
             return;
           }
@@ -199,7 +199,7 @@ const LearningModule = () => {
           setSelectedAnswer(null);
           setIsShowingFact(true); 
           setPracticeMsg('');
-        }, 1000);
+        }, 10);
       }
     };
 
