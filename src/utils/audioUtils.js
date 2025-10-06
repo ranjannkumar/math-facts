@@ -126,8 +126,15 @@ class AudioManager {
   }
 
   // Replaced with soft click (using start+next.mp3 as a generic tick/next sound)
+  // playWrongSound() {
+  //   this._playBuffer('wrong', 0.5); // Use a low volume, quick sound for wrong answer feedback
+  // }
+
   playWrongSound() {
-    this._playBuffer('wrong', 0.5); // Use a low volume, quick sound for wrong answer feedback
+    // Play a different sound for wrong answers - lower pitch with different waveform
+    this.playTone(330, 0.2, 'triangle', 0.12); // E4
+    setTimeout(() => this.playTone(294, 0.2, 'triangle', 0.12), 100); // D4
+    setTimeout(() => this.playTone(262, 0.3, 'triangle', 0.12), 200); // C4
   }
   
   // Used for wrong answers and as a general quick "next" sound

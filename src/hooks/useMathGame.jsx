@@ -299,13 +299,13 @@ const useMathGame = () => {
             audioManager.playCompleteSound(); 
         } else {
             symbol = '✓'; 
-            audioManager.playSoftClick();
+            audioManager.playWrongSound();
         }
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
       } else {
         symbol = '';
-        audioManager.playSoftClick();
+        audioManager.playWrongSound();
         setWrongCount((w) => w + 1);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
       }
@@ -326,10 +326,10 @@ const useMathGame = () => {
           // Handle server response
           if (out.completed) {
             // Extract the total time in seconds from the response summary
-            const totalTimeMs = out.summary?.sessionTotalMs || (elapsedTime * 1000); 
+             const totalTimeMs = out.summary?.totalActiveMs || (elapsedTime * 1000);
+                  const sessionTimeSeconds = Math.round(totalTimeMs / 1000); // Round to nearest second
 
-            //  localStorage.setItem('math-last-quiz-duration', elapsedTime);
-            localStorage.setItem('math-last-quiz-duration', totalTimeMs / 1000);
+                  localStorage.setItem('math-last-quiz-duration', sessionTimeSeconds);
               setTimeout(async () => {
                   setShowResult(true);
                   setIsAnimating(false);
@@ -352,7 +352,7 @@ const useMathGame = () => {
                    if (out.updatedProgress) {
                       setTableProgress(out.updatedProgress);
                   }
-                  navigate(out.passed ? '/results' : '/way-to-go', { replace: true });
+                  navigate(out.passed ? '/results' : '/way-to-go', { replace: true,state: { sessionTimeSeconds } });
 
               }, 50);
           } else if (out.next) {
@@ -367,6 +367,7 @@ const useMathGame = () => {
                     if (out.dailyStats.grandTotal !== undefined) {
                         setGrandTotalCorrect(out.dailyStats.grandTotal); 
                     }
+                    setQuizStartTime(Date.now());
                   }
               }, 10);
           } else if (out.practice) {
@@ -504,20 +505,15 @@ const useMathGame = () => {
     if (!isTimerPaused && quizStartTime) {
       timer = setInterval(() => {
         const sessionElapsedMs = Date.now() - quizStartTime;
-        //  Calculate total time by adding the base daily time (dailyTotalMs)
         const totalElapsedSeconds = Math.floor((dailyTotalMs + sessionElapsedMs) / 1000); 
 
-        setElapsedTime(sessionElapsedMs / 1000); // Current session elapsed time in seconds
-        setTotalTimeToday(totalElapsedSeconds); // Total accumulated time today in seconds
+        setElapsedTime(sessionElapsedMs / 1000); 
+        setTotalTimeToday(totalElapsedSeconds); 
 
-        // Update local storage with the TOTAL accumulated time today
-        // localStorage.setItem('math-last-session-seconds', totalElapsedSeconds); 
-      }, 1000);
+      }, 100);
     }
     return () => {
       clearInterval(timer);
-      // Ensure local storage captures final time when unmounting/cleanup occurs
-      // localStorage.setItem('math-last-session-seconds', totalTimeToday); 
     };
   }, [isTimerPaused, quizStartTime, dailyTotalMs]); //  Added dailyTotalMs, totalTimeToday to deps
 
