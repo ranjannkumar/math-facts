@@ -63,12 +63,11 @@ const WayToGoScreen = () => {
         hasRestarted.current = true;
         setQuizRunId(null);
         setSelectedDifficulty(null);
-        // FIX: Navigate to the appropriate picker screen based on difficulty
         const isBlackBelt = String(selectedDifficulty).startsWith('black');
         if (isBlackBelt) {
-            navigate('/black'); // Go back to Black Belt Degrees screen
+            navigate('/black'); 
         } else {
-            navigate('/belts'); // Go back to colored belts screen
+            navigate('/belts'); 
         }
     }
 

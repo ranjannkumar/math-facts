@@ -133,7 +133,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
 
       // If failed due to time limit, change status to 'failed' for accurate records
       if (isTimeUp(run) || (isBlackBeltRun && run.totalActiveMs > limitMs && passed)) {
-          run.status = 'failed'; // Mark as failed due to time
+          run.status = 'failed';
           passed = false;
       }
     }
@@ -151,15 +151,17 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
 
     
     await run.save();
-    //  Return sessionCorrectCount explicitly for front-end
     return { completed: true, passed, summary, sessionCorrectCount:  Number(run.stats.correct) ,dailyStats: finalDaily};
   }
 
   // continue: resume timer, return next question
   resumeTimer(run);
-  await run.save();
-  const nextQ = await GeneratedQuestion.findById(run.items[run.currentIndex].questionId);
-  return { next: nextQ.toObject(),dailyStats: updatedDaily   };
+    const [_, nextQDoc] = await Promise.all([
+        run.save(),
+        GeneratedQuestion.findById(run.items[run.currentIndex].questionId)
+    ]);
+    
+    return { next: nextQDoc.toObject(), dailyStats: updatedDaily };
 }
 
 // ------------- INACTIVITY -------------
@@ -210,11 +212,6 @@ export async function inactivity(runId, questionId) {
 }
 
 // ------------- PRACTICE ANSWER -------------
-// backend/src/services/quiz.service.js
-
-// ... (around line 200)
-
-// ------------- PRACTICE ANSWER -------------
 export async function practiceAnswer(runId, questionId, answer) {
   const run = await QuizRun.findById(runId);
   if (!run) throw new Error('Run not found');
@@ -257,7 +254,6 @@ export async function practiceAnswer(runId, questionId, answer) {
     item.practiceRequired = false;
     item.practiced = true;
     
-    // *** MODIFICATION START ***
     // Advance index to the next question
     run.currentIndex += 1;
 
@@ -283,19 +279,17 @@ export async function practiceAnswer(runId, questionId, answer) {
 
     // Continue to next question
     resumeTimer(run);
-    await run.save();
+   const [_, nextQ] = await Promise.all([
+        run.save(),
+        GeneratedQuestion.findById(run.items[run.currentIndex].questionId).lean()
+    ]);
     
-    const nextQ = await GeneratedQuestion.findById(run.items[run.currentIndex].questionId).lean();
-    
-    // Return the signal to resume AND the next question.
     return { 
         resume:  true,
         next: nextQ,
     };
-    // *** MODIFICATION END ***
   }
   
-  // Pre-quiz flow: simply signal successful practice to the frontend.
   // The frontend handles progression through the practice items and calling quizStart.
   await run.save();
   return { resume: true };

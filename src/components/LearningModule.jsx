@@ -210,6 +210,7 @@ const LearningModule = () => {
               // setShowAdvanceButton(true);
               if (!isStartingQuiz) {
                   setIsStartingQuiz(true);
+                  setIsClosing(true); 
                   setShowLearningModule(false);
                   startActualQuiz(quizRunId);
                 }
@@ -307,6 +308,7 @@ const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
     // --- 1. Intervention Flow (Show Fact -> Practice -> Resume) ---
     if (isIntervention) {
       if (isShowingFact) {
+         if (isClosing) return null;
         // Fact screen
         return (
           <>
