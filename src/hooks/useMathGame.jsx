@@ -149,8 +149,6 @@ const useMathGame = () => {
       if (oldPin !== pinValue) {
         // Reset local state for new user
         hardResetQuizState();
-        // setTableProgress({});
-        // Local storage clear is handled in handleResetProgress, but we clear the pin here.
       }
       
       localStorage.setItem('math-child-pin', pinValue);
@@ -550,11 +548,6 @@ const useMathGame = () => {
   const handleAgeChange = useCallback((e) => setChildAge(e.target.value), []);
   const handlePinChange = useCallback((e) => setChildPin(e.target.value), []);
 
-  const resumeQuizAfterIntervention = useCallback(() => {
-    // This function is now largely obsolete as resume is handled directly in LearningModule.jsx 
-    // after a successful quizPracticeAnswer API call.
-  }, []);
-
   // --- Define getQuizTimeLimit logic ---
   const quizTimeLimit = (() => {
     if (!selectedDifficulty || !selectedDifficulty.startsWith('black')) {
@@ -607,7 +600,6 @@ const useMathGame = () => {
     preQuizPracticeItems, setPreQuizPracticeItems,
     interventionQuestion, setInterventionQuestion,
     handlePracticeAnswer, //  Function for intervention practice submission
-    resumeQuizAfterIntervention,
     // Identity & Settings
     childName, setChildName, handleNameChange,
     childAge, setChildAge, handleAgeChange,

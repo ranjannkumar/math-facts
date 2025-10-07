@@ -4,7 +4,7 @@ import Catalog from '../models/Catalog.js';
 import { isBlack, getBlackTiming } from '../utils/belts.js';
 import { newSeed } from '../utils/helpers.js';
 
-/* ---------- helpers for choices (mirror frontend style) ---------- */
+/* ---- helpers for choices ---- */
 function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
 function choiceSet(correct){
   // frontend uses nearby sums [ans, ans+1, ans-1, ans+2] clipped >= 0
@@ -15,12 +15,44 @@ function choiceSet(correct){
   return shuffle(uniq.slice(0,4));
 }
 
-/* ---------- load canonical pair for a belt ---------- */
+/* ---load canonical pair for a belt ----*/
 async function getCanonicalPair(operation, level, belt){
   const cat = await Catalog.findOne({ operation, level, belt });
   if (!cat || !cat.facts?.length) return null;
   return [cat.facts[0].a, cat.facts[0].b]; // one canonical pair per belt
 }
+
+/*
+ * Reorders a quiz array to ensure no two consecutive questions have the same question string.
+ */
+function reorderNoConsecutiveDuplicates(questions) {
+  const result = [...questions];
+  const maxAttempts = result.length * 2; 
+
+  for (let i = 1; i < result.length; i++) {
+    let attempts = 0;
+    while (result[i].question === result[i - 1].question && attempts < maxAttempts) {
+      let swapIndex = -1;
+      // Search for a suitable non-identical question in the rest of the array
+      for (let j = i + 1; j < result.length; j++) {
+        if (result[j].question !== result[i - 1].question) {
+          swapIndex = j;
+          break;
+        }
+      }
+
+      if (swapIndex !== -1) {
+        [result[i], result[swapIndex]] = [result[swapIndex], result[i]];
+      } else {
+        break; 
+      }
+      attempts++;
+    }
+  }
+  return result;
+}
+
+
 
 /* ---------- current belt: practice facts ---------- */
 export async function practiceFactsForBelt(operation, level, beltOrDegree){
@@ -63,11 +95,13 @@ export async function buildQuizSet(operation, level, beltOrDegree){
       const d = Math.floor(Math.random()*10);
       out.push(await makeDigitQuestion(level, beltOrDegree, d));
     }
-    return shuffle(out);
+    return reorderNoConsecutiveDuplicates(shuffle(out));
   }
 
   if (isBlack(beltOrDegree)) {
-    return buildQuizForBlack(operation, level, beltOrDegree);
+     const out = await buildQuizForBlack(operation, level, beltOrDegree);
+    const shuffledOut = shuffle(out);
+    return reorderNoConsecutiveDuplicates(shuffledOut);
   }
 
   // colored belt:
@@ -91,25 +125,67 @@ export async function buildQuizSet(operation, level, beltOrDegree){
   }
 
   // PREVIOUS pool: all earlier belts in same level + all belts in earlier levels
-  const needPrev = 10 - news.length;
-  const prevPool = await getPreviousPool(operation, level, beltOrDegree);
-  const prevQs = await samplePrevious(prevPool, needPrev);
+   const needPrev = 10 - news.length;
+  let prevQs = [];
+  
+  if (level === 1 && beltOrDegree !== 'white') {
+    // Inject digit recognition questions (4 out of the needed N) to mix in with L1 White's facts.
+    const DIGIT_Q_COUNT = Math.min(4, needPrev); 
+    const neededFromCanonical = Math.max(0, needPrev - DIGIT_Q_COUNT);
+    
+    // 1. Generate Digit Recognition Questions
+    for (let i = 0; i < DIGIT_Q_COUNT; i++) {
+      const d = Math.floor(Math.random() * 10);
+      prevQs.push(await makeDigitQuestion(level, beltOrDegree, d)); 
+    }
+    
+    // 2. Get the remaining previous questions from the canonical facts pool (e.g., L1 White fact: 0+0)
+    if (neededFromCanonical > 0) {
+      const canonicalPool = await getPreviousPool(operation, level, beltOrDegree);
+      const canonicalPrevQs = await samplePrevious(canonicalPool, neededFromCanonical);
+      prevQs = prevQs.concat(canonicalPrevQs);
+    }
+    
+  } else {
+    // Normal previous question logic (only canonical facts)
+    const prevPool = await getPreviousPool(operation, level, beltOrDegree);
+    prevQs = await samplePrevious(prevPool, needPrev);
+  }
 
   // Interleave new among previous like the frontend interleave (positions randomized)
-  return interleave(news, prevQs);
+  const finalQuizSet = interleave(news, prevQs);
+  
+  return reorderNoConsecutiveDuplicates(finalQuizSet);
 }
 
 /* ---------- black degrees ---------- */
 async function buildQuizForBlack(operation, level, beltOrDegree){
-  const { questions } = getBlackTiming(beltOrDegree); // 20 or 30
-  const pool = await getAllCanonicalPairsUpToLevel(operation, level); // union up to current level
-  if (!pool.length) return [];
-  const out = [];
-  for (let i=0;i<questions;i++){
-    const [a,b] = pool[Math.floor(Math.random()*pool.length)];
-    out.push(await makeGenQuestion(operation, level, beltOrDegree, a, b, 'previous')); // tag as pulled from pool
+ const { questions: totalQuestions } = getBlackTiming(beltOrDegree); // 20 or 30
+  
+  let numDigitQuestions = 0;
+  let out = [];
+
+  if (level === 1) {
+    numDigitQuestions = 3; 
+    // Generate the digit questions
+    for (let i = 0; i < numDigitQuestions; i++) {
+        const d = Math.floor(Math.random() * 10);
+        out.push(await makeDigitQuestion(level, beltOrDegree, d));
+    }
   }
-  return shuffle(out);
+
+  const numCanonicalQuestions = totalQuestions - numDigitQuestions;
+  if (numCanonicalQuestions <= 0) return out; // Edge case
+
+  const pool = await getAllCanonicalPairsUpToLevel(operation, level); // union up to current level
+  if (!pool.length) return out;
+
+  for (let i = 0; i < numCanonicalQuestions; i++) {
+    const [a,b] = pool[Math.floor(Math.random()*pool.length)];
+    out.push(await makeGenQuestion(operation, level, beltOrDegree, a, b, 'previous')); 
+  }
+  
+  return out; 
 }
 
 /* ---------- build helper questions ---------- */
@@ -122,7 +198,7 @@ async function makeGenQuestion(operation, level, beltOrDegree, a, b, source, que
     level,
     beltOrDegree,
     params: { a, b },
-    question: questionStringOverride, // <--- Use override if present
+    question: questionStringOverride, 
     correctAnswer: correct,
     choices,
     source,
@@ -141,11 +217,11 @@ async function makeDigitQuestion(level, beltOrDegree, d){
     d, 
     0, 
     'previous', 
-    String(d) // <--- Use the digit 'd' as the question string
+    String(d) 
   );
 }
 
-/* ---------- previous pool builders (frontend-compliant) ---------- */
+/* ---------- previous pool builders  ---------- */
 const BELTS = ['white','yellow','green','blue','red','brown'];
 
 async function getPreviousPool(operation, level, belt){
@@ -173,7 +249,6 @@ async function samplePrevious(pool, n){
   const out = [];
   for (let i=0;i<n;i++){
     const [a,b] = pool[Math.floor(Math.random()*pool.length)];
-    // IMPORTANT: we DO NOT mirror here; the frontend’s pool already includes order where needed.
     out.push(await makeGenQuestion('add', 0, 'prev', a, b, 'previous')); // level/belt saved in params; source=previous
   }
   return out;

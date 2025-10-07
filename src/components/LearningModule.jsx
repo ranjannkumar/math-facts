@@ -11,6 +11,51 @@ import { normalizeDifficulty } from '../utils/mathGameLogic.js';
  * Intervention: Intervention Question -> Practice -> Resume Quiz
  */
 
+// ---- verbalize maths facts----
+const speak = (text) => {
+  try {
+    if (!('speechSynthesis' in window)) return; // no-op if unsupported
+    const synth = window.speechSynthesis;
+    synth.cancel(); // stop anything already speaking
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.95;   // slightly slower for clarity
+    u.pitch = 1.0;
+    synth.speak(u);
+  } catch {}
+};
+
+const stopSpeaking = () => {
+  try {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  } catch {}
+};
+
+// Build a natural sentence from a fact like "0 + 1 = 1"
+const buildSpokenFact = (q) => {
+  if (!q) return '';
+  const expr = String(q.question).trim();
+  const cleaned = expr.replace(/\s+/g, ''); // "0+1" / "3-2" / "4*5" / "6/3"
+
+  // Try to parse "A op B"
+  const m = cleaned.match(/^(-?\d+)\s*([+\-x×*/÷])\s*(-?\d+)$/i);
+  if (m) {
+    const a = m[1];
+    const op = m[2];
+    const b = m[3];
+    const opWord =
+      op === '+' ? 'plus' :
+      op === '-' ? 'minus' :
+      op === 'x' || op === '×' || op === '*' ? 'times' :
+      op === '/' || op === '÷' ? 'divided by' : '';
+    return `${a} ${opWord} ${b} equals ${q.correctAnswer}`;
+  }
+
+  // Fallback: read literally
+  return `${expr} equals ${q.correctAnswer}`;
+};
+
+
 const LearningModule = () => {
   const {
     pendingDifficulty,
@@ -80,6 +125,18 @@ const LearningModule = () => {
           navigate('/belts');
       }
   }, [selectedTable, diff, isPreQuizFlow, isIntervention, setShowLearningModule, navigate]);
+
+  // Speak the math fact during Pre-Quiz Fact screen
+  useEffect(() => {
+    if (isPreQuizFlow && isShowingFact && practiceQ) {
+      const line = buildSpokenFact(practiceQ);
+      if (line) speak(line);
+    } else {
+      stopSpeaking();
+    }
+    return () => stopSpeaking(); 
+  }, [isPreQuizFlow, isShowingFact, practiceQ]);
+
   
   
   // --- HELPERS ---

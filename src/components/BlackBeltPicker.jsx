@@ -44,7 +44,7 @@ const BlackBeltPicker = () => {
     };
   }, [selectedTable, tableProgress]); 
 
-   const isUnlocked = (deg) => deg <= effectiveMaxUnlocked; // Simplified check
+   const isUnlocked = (deg) => deg <= effectiveMaxUnlocked; 
   const isCompleted = (deg) => completedSet.has(deg);
 
   const handlePick = (deg) => {
