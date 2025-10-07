@@ -150,7 +150,13 @@ const LearningModule = () => {
 
             if (isLastFact) {
               // This was the final practice. Now we show the Start Quiz button.
-              setShowAdvanceButton(true);
+              // setShowAdvanceButton(true);
+              if (!isStartingQuiz) {
+                  setIsStartingQuiz(true);
+                  setShowLearningModule(false);
+                  startActualQuiz(quizRunId);
+                }
+              return;
             } else {
               // Not the last one — do NOT flash the Start Quiz button.
               setShowAdvanceButton(false);
@@ -307,7 +313,7 @@ const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
 
             {renderPracticeInteractions(practiceAnswers, currentCorrectAnswer)}
             
-            {showAdvanceButton && (
+            {/* {showAdvanceButton && (
                 <div className="flex justify-center mt-4">
                     <button
                         type="button"
@@ -318,7 +324,7 @@ const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
                         {buttonText}
                     </button>
                 </div>
-            )}
+            )} */}
           </>
         );
       }

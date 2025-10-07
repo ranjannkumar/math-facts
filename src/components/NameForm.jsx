@@ -73,7 +73,7 @@ const KeypadButton = ({ value, label, className }) => (
 
         <form onSubmit={onSubmit} className="w-full flex flex-col items-center">
           <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
-             Log In With Your Student Number
+             Enter Your Passcode
           </label>
 
           <input

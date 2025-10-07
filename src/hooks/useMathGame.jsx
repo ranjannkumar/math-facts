@@ -134,7 +134,7 @@ const useMathGame = () => {
 
   // --- API / LIFECYCLE ---
 
-   // FIX 1: Ensure totalTimeToday reflects the daily base time when no quiz is running.
+   //  Ensure totalTimeToday reflects the daily base time when no quiz is running.
   useEffect(() => {
       if (!quizStartTime) {
           // When the quiz timer is off, totalTimeToday should equal the completed daily total.
@@ -330,7 +330,6 @@ const useMathGame = () => {
                   const sessionTimeSeconds = Math.round(totalTimeMs / 1000); // Round to nearest second
 
                   localStorage.setItem('math-last-quiz-duration', sessionTimeSeconds);
-              setTimeout(async () => {
                   setShowResult(true);
                   setIsAnimating(false);
 
@@ -354,9 +353,7 @@ const useMathGame = () => {
                   }
                   navigate(out.passed ? '/results' : '/way-to-go', { replace: true,state: { sessionTimeSeconds } });
 
-              }, 1);
           } else if (out.next) {
-               setTimeout(() => {
                   setCurrentQuestion(mapQuestionToFrontend(out.next));
                   setCurrentQuestionIndex(prev => prev + 1);
                   questionStartTimestamp.current = Date.now();
@@ -369,16 +366,13 @@ const useMathGame = () => {
                     }
                     setQuizStartTime(Date.now());
                   }
-              }, 1);
           } else if (out.practice) {
-              setTimeout(() => {
                   setIsTimerPaused(true);
                   setPausedTime(Date.now());
                   setInterventionQuestion(mapQuestionToFrontend(out.practice));
                   setShowLearningModule(true);
                   navigate('/learning');
                   setIsAnimating(false);
-              }, 1);
           }else {
              setIsAnimating(false);
           }
@@ -467,7 +461,7 @@ const useMathGame = () => {
         try {
             const out = await quizHandleInactivity(quizRunId, currentQuestion.id, childPin);
 
-             if (out.completed) { // <--- ADDED: Check for immediate completion flag
+             if (out.completed) { // Check for immediate completion flag
                  // Black belt immediate failure due to inactivity/time up (handled by backend logic)
                 setQuizStartTime(null); // Stop timer
                 setSessionCorrectCount(out.sessionCorrectCount || 0);
@@ -515,7 +509,7 @@ const useMathGame = () => {
     return () => {
       clearInterval(timer);
     };
-  }, [isTimerPaused, quizStartTime, dailyTotalMs]); //  Added dailyTotalMs, totalTimeToday to deps
+  }, [isTimerPaused, quizStartTime, dailyTotalMs]); 
 
 
   const handleConfirmQuit = useCallback(() =>{ 
