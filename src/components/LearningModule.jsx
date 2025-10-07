@@ -19,7 +19,7 @@ const speak = (text) => {
     synth.cancel(); // stop anything already speaking
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'en-US';
-    u.rate = 1.1;   // slightly slower for clarity
+    u.rate = 1.0;   // slightly slower for clarity
     u.pitch = 1.0;
     synth.speak(u);
   } catch {}
