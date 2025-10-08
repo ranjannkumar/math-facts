@@ -24,9 +24,6 @@ async function getCanonicalPair(operation, level, belt){
 
 /*
  * Reorders a quiz array to ensure no two consecutive questions have the same question string.
- */
-/*
- * Reorders a quiz array to ensure no two consecutive questions have the same question string.
  * It now includes a fallback search to the beginning of the array if no non-duplicate is found towards the end.
  */
 function reorderNoConsecutiveDuplicates(questions) {
@@ -84,47 +81,97 @@ function reorderNoConsecutiveDuplicates(questions) {
 
 
 
+// Returns a Promise for a Mongoose Document
+function _makeGenQuestionCreatePromise(operation, level, beltOrDegree, a, b, source, questionStringOverride = null){
+  const correct = a+b;
+  const choices = choiceSet(correct);
+
+  const displayQuestion = questionStringOverride 
+    ? questionStringOverride 
+    : `${a} + ${b}`; 
+
+  // Return the promise immediately, without awaiting or converting to object
+  return GeneratedQuestion.create({
+    operation,
+    level,
+    beltOrDegree,
+    params: { a, b },
+    question: displayQuestion, 
+    correctAnswer: correct,
+    choices,
+    source,
+    seed: newSeed()
+  });
+}
+
+// Returns a Promise for a Mongoose Document
+function _makeDigitQuestionCreatePromise(level, beltOrDegree, d){
+  // The logic for choices inside makeGenQuestion will ensure proper distractors for the answer 'd'
+  return _makeGenQuestionCreatePromise(
+    'add', 
+    level, 
+    beltOrDegree, 
+    d, 
+    0, 
+    'previous', 
+    String(d) 
+  );
+}
+
 /* ---------- current belt: practice facts ---------- */
 export async function practiceFactsForBelt(operation, level, beltOrDegree){
   if (isBlack(beltOrDegree)) {
     // Black degrees don't have intro practice in the frontend flow; return empty
     return [];
   }
+  
+  const promises = []; // Collect promises
+
   // L1 white special: practice == 1 item for 0+0 (frontend returns two 0+0 new items later)
   if (level === 1 && beltOrDegree === 'white') {
-    const q = await makeGenQuestion('add', level, 'white', 0, 0, 'current');
-    return [q]; // one practice item
-  }
-
-  const pair = await getCanonicalPair(operation, level, beltOrDegree);
-  if (!pair) return [];
-  const [a,b] = pair;
-  const isIdentical = a===b;
-
-  if (isIdentical) {
-    // one practice question (same fact)
-    return [await makeGenQuestion(operation, level, beltOrDegree, a, b, 'current')];
+    promises.push(_makeGenQuestionCreatePromise('add', level, 'white', 0, 0, 'current'));
+    // return [await makeGenQuestion('add', level, 'white', 0, 0, 'current')]; // old single item logic
   } else {
-    // two practice questions (a+b) and (b+a)
-    const q1 = await makeGenQuestion(operation, level, beltOrDegree, a, b, 'current');
-    const q2 = await makeGenQuestion(operation, level, beltOrDegree, b, a, 'current');
-    return [q1, q2];
+    const pair = await getCanonicalPair(operation, level, beltOrDegree);
+    if (!pair) return [];
+    const [a,b] = pair;
+    const isIdentical = a===b;
+
+    if (isIdentical) {
+      // one practice question (same fact)
+      promises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, a, b, 'current'));
+    } else {
+      // two practice questions (a+b) and (b+a)
+      promises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, a, b, 'current'));
+      promises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, b, a, 'current'));
+    }
   }
+  
+  // <<< NEW: Execute all creations concurrently
+  const docs = await Promise.all(promises);
+  // Return array of plain JS objects
+  return docs.map(doc => doc.toObject()); 
 }
 
 /* ---------- buildQuizSet for a belt/degree ---------- */
 export async function buildQuizSet(operation, level, beltOrDegree){
+  const newPromises = []; // <<< NEW: Collect new question promises
+  let prevQs = [];
+  const outPromises = []; // To collect ALL promises eventually
+
   // L1 white special: 2×(0+0) + 8 digit-recognition [0..9]
   if (!isBlack(beltOrDegree) && level===1 && beltOrDegree==='white') {
-    const out = [];
     // two new 0+0
-    out.push(await makeGenQuestion(operation, level, beltOrDegree, 0, 0, 'current','0 + 0'));
-    out.push(await makeGenQuestion(operation, level, beltOrDegree, 0, 0, 'current','0 + 0'));
+    newPromises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, 0, 0, 'current','0 + 0'));
+    newPromises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, 0, 0, 'current','0 + 0'));
     // eight digit recognition
     for (let i=0;i<8;i++){
       const d = Math.floor(Math.random()*10);
-      out.push(await makeDigitQuestion(level, beltOrDegree, d));
+      newPromises.push(_makeDigitQuestionCreatePromise(level, beltOrDegree, d));
     }
+    
+    const docs = await Promise.all(newPromises);
+    const out = docs.map(doc => doc.toObject());
     return reorderNoConsecutiveDuplicates(shuffle(out));
   }
 
@@ -141,22 +188,21 @@ export async function buildQuizSet(operation, level, beltOrDegree){
   const isIdentical = a===b;
 
   // NEW questions from current belt:
-  // - identical → 2 new (same order twice)
-  // - non-identical → 4 new (two per order)
-  const news = [];
   if (isIdentical) {
-    news.push(await makeGenQuestion(operation, level, beltOrDegree, a, b, 'current'));
-    news.push(await makeGenQuestion(operation, level, beltOrDegree, a, b, 'current'));
+    newPromises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, a, b, 'current'));
+    newPromises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, a, b, 'current'));
   } else {
-    news.push(await makeGenQuestion(operation, level, beltOrDegree, a, b, 'current'));
-    news.push(await makeGenQuestion(operation, level, beltOrDegree, a, b, 'current'));
-    news.push(await makeGenQuestion(operation, level, beltOrDegree, b, a, 'current'));
-    news.push(await makeGenQuestion(operation, level, beltOrDegree, b, a, 'current'));
+    newPromises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, a, b, 'current'));
+    newPromises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, a, b, 'current'));
+    newPromises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, b, a, 'current'));
+    newPromises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, b, a, 'current'));
   }
 
+  // Await the creation of new questions only
+  const news = (await Promise.all(newPromises)).map(doc => doc.toObject()); // <<< NEW: Wait for batch creation
+  
   // PREVIOUS pool: all earlier belts in same level + all belts in earlier levels
-   const needPrev = 10 - news.length;
-  let prevQs = [];
+  const needPrev = 10 - news.length;
   
   if (level === 1 && beltOrDegree !== 'white') {
     // Inject digit recognition questions (4 out of the needed N) to mix in with L1 White's facts.
@@ -164,22 +210,25 @@ export async function buildQuizSet(operation, level, beltOrDegree){
     const neededFromCanonical = Math.max(0, needPrev - DIGIT_Q_COUNT);
     
     // 1. Generate Digit Recognition Questions
+    const digitPromises = [];
     for (let i = 0; i < DIGIT_Q_COUNT; i++) {
       const d = Math.floor(Math.random() * 10);
-      prevQs.push(await makeDigitQuestion(level, beltOrDegree, d)); 
+      digitPromises.push(_makeDigitQuestionCreatePromise(level, beltOrDegree, d)); 
     }
+    const digitQs = (await Promise.all(digitPromises)).map(doc => doc.toObject()); // <<< NEW
+    prevQs = prevQs.concat(digitQs);
     
-    // 2. Get the remaining previous questions from the canonical facts pool (e.g., L1 White fact: 0+0)
+    // 2. Get the remaining previous questions from the canonical facts pool 
     if (neededFromCanonical > 0) {
       const canonicalPool = await getPreviousPool(operation, level, beltOrDegree);
-      const canonicalPrevQs = await samplePrevious(canonicalPool, neededFromCanonical);
+      const canonicalPrevQs = await samplePrevious(canonicalPool, neededFromCanonical); // already uses Promise.all internally
       prevQs = prevQs.concat(canonicalPrevQs);
     }
     
   } else {
     // Normal previous question logic (only canonical facts)
     const prevPool = await getPreviousPool(operation, level, beltOrDegree);
-    prevQs = await samplePrevious(prevPool, needPrev);
+    prevQs = await samplePrevious(prevPool, needPrev); // already uses Promise.all internally
   }
 
   // Interleave new among previous like the frontend interleave (positions randomized)
@@ -190,72 +239,38 @@ export async function buildQuizSet(operation, level, beltOrDegree){
 
 /* ---------- black degrees ---------- */
 async function buildQuizForBlack(operation, level, beltOrDegree){
- const { questions: totalQuestions } = getBlackTiming(beltOrDegree); // 20 or 30
+  const { questions: totalQuestions } = getBlackTiming(beltOrDegree); // 20 or 30
   
   let numDigitQuestions = 0;
-  let out = [];
+  const outPromises = []; // <<< NEW: Collect all promises here
 
   if (level === 1) {
     numDigitQuestions = 3; 
-    // Generate the digit questions
+    // Generate the digit questions promises
     for (let i = 0; i < numDigitQuestions; i++) {
         const d = Math.floor(Math.random() * 10);
-        out.push(await makeDigitQuestion(level, beltOrDegree, d));
+        outPromises.push(_makeDigitQuestionCreatePromise(level, beltOrDegree, d)); // <<< Push Promise
     }
   }
 
   const numCanonicalQuestions = totalQuestions - numDigitQuestions;
-  if (numCanonicalQuestions <= 0) return out; // Edge case
+  if (numCanonicalQuestions <= 0) return []; // Return empty array if no canonical questions needed
 
   const pool = await getAllCanonicalPairsUpToLevel(operation, level); // union up to current level
-  if (!pool.length) return out;
+  if (!pool.length) return [];
 
+  // Generate canonical question promises
   for (let i = 0; i < numCanonicalQuestions; i++) {
     const [a,b] = pool[Math.floor(Math.random()*pool.length)];
-    out.push(await makeGenQuestion(operation, level, beltOrDegree, a, b, 'previous')); 
+    outPromises.push(_makeGenQuestionCreatePromise(operation, level, beltOrDegree, a, b, 'previous')); // <<< Push Promise
   }
   
-  return out; 
+  // <<< NEW: Execute all creations concurrently
+  const docs = await Promise.all(outPromises);
+  return docs.map(doc => doc.toObject()); // Return array of plain JS objects
 }
 
-/* ---------- build helper questions ---------- */
-async function makeGenQuestion(operation, level, beltOrDegree, a, b, source, questionStringOverride = null){
-  const correct = a+b;
-  const choices = choiceSet(correct);
-
-  const displayQuestion = questionStringOverride 
-    ? questionStringOverride 
-    : `${a} + ${b}`; 
-
-  return GeneratedQuestion.create({
-    operation,
-    level,
-    beltOrDegree,
-    params: { a, b },
-    question: displayQuestion, 
-    correctAnswer: correct,
-    choices,
-    source,
-    seed: newSeed()
-  }).then(doc => doc.toObject());
-}
-
-async function makeDigitQuestion(level, beltOrDegree, d){
-  const correct = d;
-  const base = [correct, (correct+1)%10, (correct+2)%10, (correct+3)%10];
-  const choices = shuffle([...new Set(base)]).slice(0,4);
- return makeGenQuestion(
-    'add', 
-    level, 
-    beltOrDegree, 
-    d, 
-    0, 
-    'previous', 
-    String(d) 
-  );
-}
-
-/* ---------- previous pool builders  ---------- */
+/* ---------- sample previous pool (updated to use Promise.all)  ---------- */
 const BELTS = ['white','yellow','green','blue','red','brown'];
 
 async function getPreviousPool(operation, level, belt){
@@ -278,14 +293,16 @@ async function getPreviousPool(operation, level, belt){
   return pairs;
 }
 
+// Uses the promise returning function and Promise.all
 async function samplePrevious(pool, n){
   if (!pool.length) return [];
-  const out = [];
+  const outPromises = [];
   for (let i=0;i<n;i++){
     const [a,b] = pool[Math.floor(Math.random()*pool.length)];
-    out.push(await makeGenQuestion('add', 0, 'prev', a, b, 'previous')); // level/belt saved in params; source=previous
+    outPromises.push(_makeGenQuestionCreatePromise('add', 0, 'prev', a, b, 'previous')); // push promise
   }
-  return out;
+  const docs = await Promise.all(outPromises); // <<< NEW: Execute all concurrently
+  return docs.map(doc => doc.toObject()); // Return array of plain JS objects
 }
 
 /* ---------- interleave new with previous (random positions for new) ---------- */

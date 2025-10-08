@@ -20,9 +20,11 @@ export async function loginPin(req, res, next) {
       await user.save();
     }
 
-     // --- PERFORMANCE FIX: Fetch required daily stats and embed into single response ---
-    const todayDoc = await getTodaySvc(user._id); 
-    const grandTotal = await getGrandTotalCorrectSvc(user._id);
+     // Fetch required daily stats and embed into single response ---
+    const [todayDoc, grandTotal] = await Promise.all([
+      getTodaySvc(user._id),
+      getGrandTotalCorrectSvc(user._id)
+    ]);
 
     // Part 3: Return user object including theme, progress, and dailyStats in one payload
     res.json({ 
