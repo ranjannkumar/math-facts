@@ -108,7 +108,7 @@ const ResultsScreen = () => {
     };
 
     if (leaving) return null;
-    const pointsEarned = 10;    
+    const pointsEarned = maxQuestions;
     return (
         <div
             className={

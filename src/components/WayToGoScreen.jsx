@@ -45,6 +45,7 @@ const WayToGoScreen = () => {
             // Countdown finished, execute navigation/restart
             if (hasRestarted.current) return; 
             hasRestarted.current = true;
+            localStorage.removeItem('math-last-quiz-duration'); 
             if (selectedTable && selectedDifficulty) {
                 // Call the API-backed quiz start flow. 
                 startQuizWithDifficulty(selectedDifficulty, selectedTable); 
