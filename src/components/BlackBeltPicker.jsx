@@ -11,6 +11,7 @@ const BlackBeltPicker = () => {
     selectedTable,
     startQuizWithDifficulty,
     tableProgress,
+    isQuizStarting,
   } = useContext(MathGameContext);
 
 
@@ -48,7 +49,7 @@ const BlackBeltPicker = () => {
   const isCompleted = (deg) => completedSet.has(deg);
 
   const handlePick = (deg) => {
-    if (!isUnlocked(deg)) return;
+    if (!isUnlocked(deg) || isQuizStarting) return; 
     startQuizWithDifficulty(`black-${deg}`, selectedTable);
     // navigate('/quiz');
   };
@@ -80,12 +81,14 @@ const BlackBeltPicker = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {degrees.map((deg) => {
             const locked = !isUnlocked(deg);
+            const isDisabled = locked || isQuizStarting; 
             return (
               <button
                 key={deg}
                 onClick={() => handlePick(deg)}
+                disabled={isDisabled}
                 className={`relative rounded-2xl p-6 bg-white/90 shadow-xl hover:bg-white transition
-                  ${locked ? 'opacity-60 grayscale cursor-not-allowed' : ''}`}
+                  `}
               >
                 <div className="absolute top-2 right-3 text-xl">
                   {locked ? '🔒' : ''}

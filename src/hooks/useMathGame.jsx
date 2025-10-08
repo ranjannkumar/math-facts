@@ -68,6 +68,8 @@ const useMathGame = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
 
+   const [isQuizStarting, setIsQuizStarting] = useState(false);
+
   // --- ADD MISSING PRE-TEST STATE DECLARATIONS ---
   const [preTestSection, setPreTestSection] = useState('addition');
   const [preTestQuestions, setPreTestQuestions] = useState([]);
@@ -193,6 +195,7 @@ const useMathGame = () => {
         console.log(idToUse, quizRunId, runId)
         if (!idToUse) {
           console.error("Cannot start quiz: quizRunId is missing.");
+           setIsQuizStarting(false);
           navigate('/belts');
           return;
       }
@@ -211,11 +214,14 @@ const useMathGame = () => {
         setElapsedTime(0);
         setPausedTime(0);
 
+        setIsQuizStarting(false);
+
         navigate('/quiz');
 
       } catch (e) {
         console.error('Quiz Start failed:', e.message);
         alert('Failed to start quiz: ' + e.message);
+        setIsQuizStarting(false);
         navigate('/belts');
       }
     },
@@ -230,6 +236,8 @@ const useMathGame = () => {
       setSelectedTable(table);
       setPendingDifficulty(difficulty);
       setMaxQuestions(determineMaxQuestions(difficulty));
+
+       setIsQuizStarting(true);
 
       try {
         const { quizRunId: newRunId, practice: practiceItems } = await quizPrepare(
@@ -250,6 +258,7 @@ const useMathGame = () => {
 
         if (!isBlackBelt && practiceItems && practiceItems.length > 0) {
           setShowLearningModule(true);
+          setIsQuizStarting(false);
           navigate('/learning');
         } else {
           // Black Belt or no practice items, go straight to quiz start
@@ -259,6 +268,7 @@ const useMathGame = () => {
       } catch (e) {
         console.error('Quiz Prepare failed:', e.message);
         alert('Failed to prepare quiz: ' + e.message);
+        setIsQuizStarting(false);
         navigate('/belts');
       }
     },
@@ -594,6 +604,7 @@ const useMathGame = () => {
     totalTimeToday, //  Export total time today for MainLayout/SessionTimer
     getQuizTimeLimit: () => quizTimeLimit,
     // Learning/Practice
+    isQuizStarting,
     showLearningModule, setShowLearningModule,
     learningModuleContent, setLearningModuleContent,
     pendingDifficulty, setPendingDifficulty,

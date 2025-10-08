@@ -25,6 +25,10 @@ async function getCanonicalPair(operation, level, belt){
 /*
  * Reorders a quiz array to ensure no two consecutive questions have the same question string.
  */
+/*
+ * Reorders a quiz array to ensure no two consecutive questions have the same question string.
+ * It now includes a fallback search to the beginning of the array if no non-duplicate is found towards the end.
+ */
 function reorderNoConsecutiveDuplicates(questions) {
   const result = [...questions];
   const maxAttempts = result.length * 2; 
@@ -33,17 +37,43 @@ function reorderNoConsecutiveDuplicates(questions) {
     let attempts = 0;
     while (result[i].question === result[i - 1].question && attempts < maxAttempts) {
       let swapIndex = -1;
-      // Search for a suitable non-identical question in the rest of the array
+      const targetQuestion = result[i - 1].question;
+      const questionToMove = result[i].question; // This is the duplicate question string
+
+      // 1. Search forward (i+1 to end) for a suitable non-identical question (Original strategy)
       for (let j = i + 1; j < result.length; j++) {
-        if (result[j].question !== result[i - 1].question) {
+        // A suitable question is one that is NOT the target (result[i-1])
+        if (result[j].question !== targetQuestion) {
           swapIndex = j;
           break;
         }
       }
+      
+      // 2. FALLBACK: If no forward candidate found, search backward (0 to i-2).
+      if (swapIndex === -1) {
+          // Search the portion of the array that is already considered 'fixed'
+          // We exclude 'i-1' because that is the immediate duplicate neighbor.
+          for (let j = 0; j < i - 1; j++) {
+              const candidateQuestion = result[j].question;
+              
+              // Candidate must fix the problem at i (q_j != q_i-1)
+              if (candidateQuestion !== targetQuestion) {
+                   // Safety Check: ensure the question *at* 'i' (the duplicate)
+                   // won't create a new duplicate at position 'j' when moved there.
+                   if (j === 0 || questionToMove !== result[j - 1].question) {
+                       swapIndex = j;
+                       break;
+                   }
+              }
+          }
+      }
+      // --- END FALLBACK LOGIC ---
 
       if (swapIndex !== -1) {
+        // Perform swap
         [result[i], result[swapIndex]] = [result[swapIndex], result[i]];
       } else {
+        // Cannot fix: break out of inner while loop. The array is unfixable given the constraints.
         break; 
       }
       attempts++;
@@ -193,12 +223,16 @@ async function makeGenQuestion(operation, level, beltOrDegree, a, b, source, que
   const correct = a+b;
   const choices = choiceSet(correct);
 
+  const displayQuestion = questionStringOverride 
+    ? questionStringOverride 
+    : `${a} + ${b}`; 
+
   return GeneratedQuestion.create({
     operation,
     level,
     beltOrDegree,
     params: { a, b },
-    question: questionStringOverride, 
+    question: displayQuestion, 
     correctAnswer: correct,
     choices,
     source,
