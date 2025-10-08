@@ -15,6 +15,8 @@ const WayToGoScreen = () => {
         setQuizRunId, 
         setSelectedDifficulty,
         setSelectedTable,
+        isQuizStarting,
+
     } = useContext(MathGameContext);
 
     const [displaySessionScore] = useState(sessionCorrectCount); 
@@ -75,6 +77,8 @@ const WayToGoScreen = () => {
     const beltName = String(selectedDifficulty).startsWith('black') 
         ? `Black (Degree ${selectedDifficulty.split('-')[1]})` 
         : selectedDifficulty?.charAt(0).toUpperCase() + selectedDifficulty?.slice(1);
+
+    const isDisabled = isQuizStarting;
 
     return (
         <div 
@@ -159,6 +163,7 @@ const WayToGoScreen = () => {
                     <button
                         className="px-6 py-3 rounded-2xl bg-gray-900 text-white font-semibold hover:opacity-90 transition text-base sm:text-lg"
                         onClick={handleBackToBelts}
+                        disabled={isDisabled}
                     >
                         Back to Belts
                     </button>
