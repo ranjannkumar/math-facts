@@ -4,6 +4,26 @@ import Catalog from '../models/Catalog.js';
 import { isBlack, getBlackTiming } from '../utils/belts.js';
 import { newSeed } from '../utils/helpers.js';
 
+// --- NEW: In-memory cache for canonical pairs to drastically speed up quiz generation ---
+let canonicalPairsCache = null;
+
+// NEW: Function to populate the cache
+export async function cacheCanonicalPairs() {
+  console.log('Starting canonical pair cache warm...');
+  const allCatalogs = await Catalog.find({}).lean();
+  const cache = {};
+  for (const cat of allCatalogs) {
+    // Key format: operation_Llevel_belt (e.g., 'add_L1_white')
+    const key = `${cat.operation}_L${cat.level}_${cat.belt}`;
+    if (cat.facts?.length) {
+      cache[key] = [cat.facts[0].a, cat.facts[0].b]; // Store just the canonical pair: [a, b]
+    }
+  }
+  canonicalPairsCache = cache;
+  console.log(`Canonical pair cache warmed. ${Object.keys(cache).length} entries loaded.`);
+  return cache;
+}
+
 /* ---- helpers for choices ---- */
 function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
 function choiceSet(correct){
@@ -17,9 +37,27 @@ function choiceSet(correct){
 
 /* ---load canonical pair for a belt ----*/
 async function getCanonicalPair(operation, level, belt){
+
+   // --- MODIFIED: Use cache first (near-instant lookup) ---
+  if (!canonicalPairsCache) {
+      console.warn('Canonical cache empty, performing one-time warm up.');
+      await cacheCanonicalPairs(); // Fallback in case a controller didn't call it on startup
+  }
+  
+  const key = `${operation}_L${level}_${belt}`;
+  const cachedPair = canonicalPairsCache?.[key];
+  if (cachedPair) {
+      return cachedPair; // Cache HIT: Return instantly!
+  }
+
   const cat = await Catalog.findOne({ operation, level, belt });
   if (!cat || !cat.facts?.length) return null;
-  return [cat.facts[0].a, cat.facts[0].b]; // one canonical pair per belt
+   
+  const pair = [cat.facts[0].a, cat.facts[0].b];
+  if (canonicalPairsCache) {
+      canonicalPairsCache[key] = pair; // Populate cache on miss
+  }
+  return pair;
 }
 
 /*

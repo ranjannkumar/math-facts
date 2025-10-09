@@ -9,6 +9,10 @@ class AudioManager {
     this.audioBuffers = {}; // Store loaded audio buffers
     this._ensureContext();
     this._loadAllAudio(); // Load all audio files on initialization
+
+     
+    document.addEventListener('click', this.resume.bind(this), { once: true });
+    document.addEventListener('keydown', this.resume.bind(this), { once: true });
   }
 
   _ensureContext() {
@@ -121,8 +125,8 @@ class AudioManager {
 
   playCorrectSound() {
     this.playTone(523.25, 0.12, 'sine', 0.18); // C5
-    setTimeout(() => this.playTone(659.25, 0.12, 'sine', 0.18), 110); // E5
-    setTimeout(() => this.playTone(783.99, 0.16, 'sine', 0.18), 220); // G5
+    setTimeout(() => this.playTone(659.25, 0.12, 'sine', 0.18), 80); // E5
+    // setTimeout(() => this.playTone(783.99, 0.16, 'sine', 0.18), 50); // G5
   }
 
   // Replaced with soft click (using start+next.mp3 as a generic tick/next sound)
@@ -133,8 +137,8 @@ class AudioManager {
   playWrongSound() {
     // Play a different sound for wrong answers - lower pitch with different waveform
     this.playTone(330, 0.2, 'triangle', 0.12); // E4
-    setTimeout(() => this.playTone(294, 0.2, 'triangle', 0.12), 100); // D4
-    setTimeout(() => this.playTone(262, 0.3, 'triangle', 0.12), 200); // C4
+    setTimeout(() => this.playTone(294, 0.2, 'triangle', 0.12), 80); // D4
+    // setTimeout(() => this.playTone(262, 0.3, 'triangle', 0.12), 200); // C4
   }
   
   // Used for wrong answers and as a general quick "next" sound
@@ -150,8 +154,8 @@ class AudioManager {
   // General quiz complete sound (can keep as tone or use an MP3 if available)
   playCompleteSound() {
     this.playTone(523.25, 0.15, 'sine', 0.2);
-    setTimeout(() => this.playTone(659.25, 0.15, 'sine', 0.2), 150);
-    setTimeout(() => this.playTone(783.99, 0.25, 'sine', 0.2), 300);
+    setTimeout(() => this.playTone(659.25, 0.15, 'sine', 0.2), 50);
+    // setTimeout(() => this.playTone(783.99, 0.25, 'sine', 0.2), 300);
   }
   
   // NEW (Part 2): Sounds for specific correct symbols
