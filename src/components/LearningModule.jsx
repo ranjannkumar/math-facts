@@ -11,19 +11,82 @@ import { normalizeDifficulty } from '../utils/mathGameLogic.js';
  * Intervention: Intervention Question -> Practice -> Resume Quiz
  */
 
-// ---- verbalize maths facts----
+// Global cache for the preferred voice to avoid re-calculating on every speak call.
+let preferredVoice = null;
+const VOICE_PREFERENCES = [
+  // Prioritize known pleasant/clear voices across browsers
+  'Google UK English Female', 
+  'Google US English',
+  'Samantha', // Common iOS voice
+  'Karen', // Common iOS voice
+  'Zoe', // Common iOS voice
+  'Daniel', // Common male voice, often clear
+  'Alex', // Common MacOS voice
+];
+
+function findAndSetVoice() {
+    if (preferredVoice) return;
+    const synth = window.speechSynthesis;
+    const voices = synth.getVoices();
+    
+    if (voices.length === 0) return;
+
+    // 1. Try to find one of the preferred names
+    for (const name of VOICE_PREFERENCES) {
+        const found = voices.find(v => v.name === name);
+        if (found) {
+            preferredVoice = found;
+            return;
+        }
+    }
+    
+    // 2. Fallback to any en-US voice, prioritizing non-male if possible.
+    const usVoices = voices.filter(v => v.lang.startsWith('en-US'));
+    const femaleUSVoice = usVoices.find(v => !v.name.includes('Male')) || usVoices[0];
+
+    // 3. Final fallback to any English voice
+    preferredVoice = femaleUSVoice || voices.find(v => v.lang.startsWith('en-')) || voices[0];
+}
+
+// Ensure voices are loaded (they might be empty initially)
+if ('speechSynthesis' in window) {
+    // Attempt to find voices immediately
+    findAndSetVoice(); 
+    // Set up listener for when voices finish loading
+    window.speechSynthesis.onvoiceschanged = findAndSetVoice;
+}
+
+
+// ---- verbalize maths facts (UPDATED) ----
 const speak = (text) => {
   try {
     if (!('speechSynthesis' in window)) return; // no-op if unsupported
     const synth = window.speechSynthesis;
     synth.cancel(); // stop anything already speaking
+    
+    // Ensure voice is set, especially if onvoiceschanged fired late
+    if (!preferredVoice) findAndSetVoice();
+
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US';
-    u.rate = 1.0;   // slightly slower for clarity
-    u.pitch = 1.0;
+    
+    // Use the preferred voice and language
+    if (preferredVoice) {
+        u.voice = preferredVoice;
+        u.lang = preferredVoice.lang; // Use the specific voice's language
+    } else {
+        // Fallback defaults
+        u.lang = 'en-US';
+    }
+    
+    u.rate = 1.0;   // Keep rate at 1.0 for a neutral pace
+    u.pitch = 1.3;  // Slightly increase pitch to make it sound friendlier/less deep
+
     synth.speak(u);
-  } catch {}
+  } catch (e) {
+      console.error("Speech synthesis failed:", e);
+  }
 };
+
 
 const stopSpeaking = () => {
   try {
@@ -54,6 +117,7 @@ const buildSpokenFact = (q) => {
   // Fallback: read literally
   return `${expr} equals ${q.correctAnswer}`;
 };
+
 
 
 const LearningModule = () => {
