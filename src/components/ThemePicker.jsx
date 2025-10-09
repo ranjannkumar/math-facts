@@ -76,7 +76,7 @@ const ThemePicker = () => {
   };
 
   const handleChooseTheme = () => {
-    if (!themes.length || !currentTheme || isLocked) return;
+    if (!themes.length || !currentTheme ) return;
     // Persist the whole theme object (key + config) into context
     setSelectedTheme(currentTheme);
     // try { localStorage.setItem('math-selected-theme', currentTheme.key); } catch {}
@@ -115,7 +115,7 @@ const ThemePicker = () => {
         className="font-baloo text-white text-center drop-shadow-lg"
         style={{ fontSize: 'clamp(1.5rem, 6vw, 2.5rem)' }}
       >
-        {isLocked ? `Your Adventure: ${cardTitle(currentTheme?.key || '')}` : 'Choose Your Adventure!'} 
+        {isLocked ? 'Your Adventure' : 'Choose Your Adventure!'}
       </h1>
 
       {themePickerMode === 'slide' && (
