@@ -11,96 +11,84 @@ import { normalizeDifficulty } from '../utils/mathGameLogic.js';
  * Intervention: Intervention Question -> Practice -> Resume Quiz
  */
 
-// Global cache for the preferred voice to avoid re-calculating on every speak call.
-let preferredVoice = null;
-const VOICE_PREFERENCES = [
-  // Prioritize known pleasant/clear voices across browsers
-  'Google UK English Female', 
-  'Google US English',
-  'Samantha', // Common iOS voice
-  'Karen', // Common iOS voice
-  'Zoe', // Common iOS voice
-  'Daniel', // Common male voice, often clear
-  'Alex', // Common MacOS voice
-];
+// ---- verbalize maths facts (pleasant voice) ----
 
-function findAndSetVoice() {
-    if (preferredVoice) return;
-    const synth = window.speechSynthesis;
-    const voices = synth.getVoices();
-    
-    if (voices.length === 0) return;
+// Cache across renders
+let _cachedVoices = [];
+let _cachedPreferredVoice = null;
 
-    // 1. Try to find one of the preferred names
-    for (const name of VOICE_PREFERENCES) {
-        const found = voices.find(v => v.name === name);
-        if (found) {
-            preferredVoice = found;
-            return;
-        }
+const loadVoices = () =>
+  new Promise((resolve) => {
+    try {
+      const synth = window?.speechSynthesis;
+      if (!synth) return resolve([]);
+      let voices = synth.getVoices();
+      if (voices && voices.length) return resolve(voices);
+
+      // voices load async on many browsers
+      const onVoicesChanged = () => {
+        voices = synth.getVoices();
+        synth.removeEventListener?.('voiceschanged', onVoicesChanged);
+        resolve(voices || []);
+      };
+      synth.addEventListener?.('voiceschanged', onVoicesChanged);
+      // Fallback timeout
+      setTimeout(() => {
+        synth.removeEventListener?.('voiceschanged', onVoicesChanged);
+        resolve(synth.getVoices() || []);
+      }, 1200);
+    } catch {
+      resolve([]);
     }
-    
-    // 2. Fallback to any en-US voice, prioritizing non-male if possible.
-    const usVoices = voices.filter(v => v.lang.startsWith('en-US'));
-    const femaleUSVoice = usVoices.find(v => !v.name.includes('Male')) || usVoices[0];
+  });
 
-    // 3. Final fallback to any English voice
-    preferredVoice = femaleUSVoice || voices.find(v => v.lang.startsWith('en-')) || voices[0];
-}
+/**
+ * Try to pick a modern, pleasant, natural voice.
+ * Priority list includes Google/Microsoft/iOS high-quality voices.
+ */
+function choosePleasantVoice(voices) {
+  if (!voices?.length) return null;
 
-// Ensure voices are loaded (they might be empty initially)
-if ('speechSynthesis' in window) {
-    // Attempt to find voices immediately
-    findAndSetVoice(); 
-    // Set up listener for when voices finish loading
-    window.speechSynthesis.onvoiceschanged = findAndSetVoice;
-}
+  // Normalized name matcher
+  const n = (v) => (v?.name || '').toLowerCase();
 
+  // 1) Hard-preferred voices (very natural on Chrome/Edge/iOS/macOS)
+  const preferredNames = [
+    // Google voices (Chrome)
+    'google us english', 'google uk english female', 'google uk english male',
+    // Microsoft neural voices (Edge on Windows)
+    'microsoft aria online', 'microsoft aria', 'microsoft jenny online', 'microsoft jenny',
+    // Apple voices (Safari/macOS/iOS)
+    'samantha', 'victoria', 'serena', 'karen', 'olivia', 'ava'
+  ];
 
-// ---- verbalize maths facts (UPDATED) ----
-const speak = (text) => {
-  try {
-    if (!('speechSynthesis' in window)) return; // no-op if unsupported
-    const synth = window.speechSynthesis;
-    synth.cancel(); // stop anything already speaking
-    
-    // Ensure voice is set, especially if onvoiceschanged fired late
-    if (!preferredVoice) findAndSetVoice();
-
-    const u = new SpeechSynthesisUtterance(text);
-    
-    // Use the preferred voice and language
-    if (preferredVoice) {
-        u.voice = preferredVoice;
-        u.lang = preferredVoice.lang; // Use the specific voice's language
-    } else {
-        // Fallback defaults
-        u.lang = 'en-US';
-    }
-    
-    u.rate = 1.0;   // Keep rate at 1.0 for a neutral pace
-    u.pitch = 1.3;  // Slightly increase pitch to make it sound friendlier/less deep
-
-    synth.speak(u);
-  } catch (e) {
-      console.error("Speech synthesis failed:", e);
+  for (const pname of preferredNames) {
+    const hit = voices.find(v => n(v).includes(pname));
+    if (hit) return hit;
   }
-};
 
+  // 2) Prefer en-US / en-GB female-like voices
+  const enVoices = voices.filter(v =>
+    (v.lang || '').toLowerCase().startsWith('en') || /english/i.test(v.lang || v.name)
+  );
 
-const stopSpeaking = () => {
-  try {
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  } catch {}
-};
+  // Some engines mark "female" in name/voiceURI
+  const likelyPleasant = enVoices.find(v =>
+    /female|samantha|victoria|serena|karen|aria|jenny/i.test(v.name + ' ' + v.voiceURI)
+  );
+  if (likelyPleasant) return likelyPleasant;
 
-// Build a natural sentence from a fact like "0 + 1 = 1"
+  // 3) Otherwise just grab first good English voice
+  return enVoices[0] || voices[0] || null;
+}
+
+/** Build a natural sentence from a fact like "0 + 1 = 1" */
 const buildSpokenFact = (q) => {
   if (!q) return '';
-  const expr = String(q.question).trim();
-  const cleaned = expr.replace(/\s+/g, ''); // "0+1" / "3-2" / "4*5" / "6/3"
+  const expr = String(q.question ?? '').trim();
+  const cleaned = expr.replace(/\s+/g, '');
 
-  // Try to parse "A op B"
+  // Accept + - x × * / ÷
   const m = cleaned.match(/^(-?\d+)\s*([+\-x×*/÷])\s*(-?\d+)$/i);
   if (m) {
     const a = m[1];
@@ -109,13 +97,44 @@ const buildSpokenFact = (q) => {
     const opWord =
       op === '+' ? 'plus' :
       op === '-' ? 'minus' :
-      op === 'x' || op === '×' || op === '*' ? 'times' :
-      op === '/' || op === '÷' ? 'divided by' : '';
+      (op === 'x' || op === '×' || op === '*') ? 'times' :
+      (op === '/' || op === '÷') ? 'divided by' : '';
     return `${a} ${opWord} ${b} equals ${q.correctAnswer}`;
   }
 
-  // Fallback: read literally
+  // Fallback
   return `${expr} equals ${q.correctAnswer}`;
+};
+
+const stopSpeaking = () => {
+  try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch {}
+};
+
+const speak = async (text) => {
+  try {
+    if (!('speechSynthesis' in window) || !text) return;
+    const synth = window.speechSynthesis;
+
+    // Cancel anything already speaking
+    synth.cancel();
+
+    // Load/cache voices
+    if (!_cachedVoices.length) _cachedVoices = await loadVoices();
+    if (!_cachedPreferredVoice) _cachedPreferredVoice = choosePleasantVoice(_cachedVoices);
+
+    const u = new SpeechSynthesisUtterance(text);
+
+    // Assign the pleasant voice if found
+    if (_cachedPreferredVoice) u.voice = _cachedPreferredVoice;
+
+    // Tuned for clarity & warmth
+    u.lang = (u.voice?.lang) || 'en-US';
+    u.rate = 0.95;   // slightly slower than default
+    u.pitch = 1.0;   // natural
+    u.volume = 1.0;  // full volume
+
+    synth.speak(u);
+  } catch {}
 };
 
 
@@ -148,6 +167,18 @@ const LearningModule = () => {
   const isPreQuizFlow = !isIntervention && preQuizPracticeItems?.length > 0;
 
   const [isClosing, setIsClosing] = useState(false);
+
+  // Warm up voices once so the first spoken fact uses the pleasant voice
+useEffect(() => {
+  (async () => {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      if (!_cachedVoices.length) _cachedVoices = await loadVoices();
+      if (!_cachedPreferredVoice) _cachedPreferredVoice = choosePleasantVoice(_cachedVoices);
+    } catch {}
+  })();
+}, []);
+
   
   // --- INIT & RESET ---
   useEffect(() => {
