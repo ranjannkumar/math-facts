@@ -39,6 +39,10 @@ export const authLogin = async (pin, name = 'Player') => {
   return callApi('/auth/login-pin', 'POST', { pin, name });
 };
 
+export const userUpdateTheme = async (themeKey, pin) => {
+  return callApi('/user/theme', 'POST', { themeKey }, pin);
+};
+
 // FIX: Ensure quizPrepare receives and passes the pin parameter.
 // The useMathGame hook already calls this correctly with the pin.
 export const quizPrepare = async (level, beltOrDegree, pin, operation = 'add') => { 

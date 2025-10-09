@@ -1,5 +1,5 @@
 // src/components/NameForm.jsx
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { MathGameContext } from '../App.jsx';
 
 const NameForm = () => {
@@ -10,6 +10,10 @@ const NameForm = () => {
   } = useContext(MathGameContext);
 
   const [error, setError] = useState('');
+
+    useEffect(() => {
+    handlePinChange({ target: { value: '' } });
+  }, [handlePinChange]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -26,10 +30,6 @@ const NameForm = () => {
     }
   };
 
-  /**
-   * Handles button clicks from the custom keypad to update the PIN.
-   * It simulates an event object expected by handlePinChange.
-   */
   const handleKeypadInput = (key) => {
     let newPin = childPin;
     
@@ -42,16 +42,13 @@ const NameForm = () => {
         newPin = childPin + key;
     }
 
-    // Call the original handler in context with a synthetic event object
     handlePinChange({ target: { value: newPin } });
   };
   
-  // FINAL KeypadButton Component Update
 const KeypadButton = ({ value, label, className }) => (
     <button
         type="button"
         onClick={() => handleKeypadInput(value)}
-        // Fixed widths removed, now using w-full and applying the passed className
         className={`h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center ${className || ''}`}
         tabIndex="-1" 
     >
@@ -71,19 +68,20 @@ const KeypadButton = ({ value, label, className }) => (
     >
       <div className="bg-white/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-full flex flex-col items-center relative z-10 mx-2 sm:mx-4 w-full max-w-sm backdrop-blur-md">
 
-        <form onSubmit={onSubmit} className="w-full flex flex-col items-center">
+        <form onSubmit={onSubmit} className="w-full flex flex-col items-center" autoComplete="off">
           <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
              Enter Your Passcode
           </label>
 
           <input
             className="w-full max-w-[380px] mb-4 sm:mb-6 px-4 sm:px-6 py-2 sm:py-2 rounded-xl sm:rounded-2xl opacity-80 text-white font-bold text-center text-4xl tracking-widest transition-all duration-200 bg-gray-800/50 outline-none focus:ring focus:ring-white/40"
-            value={childPin}
+            value={childPin || ''}
             readOnly 
             type="password"
             maxLength={4}
-            autoComplete="off"
             inputMode="none" 
+            autoComplete="new-password"
+            name="passcode"   
           />
 
           <div className="grid grid-cols-4 gap-3 mb-4 mx-auto justify-items-center">

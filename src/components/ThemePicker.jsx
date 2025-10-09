@@ -14,8 +14,13 @@ const ThemePicker = () => {
   const navigate = ctx?.navigate || rrNavigate; // safe fallback
   const setSelectedTheme = ctx?.setSelectedTheme || (() => {});
 
-  const [themePickerMode] = useState('slide');
-  const [currentThemeIdx, setCurrentThemeIdx] = useState(0);
+   // NEW: Get the saved theme key to determine if selection is locked
+  const userSavedThemeKey = ctx?.userSavedThemeKey; 
+  const isLocked = !!userSavedThemeKey && userSavedThemeKey.length > 0; // Check if backend theme is set
+  
+
+  // const [themePickerMode] = useState('slide');
+  // const [currentThemeIdx, setCurrentThemeIdx] = useState(0);
 
   // 1) Age → preferred theme keys
   const age = localStorage.getItem('math-child-age') || '5';
@@ -46,27 +51,36 @@ const ThemePicker = () => {
       : [{ key: 'space', image: '', tableEmojis: ['🚀', '🛰️', '🪐', '🌌', '☄️', '⭐'] }];
   }, [preferredKeys]);
 
+   
+  // Determine starting index: if locked, start on the saved theme
+  const savedThemeIndex = themes.findIndex(t => t.key === userSavedThemeKey);
+
+  const [themePickerMode] = useState('slide');
+  const [currentThemeIdx, setCurrentThemeIdx] = useState(
+      isLocked && savedThemeIndex !== -1 ? savedThemeIndex : 0 // MODIFIED: Start at saved theme if locked
+  );
+
   const currentTheme =
     themes[Math.min(Math.max(currentThemeIdx, 0), themes.length - 1)];
 
   const handleBackToNameForm = () => navigate('/name');
 
   const gotoPrev = () => {
-    if (!themes.length) return;
+    if (!themes.length || isLocked) return; // ADDED: disabled if locked
     setCurrentThemeIdx((i) => (i - 1 + themes.length) % themes.length);
   };
 
   const gotoNext = () => {
-    if (!themes.length) return;
+    if (!themes.length || isLocked) return; // ADDED: disabled if locked
     setCurrentThemeIdx((i) => (i + 1) % themes.length);
   };
 
   const handleChooseTheme = () => {
-    if (!themes.length || !currentTheme) return;
+    if (!themes.length || !currentTheme || isLocked) return;
     // Persist the whole theme object (key + config) into context
     setSelectedTheme(currentTheme);
-    try { localStorage.setItem('math-selected-theme', currentTheme.key); } catch {}
-    navigate('/levels');
+    // try { localStorage.setItem('math-selected-theme', currentTheme.key); } catch {}
+    // navigate('/levels');
   };
 
   return (
@@ -101,7 +115,7 @@ const ThemePicker = () => {
         className="font-baloo text-white text-center drop-shadow-lg"
         style={{ fontSize: 'clamp(1.5rem, 6vw, 2.5rem)' }}
       >
-        Choose Your Adventure!
+        {isLocked ? `Your Adventure: ${cardTitle(currentTheme?.key || '')}` : 'Choose Your Adventure!'} 
       </h1>
 
       {themePickerMode === 'slide' && (
@@ -123,8 +137,8 @@ const ThemePicker = () => {
               }}
               onClick={gotoPrev}
               aria-label="Previous Adventure"
-              disabled={!themes.length}
-              title={!themes.length ? 'No themes available' : 'Previous'}
+               disabled={!themes.length || isLocked} 
+              title={!themes.length ? 'No themes available' : (isLocked ? 'Theme is locked' : 'Previous')}
             >
               &#8592;
             </button>
@@ -178,8 +192,8 @@ const ThemePicker = () => {
               }}
               onClick={gotoNext}
               aria-label="Next Adventure"
-              disabled={!themes.length}
-              title={!themes.length ? 'No themes available' : 'Next'}
+              disabled={!themes.length || isLocked}
+              title={!themes.length ? 'No themes available' : (isLocked ? 'Theme is locked' : 'Next')}
             >
               &#8594;
             </button>
@@ -187,8 +201,8 @@ const ThemePicker = () => {
 
           <button
             className={`kid-btn text-white font-bold rounded-2xl mt-2 ${
-              themes.length ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'
-            }`}
+              themes.length && !isLocked ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'
+            }`} 
             style={{
               padding: 'clamp(0.5rem, 2vw, 1rem) clamp(1rem, 4vw, 2rem)',
               fontSize: 'clamp(0.875rem, 3vw, 1.25rem)',

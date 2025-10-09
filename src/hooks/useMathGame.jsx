@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import audioManager from '../utils/audioUtils.js';
+import { themeConfigs } from '../utils/mathGameLogic.js';
 // Import API functions
 import {
   authLogin,
@@ -14,6 +15,7 @@ import {
   quizStart,
   quizSubmitAnswer,
   userResetProgress,
+  userUpdateTheme, 
 } from '../api/mathApi.js';
 
 // Constant for inactivity timeout (same as backend, 5000ms)
@@ -58,6 +60,7 @@ const useMathGame = () => {
 
   // Identity and Progress
   const [selectedTheme, setSelectedTheme] = useState(null);
+  const [userThemeKey, setUserThemeKey] = useState(null);
   const [childName, setChildName] = useState(() => localStorage.getItem('math-child-name') || '');
   const [childAge, setChildAge] = useState(() => localStorage.getItem('math-child-age') || '');
   const [childPin, setChildPin] = useState(() => localStorage.getItem('math-child-pin') || '');
@@ -162,6 +165,19 @@ const useMathGame = () => {
 
         localStorage.setItem('math-child-name', loginResponse.user.name);
         setChildName(loginResponse.user.name);
+
+        // 2. Process results - ADD THEME RETRIEVAL
+        const themeKeyFromBackend = loginResponse.user.theme || null;
+        setUserThemeKey(themeKeyFromBackend); // Store theme key from backend
+        
+        // Set the active theme object based on backend
+        if (themeKeyFromBackend && themeKeyFromBackend.length > 0) {
+            const config = themeConfigs[themeKeyFromBackend];
+             if (config) setSelectedTheme({ key: themeKeyFromBackend, ...config });
+        } else {
+             setSelectedTheme(null); // No theme saved yet
+        }
+        
         
         // 2. Fetch progression data and daily stats CONCURRENTLY
         // const [progressResponse, stats] = await Promise.all([
@@ -180,7 +196,11 @@ const useMathGame = () => {
         setGrandTotalCorrect(stats?.grandTotal || 0); // Store Grand Total
 
         // navigate('/pre-test-popup');
-        navigate('/theme')
+        if (themeKeyFromBackend && themeKeyFromBackend.length > 0 && themeKeyFromBackend !== 'null') {
+             navigate('/levels');
+        } else {
+             navigate('/theme');
+        }
 
       } catch (e) {
         throw new Error(e.message || 'Login failed.');
@@ -188,6 +208,28 @@ const useMathGame = () => {
     },
     [childName, navigate, hardResetQuizState]
   );
+
+  // ADDED: New function to persist theme to backend and navigate
+  const updateThemeAndNavigate = useCallback(async (themeObject) => {
+      const themeKey = themeObject?.key;
+      if (!themeKey) return;
+      
+      // 1. Persist to backend (will fail with 403 if theme is already locked)
+      try {
+          await userUpdateTheme(themeKey, childPin);
+          // 2. Update local state
+          setUserThemeKey(themeKey); 
+          setSelectedTheme(themeObject);
+          // 3. Navigate to next screen
+          navigate('/levels');
+      } catch (e) {
+          console.error('Failed to save theme:', e.message);
+          // If the failure is due to the theme being locked (403), we still proceed.
+          // The selectedTheme is still set to the new one for the current session.
+          setSelectedTheme(themeObject);
+          navigate('/levels');
+      }
+  }, [childPin, navigate]);
 
   const startActualQuiz = useCallback(
     async (runId) => {
@@ -616,6 +658,11 @@ const useMathGame = () => {
     childAge, setChildAge, handleAgeChange,
     childPin, setChildPin, handlePinChange,
     handlePinSubmit,
+
+    userSavedThemeKey: userThemeKey, // EXPOSED: Key to check if theme is locked
+    selectedTheme,
+    setSelectedTheme: updateThemeAndNavigate, 
+    
     handleResetProgress: handleInitiateReset,
     handleConfirmReset, handleCancelReset,
     handleConfirmQuit, handleCancelQuit,
