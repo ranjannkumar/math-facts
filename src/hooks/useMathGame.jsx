@@ -20,7 +20,6 @@ import {
 
 // Constant for inactivity timeout (same as backend, 5000ms)
 const INACTIVITY_TIMEOUT_MS = 5000;
-const STREAK_PAUSE_MS = 2000;
 
 const useMathGame = () => {
   const navigate = useNavigate();
@@ -50,16 +49,6 @@ const useMathGame = () => {
   const [currentQuestion, setCurrentQuestion] = useState(null); // Full question object (from mapQuestionToFrontend)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [maxQuestions, setMaxQuestions] = useState(10);
-
-
-    
-  // --- STREAK STATE (NEW) ---
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [lightningStreakCount, setLightningStreakCount] = useState(0); 
-  const [showStreakAnimation, setShowStreakAnimation] = useState(false);
-  const [streakType, setStreakType] = useState(null); // 'high-speed' or 'standard'
-  const [streakPoints, setStreakPoints] = useState(0); // Points to display in animation
-  // --- END STREAK STATE ---
 
   // Timers
   const [quizStartTime, setQuizStartTime] = useState(null);
@@ -146,14 +135,6 @@ const useMathGame = () => {
     setShowResult(false);
     setIsAnimating(false);
     setInterventionQuestion(null);
-
-    // --- STREAK RESET (NEW) ---
-    setCurrentStreak(0); 
-    setLightningStreakCount(0);
-    setShowStreakAnimation(false);
-    setStreakType(null);
-    setStreakPoints(0);
-    // --- END STREAK RESET ---
   }, []);
 
   // --- API / LIFECYCLE ---
@@ -337,62 +318,47 @@ const useMathGame = () => {
   );
   
   // 3. Answer
- // 3. Answer
   const handleAnswer = useCallback(
     async (selectedAnswer) => {
       if (isAnimating || showResult || isTimerPaused || !currentQuestion || !quizRunId) return;
       setIsAnimating(true);
+      
+      const responseMs = Date.now() - questionStartTimestamp.current;
+      const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+      const questionId = currentQuestion.id;
       
       if (inactivityTimeoutId.current) {
         clearTimeout(inactivityTimeoutId.current);
         inactivityTimeoutId.current = null;
       }
       
-      const responseMs = Date.now() - questionStartTimestamp.current;
-      const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
-      const questionId = currentQuestion.id;
-      
-      
-      // --- LOCAL UI UPDATE & SYMBOL DETERMINATION ---
+      // Update client-side UI first (optimistic symbol)
       const timeTaken = responseMs / 1000;
       let symbol;
-      let newCorrectStreak = currentStreak;
-      let newLightningStreakCount = lightningStreakCount;
-      
-      if (isCorrect) {
-        newCorrectStreak += 1;
+       if (isCorrect) {
         if (timeTaken <= 1.5) {
             symbol = '⚡';
             audioManager.playLightningSound(); 
         } 
+        // else if (timeTaken <= 2) {
+        //     symbol = '⭐';
+        //     audioManager.playStarSound(); 
+        // } 
         else if (timeTaken <= 5) {
             symbol = '✓';
-            audioManager.playCheckSound(); 
+            audioManager.playCompleteSound(); 
         } else {
             symbol = '✓'; 
-            audioManager.playCheckSound();
+            audioManager.playWrongSound();
         }
-        
-        newLightningStreakCount = (symbol === '⚡') ? (lightningStreakCount + 1) : 0;
-        
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
-        
       } else {
-        symbol = '✕'; // Explicitly mark wrong answers in the bar
+        symbol = '';
         audioManager.playWrongSound();
         setWrongCount((w) => w + 1);
-        setAnswerSymbols((prev) => [...prev, { symbol: '✕', isCorrect: false, timeTaken }]);
-        
-        // Reset streak immediately on local failure anticipation
-        newCorrectStreak = 0; 
-        newLightningStreakCount = 0;
+        setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
       }
-      
-      // Update local streak counters (will be finalized after server response)
-      setCurrentStreak(newCorrectStreak);
-      setLightningStreakCount(newLightningStreakCount);
-      // --- END LOCAL UI UPDATE ---
       
       // Send answer to backend to get next state
       try {
@@ -407,121 +373,57 @@ const useMathGame = () => {
           );
 
           console.log('Quiz Submit Answer Response:', out);
-          
-          
-          // --- STREAK LOGIC CHECK ---
-          let triggerStreak = false;
-          let determinedStreakType = null;
-          let pointsEarned = 0;
-          const streakLengths = [3, 5, 10];
-          
-          if (out.next) {
-              const finalStreakLength = newCorrectStreak; 
-              
-              if (streakLengths.includes(finalStreakLength)) {
-                  triggerStreak = true;
-                  pointsEarned = finalStreakLength;
-                  
-                  // Get the current list of symbols (including the latest one just added to state in the local update)
-                  const allSymbols = answerSymbols.slice(-finalStreakLength + 1); 
-                  const streakAnswers = [...allSymbols, { symbol, isCorrect: true, timeTaken }];
-                  
-                  // 1. Check for All-Lightning Streak (High-Speed)
-                  const allLightning = streakAnswers.every(a => a.symbol === '⚡');
-                  
-                  if (allLightning) {
-                       determinedStreakType = 'high-speed';
-                  } 
-                  // 2. Standard Streak (Not All-Lightning, but correct)
-                  else {
-                       determinedStreakType = 'standard';
-                  }
-              }
-              
-              if (triggerStreak) {
-                   console.log('STREAK TRIGGERED:', finalStreakLength, 'Type:', determinedStreakType);
-                  
-                  // 1. Pause timer
-                  setIsTimerPaused(true);
-                  setPausedTime(Date.now()); // Capture pause time
-
-                  // 2. Set animation state
-                  setStreakType(determinedStreakType);
-                  setStreakPoints(pointsEarned);
-                  setShowStreakAnimation(true);
-                  audioManager.playCompleteSound(); // Use pleasant sound for streak celebration
-                 
-                  // 3. Wait for STREAK_PAUSE_MS
-                  await new Promise(resolve => setTimeout(resolve, STREAK_PAUSE_MS));
-                  
-                  // 4. Clear animation state
-                  setShowStreakAnimation(false);
-                  setStreakType(null);
-                  setStreakPoints(0);
-                  
-                  // 5. Reset streak counters for the next cycle
-                  setCurrentStreak(0);
-                  setLightningStreakCount(0);
-                  
-                  // 6. Resume timer after clearing state
-                  setIsTimerPaused(false);
-              } else {
-                  // No streak, state counters were already updated locally
-              }
-             
-              // --- Continue to next question ---
-              setCurrentQuestion(mapQuestionToFrontend(out.next));
-              setCurrentQuestionIndex(prev => prev + 1);
-              questionStartTimestamp.current = Date.now();
-              setIsAnimating(false);
-              
-              if (out.dailyStats) {
-                  setCorrectCount(out.dailyStats.correctCount);
-                  setDailyTotalMs(out.dailyStats.totalActiveMs);
-                  if (out.dailyStats.grandTotal !== undefined) { 
-                          setGrandTotalCorrect(out.dailyStats.grandTotal); 
-                      }
-              }
-              
-          } else if (out.completed) {
-              // Reset streaks on completion/failure
-              setCurrentStreak(0);
-              setLightningStreakCount(0);
-              
-              const totalTimeMs = out.summary?.totalActiveMs || (elapsedTime * 1000);
-                  const sessionTimeSeconds = Math.round(totalTimeMs / 1000); 
+          // Handle server response
+          if (out.completed) {
+            // Extract the total time in seconds from the response summary
+             const totalTimeMs = out.summary?.totalActiveMs || (elapsedTime * 1000);
+                  const sessionTimeSeconds = Math.round(totalTimeMs / 1000); // Round to nearest second
 
                   localStorage.setItem('math-last-quiz-duration', sessionTimeSeconds);
                   setShowResult(true);
                   setIsAnimating(false);
 
-                  setQuizStartTime(null); 
+                  setQuizStartTime(null); // Stop the session timer interval
                   setElapsedTime(0);  
                   
+                  //Set session score from API response
                   setSessionCorrectCount(out.sessionCorrectCount || 0); 
 
                   if (out.dailyStats) {
-                setCorrectCount(out.dailyStats.correctCount); 
-                setDailyTotalMs(out.dailyStats.totalActiveMs); 
-                if (out.dailyStats.grandTotal !== undefined) { 
+                setCorrectCount(out.dailyStats.correctCount); // Update score instantly
+                setDailyTotalMs(out.dailyStats.totalActiveMs); // Update time base instantly
+                if (out.dailyStats.grandTotal !== undefined) { //  Update grand total
                         setGrandTotalCorrect(out.dailyStats.grandTotal); 
                     }
            }  
 
+                  //  Refetch progress & daily stats after completion/failure
                    if (out.updatedProgress) {
                       setTableProgress(out.updatedProgress);
                   }
                   navigate(out.passed ? '/results' : '/way-to-go', { replace: true,state: { sessionTimeSeconds } });
 
+          } else if (out.next) {
+                  setCurrentQuestion(mapQuestionToFrontend(out.next));
+                  setCurrentQuestionIndex(prev => prev + 1);
+                  questionStartTimestamp.current = Date.now();
+                  setIsAnimating(false);
+                   if (out.dailyStats) {
+                    setCorrectCount(out.dailyStats.correctCount);
+                    setDailyTotalMs(out.dailyStats.totalActiveMs);
+                    if (out.dailyStats.grandTotal !== undefined) {
+                        setGrandTotalCorrect(out.dailyStats.grandTotal); 
+                    }
+                    setQuizStartTime(Date.now());
+                  }
           } else if (out.practice) {
-              // Intervention/Wrong Answer - Streaks reset locally at the top
-              setIsTimerPaused(true);
-              setPausedTime(Date.now());
-              setInterventionQuestion(mapQuestionToFrontend(out.practice));
-              setShowLearningModule(true);
-              navigate('/learning');
-              setIsAnimating(false);
-          } else {
+                  setIsTimerPaused(true);
+                  setPausedTime(Date.now());
+                  setInterventionQuestion(mapQuestionToFrontend(out.practice));
+                  setShowLearningModule(true);
+                  navigate('/learning');
+                  setIsAnimating(false);
+          }else {
              setIsAnimating(false);
           }
       } catch (e) {
@@ -529,11 +431,9 @@ const useMathGame = () => {
           alert('Error during quiz: ' + e.message);
           setIsAnimating(false);
           navigate('/belts');
-          setCurrentStreak(0);
-          setLightningStreakCount(0);
       }
     },
-    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions, currentStreak, lightningStreakCount, answerSymbols, elapsedTime, pausedTime]
+    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions]
   );
   
   // 4. Handle Practice Answer Submission (for LearningModule intervention)
@@ -769,13 +669,6 @@ const useMathGame = () => {
     handleQuit: handleInitiateQuit,
     showQuitModal, setShowQuitModal, showResetModal, setShowResetModal,
     showSettings, setShowSettings,
-
-
-    // --- NEW STREAK EXPORTS ---
-    showStreakAnimation,
-    streakType,
-    streakPoints,
-    // --- END NEW STREAK EXPORTS ---
     // Progression Data
     tableProgress, setTableProgress,
     preTestSection, setPreTestSection,
