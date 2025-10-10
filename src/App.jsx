@@ -17,6 +17,8 @@ import PreTestScreen from './components/PreTestScreen.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
 import MainLayout from './components/MainLayout.jsx';
 
+import StreakAnimation from './components/ui/StreakAnimation.jsx';
+
 import { clearShootingStars } from './utils/mathGameLogic.js';
 import audioManager from './utils/audioUtils.js';
 
@@ -104,6 +106,10 @@ const App = () => {
           </div>
         </div>
       )}
+
+        
+      {/* NEW: Streak Animation Overlay */}
+      {ctx.showStreakAnimation && <StreakAnimation />} 
     </MathGameContext.Provider>
   );
 };
