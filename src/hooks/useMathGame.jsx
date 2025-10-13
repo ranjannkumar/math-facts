@@ -177,13 +177,6 @@ const useMathGame = () => {
         } else {
              setSelectedTheme(null); // No theme saved yet
         }
-        
-        
-        // 2. Fetch progression data and daily stats CONCURRENTLY
-        // const [progressResponse, stats] = await Promise.all([
-        //   userGetProgress(pinValue),
-        //   userGetDailyStats(pinValue)
-        // ]);
         const progressResponse = loginResponse.user.progress || {};
         const stats = loginResponse.user.dailyStats || {};
 
@@ -209,7 +202,7 @@ const useMathGame = () => {
     [childName, navigate, hardResetQuizState]
   );
 
-  // ADDED: New function to persist theme to backend and navigate
+  //New function to persist theme to backend and navigate
   const updateThemeAndNavigate = useCallback(async (themeObject) => {
       const themeKey = themeObject?.key;
       if (!themeKey) return;
@@ -454,7 +447,7 @@ const useMathGame = () => {
         setIsTimerPaused(false);
         setElapsedTime(0);
         
-        // CRITICAL: Update session score from backend response before LearningModule navigates
+        //  Update session score from backend response before LearningModule navigates
         setSessionCorrectCount(out.sessionCorrectCount || 0); 
         
         return out; 

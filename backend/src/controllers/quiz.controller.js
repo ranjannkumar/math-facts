@@ -22,7 +22,7 @@ export async function answer(req, res, next) {
     const { quizRunId, questionId, answer, responseMs } = req.body;
     const out = await QuizSvc.submitAnswer(quizRunId, questionId, answer, responseMs);
     
-    if (out.completed && out.passed && out.summary) { // FIX: Check for summary existence
+    if (out.completed && out.passed && out.summary) { //  Check for summary existence
      const updatedUser = await ProgressSvc.unlockOnPass( 
           req.user, 
           out.summary.level,

@@ -6,10 +6,10 @@ import Catalog from '../models/Catalog.js';
 import { isBlack, getBlackTiming } from '../utils/belts.js';
 import { newSeed } from '../utils/helpers.js';
 
-// --- NEW: In-memory cache for canonical pairs to drastically speed up quiz generation ---
+// --- In-memory cache for canonical pairs to drastically speed up quiz generation ---
 let canonicalPairsCache = null;
 
-// NEW: Function to populate the cache
+// Function to populate the cache
 export async function cacheCanonicalPairs() {
   console.log('Starting canonical pair cache warm...');
   const allCatalogs = await Catalog.find({}).lean();
@@ -37,7 +37,7 @@ function choiceSet(correct){
   return shuffle(Array.from(uniq).slice(0,4));
 }
 
-// 💥 NEW: Function for bulk insert (Used once per quiz set)
+//  Function for bulk insert (Used once per quiz set)
 export async function bulkCreateQuestions(questionObjects){
     // Use insertMany to perform a single, efficient database write
     const docs = await GeneratedQuestion.insertMany(questionObjects, { ordered: false });
@@ -82,7 +82,7 @@ function reorderNoConsecutiveDuplicates(questions) {
       const targetQuestion = result[i - 1].question;
       const questionToMove = result[i].question; // This is the duplicate question string
 
-      // 1. Search forward (i+1 to end) for a suitable non-identical question
+      // Search forward (i+1 to end) for a suitable non-identical question
       for (let j = i + 1; j < result.length; j++) {
         if (result[j].question !== targetQuestion) {
           swapIndex = j;
@@ -90,7 +90,7 @@ function reorderNoConsecutiveDuplicates(questions) {
         }
       }
       
-      // 2. FALLBACK: If no forward candidate found, search backward (0 to i-2).
+      //  If no forward candidate found, search backward (0 to i-2).
       if (swapIndex === -1) {
           for (let j = 0; j < i - 1; j++) {
               const candidateQuestion = result[j].question;
@@ -115,7 +115,7 @@ function reorderNoConsecutiveDuplicates(questions) {
   return result;
 }
 
-// 1. MODIFIED: Function to create an in-memory question object (no DB call)
+//Function to create an in-memory question object (no DB call)
 async function createQuestionObject(operation, level, beltOrDegree, a, b, source, questionStringOverride = null){
   const correct = a+b;
   const choices = choiceSet(correct);
@@ -232,7 +232,7 @@ function samplePreviousObject(pool, n){
 
 
 /* ---------- buildQuizSet for a belt/degree (The orchestrator) ---------- */
-// MODIFIED: This function now collects all questions and uses bulkCreateQuestions.
+//This function now collects all questions and uses bulkCreateQuestions.
 export async function buildQuizSet(operation, level, beltOrDegree){
   let questionObjects = [];
   const pool = await getPreviousPool(operation, level, beltOrDegree);
@@ -259,7 +259,7 @@ export async function buildQuizSet(operation, level, beltOrDegree){
     const [a,b] = pair;
     const isIdentical = a===b;
     
-    // NEW questions from current belt:
+    // questions from current belt:
     const news = [];
     if (isIdentical) {
       news.push(await createQuestionObject(operation, level, beltOrDegree, a, b, 'current'));
@@ -297,7 +297,7 @@ export async function buildQuizSet(operation, level, beltOrDegree){
   }
 
 
-  // 💥 Perform BULK INSERT - This is the primary optimization for quiz start latency
+  //  Perform BULK INSERT - This is the primary optimization for quiz start latency
   const insertedQuestions = await bulkCreateQuestions(questionObjects); 
 
   // Shuffle and reorder for the final set

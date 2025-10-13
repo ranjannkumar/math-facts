@@ -32,7 +32,7 @@ export async function prepare(user, { level, beltOrDegree, operation }) {
 
  const practiceObjects = await practiceFactsForBelt(operation, level, beltOrDegree);
   
-  // 💥 NEW: Save practice items to DB now, using bulk insert
+  //Save practice items to DB now, using bulk insert
   // This is required to get the MongoDB _id for client-side practice tracking.
   const savedPractice = await bulkCreateQuestions(practiceObjects);
 
@@ -46,8 +46,8 @@ export async function start(runId) {
   if (!run) throw new Error('Quiz run not found');
   if (run.status !== 'prepared') throw new Error('Quiz already started');
 
-  // [CHANGE 1: Generate the full quiz set of SAVED documents]
-   // MODIFIED: buildQuizSet now returns the list of *saved* GeneratedQuestion documents.
+  // Generate the full quiz set of SAVED documents
+  // buildQuizSet now returns the list of *saved* GeneratedQuestion documents.
   const quizQuestions = await buildQuizSet(run.operation, run.level, run.beltOrDegree);
   
   // Use the actual _id from the inserted documents
@@ -96,7 +96,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
   });
 
   if (!isCorrect) {
-    // Wrong answer: pause timer, set practice required, and return question for intervention.
+    // Wrong  answer:pause timer, set practice required, and return question for intervention.
     pauseTimer(run);
     run.stats.wrong += 1; 
     item.practiceRequired = true;
@@ -125,7 +125,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
 
   const updatedDaily = await incDaily(run.user, 1, timeDelta);
 
-  // NEW: Atomically increment the grand total on the User document
+  // Atomically increment the grand total on the User document
   await User.findByIdAndUpdate(run.user, { $inc: { grandTotalCorrect: 1 } }); 
   
 
