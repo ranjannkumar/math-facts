@@ -12,8 +12,8 @@ export async function prepare(req, res, next) {
 export async function start(req, res, next) {
   try {
     const { quizRunId } = req.body;
-    const { run, question } = await QuizSvc.start(quizRunId);
-    res.json({ quizRunId: run._id, question, timer: run.timer });
+     const { run, questions } = await QuizSvc.start(quizRunId);
+    res.json({ quizRunId: run._id, questions, timer: run.timer }); 
   } catch (e) { next(e); }
 }
 

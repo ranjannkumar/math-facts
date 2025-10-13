@@ -56,9 +56,7 @@ export async function start(runId) {
   startTimer(run);
   await run.save();
 
-  // Return the actual first question document
-  const firstQ = quizQuestions[0]; 
-  return { run, question: firstQ };
+   return { run, questions: quizQuestions };
 }
 
 // ------------- ANSWER -------------
@@ -162,7 +160,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
         beltOrDegree: run.beltOrDegree
     };
 
-    console.log('Quiz completed for user', run.user, 'Level:', run.level, 'Belt/Degree:', run.beltOrDegree, 'Passed:', passed, 'Summary:', summary);
+    // console.log('Quiz completed for user', run.user, 'Level:', run.level, 'Belt/Degree:', run.beltOrDegree, 'Passed:', passed, 'Summary:', summary);
 
     
     await run.save();
@@ -171,12 +169,12 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
 
   // continue: resume timer, return next question
   resumeTimer(run);
-    const [_, nextQDoc] = await Promise.all([
-        run.save(),
-        GeneratedQuestion.findById(run.items[run.currentIndex].questionId)
-    ]);
-    
-    return { next: nextQDoc.toObject(), dailyStats: updatedDaily };
+    await run.save(); 
+  
+  return { 
+      nextIndex: run.currentIndex, // New field for client to advance
+      dailyStats: updatedDaily 
+  };
 }
 
 // ------------- INACTIVITY -------------

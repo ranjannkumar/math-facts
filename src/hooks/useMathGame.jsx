@@ -50,6 +50,8 @@ const useMathGame = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [maxQuestions, setMaxQuestions] = useState(10);
 
+   const [quizQuestions, setQuizQuestions] = useState([]);
+
   // Timers
   const [quizStartTime, setQuizStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -116,7 +118,7 @@ const useMathGame = () => {
       clearTimeout(inactivityTimeoutId.current);
       inactivityTimeoutId.current = null;
     }
-
+    setQuizQuestions([]);
     setQuizRunId(null);
     setPreQuizPracticeItems([]);
     setQuizProgress(0);
@@ -235,13 +237,13 @@ const useMathGame = () => {
           return;
       }
       try {
-        const { question: backendQuestion } = await quizStart(idToUse, childPin);
-        
-        if (!backendQuestion) throw new Error("No question returned from quiz start.");
+       const { questions: backendQuestions } = await quizStart(idToUse, childPin);
 
+        if (!backendQuestions || backendQuestions.length === 0) throw new Error("No questions returned from quiz start.");
+        const mappedQuestions = backendQuestions.map(mapQuestionToFrontend);
+        setQuizQuestions(mappedQuestions); // Cache all questions
         setCurrentQuestionIndex(0);
-        const firstQ = mapQuestionToFrontend(backendQuestion);
-        setCurrentQuestion(firstQ);
+        setCurrentQuestion(mappedQuestions[0]); // Set first question
 
         setQuizStartTime(Date.now());
         questionStartTimestamp.current = Date.now();
@@ -260,7 +262,7 @@ const useMathGame = () => {
         navigate('/belts');
       }
     },
-    [navigate, childPin, quizRunId]
+    [navigate, childPin, quizRunId, mapQuestionToFrontend]
   );
 
   // 1. Prepare (called from DifficultyPicker/BlackBeltPicker -> startQuizWithDifficulty)
@@ -365,7 +367,7 @@ const useMathGame = () => {
               childPin
           );
 
-          console.log('Quiz Submit Answer Response:', out);
+          // console.log('Quiz Submit Answer Response:', out);
           // Handle server response
           if (out.completed) {
             // Extract the total time in seconds from the response summary
@@ -396,11 +398,14 @@ const useMathGame = () => {
                   }
                   navigate(out.passed ? '/results' : '/way-to-go', { replace: true,state: { sessionTimeSeconds } });
 
-          } else if (out.next) {
-                  setCurrentQuestion(mapQuestionToFrontend(out.next));
-                  setCurrentQuestionIndex(prev => prev + 1);
-                  questionStartTimestamp.current = Date.now();
-                  setIsAnimating(false);
+          } else if (isCorrect) {
+                  const nextIndex = currentQuestionIndex + 1;
+                  if (nextIndex < quizQuestions.length) { //
+                    // Update state to next question from local cache
+                    setCurrentQuestion(quizQuestions[nextIndex]); 
+                    setCurrentQuestionIndex(nextIndex);
+                    questionStartTimestamp.current = Date.now();
+                    setIsAnimating(false);
                    if (out.dailyStats) {
                     setCorrectCount(out.dailyStats.correctCount);
                     setDailyTotalMs(out.dailyStats.totalActiveMs);
@@ -408,7 +413,12 @@ const useMathGame = () => {
                         setGrandTotalCorrect(out.dailyStats.grandTotal); 
                     }
                     setQuizStartTime(Date.now());
-                  }
+                  } 
+                } else {
+                   // Fallback if client runs out of questions before server signals completion
+                   console.warn("Client ran out of questions before server signaled completion.");
+                   setIsAnimating(false); 
+                }
           } else if (out.practice) {
                   setIsTimerPaused(true);
                   setPausedTime(Date.now());
@@ -426,7 +436,7 @@ const useMathGame = () => {
           navigate('/belts');
       }
     },
-    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions]
+    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions, quizQuestions, currentQuestionIndex,]
   );
   
   // 4. Handle Practice Answer Submission (for LearningModule intervention)
