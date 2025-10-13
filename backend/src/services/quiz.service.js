@@ -121,6 +121,19 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
       run.totalActiveMs += timeDelta;
   }
 
+   // 1. Non-blocking: Record attempt
+  Attempt.create({
+    quizRun: run._id,
+    questionId: q._id,
+    userAnswer: answer,
+    isCorrect,
+    responseMs,
+    reason: 'answer'
+  }).catch(err => console.error('Attempt creation failed non-blocking:', err));
+
+  // 2. Non-blocking: Atomically increment the grand total on the User document
+  User.findByIdAndUpdate(run.user, { $inc: { grandTotalCorrect: 1 } }).catch(err => console.error('User grand total update failed non-blocking:', err));
+
   const updatedDaily = await incDaily(run.user, 1, timeDelta);
 
   // Atomically increment the grand total on the User document
