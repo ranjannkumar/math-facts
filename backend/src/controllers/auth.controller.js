@@ -21,9 +21,8 @@ export async function loginPin(req, res, next) {
     }
 
      // Fetch required daily stats and embed into single response ---
-    const [todayDoc, grandTotal] = await Promise.all([
+    const [todayDoc] = await Promise.all([
       getTodaySvc(user._id),
-      getGrandTotalCorrectSvc(user._id)
     ]);
 
     // Part 3: Return user object including theme, progress, and dailyStats in one payload
@@ -31,13 +30,14 @@ export async function loginPin(req, res, next) {
       user: { 
         ...user.toObject(), 
         theme: user.theme,
+        // NEW: Read the denormalized total from the user object
+        grandTotal: user.grandTotalCorrect,
         // Embed progress data (converted from Mongoose Map)
         progress: Object.fromEntries(user.progress), 
         // Embed daily stats data
         dailyStats: { 
           correctCount: todayDoc.correctCount || 0,
           totalActiveMs: todayDoc.totalActiveMs || 0,
-          grandTotal: grandTotal || 0,
         }
       }, 
       token: pin 

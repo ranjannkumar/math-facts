@@ -1,21 +1,22 @@
-import React, { useEffect, createContext } from 'react';
+import React, { useEffect, createContext, lazy, Suspense } from 'react'; 
 import useMathGame from './hooks/useMathGame.jsx';
 
-import StartScreen from './components/StartScreen.jsx';
-import NameForm from './components/NameForm.jsx';
-import ThemePicker from './components/ThemePicker.jsx';
-import TablePicker from './components/TablePicker.jsx';
-import DifficultyPicker from './components/DifficultyPicker.jsx';
-import BlackBeltPicker from './components/BlackBeltPicker.jsx'; 
-import QuizScreen from './components/QuizScreen.jsx';
-import ResultsScreen from './components/ResultsScreen.jsx';
-import WayToGoScreen from './components/WayToGoScreen.jsx';
-import LearningModule from './components/LearningModule.jsx';
-import SpeedTestScreen from './components/ui/SpeedTestScreen.jsx';
+// NEW: Lazy loading imports for Code Splitting
+const StartScreen = lazy(() => import('./components/StartScreen.jsx'));
+const NameForm = lazy(() => import('./components/NameForm.jsx'));
+const ThemePicker = lazy(() => import('./components/ThemePicker.jsx'));
+const TablePicker = lazy(() => import('./components/TablePicker.jsx'));
+const DifficultyPicker = lazy(() => import('./components/DifficultyPicker.jsx'));
+const BlackBeltPicker = lazy(() => import('./components/BlackBeltPicker.jsx')); 
+const QuizScreen = lazy(() => import('./components/QuizScreen.jsx'));
+const ResultsScreen = lazy(() => import('./components/ResultsScreen.jsx'));
+const WayToGoScreen = lazy(() => import('./components/WayToGoScreen.jsx'));
+const LearningModule = lazy(() => import('./components/LearningModule.jsx'));
+const MainLayout = lazy(() => import('./components/MainLayout.jsx'));
+const SpeedTestScreen = lazy(() => import('./components/ui/SpeedTestScreen.jsx'));
 import PreTestPopup from './components/PreTestPopup.jsx';
 import PreTestScreen from './components/PreTestScreen.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
-import MainLayout from './components/MainLayout.jsx';
 
 import { clearShootingStars } from './utils/mathGameLogic.js';
 import audioManager from './utils/audioUtils.js';
@@ -46,6 +47,12 @@ const App = () => {
 
   return (
     <MathGameContext.Provider value={{ ...ctx, navigate }}>
+      {/* NEW: Use Suspense to show a fallback while waiting for code to load */}
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white text-xl">
+          Loading Adventure...
+        </div>
+      }>
       <Routes>
         <Route path="/" element={<StartScreen />} />
         <Route path="/name" element={<NameForm />} />
@@ -66,6 +73,7 @@ const App = () => {
 
         </Route>
       </Routes>
+      </Suspense>
 
       {/* Optional overlays kept here if you use them */}
       {ctx.showQuitModal && (

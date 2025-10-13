@@ -1,5 +1,6 @@
 import QuizRun from '../models/QuizRun.js';
 import Attempt from '../models/Attempt.js';
+import User from '../models/User.js';
 import GeneratedQuestion from '../models/GeneratedQuestion.js';
 import { practiceFactsForBelt, buildQuizSet } from './question.service.js';
 import { startTimer, pauseTimer, resumeTimer, isTimeUp } from './timer.service.js';
@@ -113,6 +114,10 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
   }
 
   const updatedDaily = await incDaily(run.user, 1, timeDelta);
+
+  // NEW: Atomically increment the grand total on the User document
+  await User.findByIdAndUpdate(run.user, { $inc: { grandTotalCorrect: 1 } }); 
+  
 
   // next index
   run.currentIndex += 1;

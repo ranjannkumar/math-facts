@@ -37,6 +37,8 @@ const UserSchema = new mongoose.Schema({
   pin: { type: String, required: true, unique: true, index: true },
   name: { type: String },
   theme: { type: String, default: null },
+  // NEW: Denormalized field for fast retrieval on login
+  grandTotalCorrect: { type: Number, default: 0 }, 
   progress: {
     type: Map,
     of: ProgressSchema, // key like "L1", "L2"
