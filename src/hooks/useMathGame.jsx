@@ -106,7 +106,7 @@ const useMathGame = () => {
 
   const determineMaxQuestions = useCallback((difficulty) => {
     if (difficulty && difficulty.startsWith('black')) {
-      return difficulty.endsWith('7') ? 30 : 20;
+      return 20; 
     }
     return 10;
   }, []);

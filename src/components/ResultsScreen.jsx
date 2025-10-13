@@ -25,7 +25,7 @@ const ResultsScreen = () => {
     // --- Quiz Info ---
     const isBlack = String(selectedDifficulty).startsWith('black');
     const degree = isBlack ? parseInt(String(selectedDifficulty).split('-')[1] || '1', 10) : null;
-    const maxQuestions = isBlack ? (degree === 7 ? 30 : 20) : 10;
+    const maxQuestions = isBlack ? 20 : 10;
     const allCorrect = sessionCorrectCount === maxQuestions;  
 
     // 1. Redirect if not perfect score

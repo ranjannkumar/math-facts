@@ -96,7 +96,7 @@ const BlackBeltPicker = () => {
                 <div className="text-center">
                   <div className="text-3xl font-extrabold">Degree {deg}</div>
                   <div className="text-xl mt-2">
-                    {deg === 7 ? '30 Questions' : '20 Questions'}
+                    20 Questions
                   </div>
                   {isCompleted(deg) && (
                     <div className="mt-2 text-green-600 font-semibold">Completed ✅</div>

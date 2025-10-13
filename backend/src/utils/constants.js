@@ -8,7 +8,7 @@ export const BLACK_DEGREES = [
   { degree: 4, questions: 20, seconds: 45 },
   { degree: 5, questions: 20, seconds: 40 },
   { degree: 6, questions: 20, seconds: 35 },
-  { degree: 7, questions: 30, seconds: 30 }
+  { degree: 7, questions: 20, seconds: 30 }
 ];
 
 export const QUIZ_SIZE_COLORED = 10;

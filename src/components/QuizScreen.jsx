@@ -26,9 +26,7 @@ const QuizScreen = () => {
     selectedDifficulty === 'brown'
       ? 10
       : selectedDifficulty && selectedDifficulty.startsWith('black')
-      ? selectedDifficulty.endsWith('7')
-        ? 30
-        : 20
+      ? 20
       : 10;
 
   return (
