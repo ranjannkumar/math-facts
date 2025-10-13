@@ -48,11 +48,7 @@ const App = () => {
   return (
     <MathGameContext.Provider value={{ ...ctx, navigate }}>
       {/* NEW: Use Suspense to show a fallback while waiting for code to load */}
-      <Suspense fallback={
-        <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white text-xl">
-          Loading Adventure...
-        </div>
-      }>
+      <Suspense>
       <Routes>
         <Route path="/" element={<StartScreen />} />
         <Route path="/name" element={<NameForm />} />

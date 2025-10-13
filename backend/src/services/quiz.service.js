@@ -2,7 +2,7 @@ import QuizRun from '../models/QuizRun.js';
 import Attempt from '../models/Attempt.js';
 import User from '../models/User.js';
 import GeneratedQuestion from '../models/GeneratedQuestion.js';
-import { practiceFactsForBelt, buildQuizSet } from './question.service.js';
+import { practiceFactsForBelt, buildQuizSet, bulkCreateQuestions } from './question.service.js';
 import { startTimer, pauseTimer, resumeTimer, isTimeUp } from './timer.service.js';
 import { getBlackTiming, isBlack } from '../utils/belts.js';
 import { incDaily } from './daily.service.js';
@@ -30,9 +30,14 @@ export async function prepare(user, { level, beltOrDegree, operation }) {
     })()
   });
 
-  // practice items (1 if identical; else 2)
-  const practice = await practiceFactsForBelt(operation, level, beltOrDegree);
-  return { run, practice };
+ const practiceObjects = await practiceFactsForBelt(operation, level, beltOrDegree);
+  
+  // 💥 NEW: Save practice items to DB now, using bulk insert
+  // This is required to get the MongoDB _id for client-side practice tracking.
+  const savedPractice = await bulkCreateQuestions(practiceObjects);
+
+  // Return the saved practice documents (with IDs)
+  return { run, practice: savedPractice };
 }
 
 // ------------- START -------------
@@ -41,13 +46,18 @@ export async function start(runId) {
   if (!run) throw new Error('Quiz run not found');
   if (run.status !== 'prepared') throw new Error('Quiz already started');
 
-  const set = await buildQuizSet(run.operation, run.level, run.beltOrDegree);
-  run.items = set.map(q => ({ questionId: q._id }));
+  // [CHANGE 1: Generate the full quiz set of SAVED documents]
+   // MODIFIED: buildQuizSet now returns the list of *saved* GeneratedQuestion documents.
+  const quizQuestions = await buildQuizSet(run.operation, run.level, run.beltOrDegree);
+  
+  // Use the actual _id from the inserted documents
+  run.items = quizQuestions.map(q => ({ questionId: q._id }));
   run.status = 'in-progress';
   startTimer(run);
   await run.save();
 
-  const firstQ = await GeneratedQuestion.findById(run.items[0].questionId);
+  // Return the actual first question document
+  const firstQ = quizQuestions[0]; 
   return { run, question: firstQ };
 }
 
