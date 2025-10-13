@@ -13,7 +13,11 @@ export async function start(req, res, next) {
   try {
     const { quizRunId } = req.body;
      const { run, questions } = await QuizSvc.start(quizRunId);
-    res.json({ quizRunId: run._id, questions, timer: run.timer }); 
+   res.json({ 
+        quizRunId: run._id, 
+        questions: questions, // Send the full array of generated questions
+        timer: run.timer 
+    });
   } catch (e) { next(e); }
 }
 

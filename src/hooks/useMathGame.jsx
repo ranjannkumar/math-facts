@@ -229,7 +229,7 @@ const useMathGame = () => {
   const startActualQuiz = useCallback(
     async (runId) => {
       const idToUse = runId || quizRunId;
-        console.log(idToUse, quizRunId, runId)
+        // console.log(idToUse, quizRunId, runId)
         if (!idToUse) {
           console.error("Cannot start quiz: quizRunId is missing.");
            setIsQuizStarting(false);
