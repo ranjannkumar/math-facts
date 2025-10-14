@@ -64,6 +64,19 @@ const KeypadButton = ({ value, label, className }) => (
     </button>
 );
 
+const commonInputClass = [
+  "w-full max-w-[380px] box-border",            // same width behaviour
+  "h-16 sm:h-[66px]",
+  "px-4 sm:px-6 py-0",
+  "rounded-[14px] border border-white/30",      // softer border like passcode
+  "bg-gray-800/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]",
+  "text-white font-bold text-center text-4xl tracking-widest leading-none",
+  "appearance-none outline-none ring-0 focus:ring-0 focus:outline-none",
+  "focus:border-white/30",                      // no bright ring on focus
+  "placeholder:text-white/50",
+  "read-only:opacity-100 read-only:bg-gray-800/60"
+].join(" ");
+
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center px-4"
@@ -79,32 +92,31 @@ const KeypadButton = ({ value, label, className }) => (
         <form onSubmit={onSubmit} className="w-full flex flex-col items-center" autoComplete="off">
           {/* Name Input Field */}
           <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
-             Enter Your Name
+            Enter Your Name
           </label>
           <input
-            className="w-full max-w-[380px] mb-4 sm:mb-6 px-4 sm:px-6 py-2 sm:py-2 rounded-4xl sm:rounded-4xl opacity-80 text-white font-bold text-center text-4xl tracking-widest transition-all duration-200 bg-gray-800/50 outline-none focus:ring focus:ring-white/40"
+            className={commonInputClass}
             value={childName}
-            onChange={handleNameChange} // Use handleNameChange from context
+            onChange={handleNameChange}
             type="text"
             maxLength={15}
-            // placeholder="Name"
-            autoFocus 
+            autoFocus
             autoComplete="name"
           />
+
           {/* Passcode Input Field */}
           <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
-             Enter Your Passcode
+            Enter Your Passcode
           </label>
-
           <input
-            className="w-full max-w-[380px] mb-4 sm:mb-6 px-4 sm:px-6 py-2 sm:py-2 rounded-xl sm:rounded-2xl opacity-80 text-white font-bold text-center text-4xl tracking-widest transition-all duration-200 bg-gray-800/50 outline-none focus:ring focus:ring-white/40"
-            value={childPin || ''}
-            readOnly 
+            className={`${commonInputClass} select-none caret-transparent`}
+            value={childPin || ""}
+            readOnly
             type="password"
             maxLength={4}
-            inputMode="none" 
+            inputMode="none"
             autoComplete="new-password"
-            name="passcode"   
+            name="passcode"
           />
 
           <div className="grid grid-cols-4 gap-3 mb-4 mx-auto justify-items-center">

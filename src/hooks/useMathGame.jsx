@@ -342,10 +342,6 @@ const useMathGame = () => {
             symbol = '⚡';
             audioManager.playLightningSound(); 
         } 
-        // else if (timeTaken <= 2) {
-        //     symbol = '⭐';
-        //     audioManager.playStarSound(); 
-        // } 
         else if (timeTaken <= 5) {
             symbol = '✓';
             audioManager.playCompleteSound(); 
@@ -362,7 +358,26 @@ const useMathGame = () => {
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
       }
       
-      // Send answer to backend to get next state
+      // ---   UI ADVANCE FOR INSTANT TRANSITION ---
+      const nextIndex = currentQuestionIndex + 1;
+      let uiAdvancedOptimistically = false;
+      
+      if (isCorrect && nextIndex < quizQuestions.length) {
+          // Immediately update UI to the next question
+          setCurrentQuestion(quizQuestions[nextIndex]); 
+          setCurrentQuestionIndex(nextIndex);
+          questionStartTimestamp.current = Date.now();
+          
+          // Unlock the UI immediately (before the slow API call returns)
+          setIsAnimating(false); 
+          uiAdvancedOptimistically = true;
+          
+          // Optimistically update session score for accurate UI display 
+          setSessionCorrectCount(s => s + 1);
+      } 
+      // ---  UI ADVANCE ---
+      
+      // Send answer to backend to get next state (Awaited for terminal/stat updates)
       try {
           const out = await quizSubmitAnswer(
               quizRunId,
@@ -374,67 +389,63 @@ const useMathGame = () => {
               childPin
           );
 
-          // console.log('Quiz Submit Answer Response:', out);
-          // Handle server response
+          // --- HANDLE SERVER RESPONSE (For terminal states and authoritative stats) ---
+          
           if (out.completed) {
-            // Extract the total time in seconds from the response summary
-             const totalTimeMs = out.summary?.totalActiveMs || (elapsedTime * 1000);
-                  const sessionTimeSeconds = Math.round(totalTimeMs / 1000); // Round to nearest second
+              // Server signals completion (either perfect score or black belt failure/intervention failure)
+              const totalTimeMs = out.summary?.totalActiveMs || (elapsedTime * 1000);
+              const sessionTimeSeconds = Math.round(totalTimeMs / 1000); 
+              
+              // Ensure UI is unlocked
+              setIsAnimating(false);
 
-                  localStorage.setItem('math-last-quiz-duration', sessionTimeSeconds);
-                  setShowResult(true);
-                  setIsAnimating(false);
-
-                  setQuizStartTime(null); // Stop the session timer interval
-                  setElapsedTime(0);  
-                  
-                  //Set session score from API response
-                  setSessionCorrectCount(out.sessionCorrectCount || 0); 
-
-                  if (out.dailyStats) {
-                setCorrectCount(out.dailyStats.correctCount); // Update score instantly
-                setDailyTotalMs(out.dailyStats.totalActiveMs); // Update time base instantly
-                if (out.dailyStats.grandTotal !== undefined) { //  Update grand total
-                        setGrandTotalCorrect(out.dailyStats.grandTotal); 
-                    }
-           }  
-
-                  //  Refetch progress & daily stats after completion/failure
-                   if (out.updatedProgress) {
-                      setTableProgress(out.updatedProgress);
+              localStorage.setItem('math-last-quiz-duration', sessionTimeSeconds);
+              setShowResult(true);
+              setQuizStartTime(null);  
+              
+              // Set final authoritative scores
+              setSessionCorrectCount(out.sessionCorrectCount || 0); 
+              if (out.dailyStats) {
+                  setCorrectCount(out.dailyStats.correctCount); 
+                  setDailyTotalMs(out.dailyStats.totalActiveMs); 
+                  if (out.dailyStats.grandTotal !== undefined) {
+                      setGrandTotalCorrect(out.dailyStats.grandTotal); 
                   }
-                  navigate(out.passed ? '/results' : '/way-to-go', { replace: true,state: { sessionTimeSeconds } });
-
-          } else if (isCorrect) {
-                  const nextIndex = currentQuestionIndex + 1;
-                  if (nextIndex < quizQuestions.length) { //
-                    // Update state to next question from local cache
-                    setCurrentQuestion(quizQuestions[nextIndex]); 
-                    setCurrentQuestionIndex(nextIndex);
-                    questionStartTimestamp.current = Date.now();
-                    setIsAnimating(false);
-                   if (out.dailyStats) {
-                    setCorrectCount(out.dailyStats.correctCount);
-                    setDailyTotalMs(out.dailyStats.totalActiveMs);
-                    if (out.dailyStats.grandTotal !== undefined) {
-                        setGrandTotalCorrect(out.dailyStats.grandTotal); 
-                    }
-                    setQuizStartTime(Date.now());
-                  } 
-                } else {
-                   // Fallback if client runs out of questions before server signals completion
-                   console.warn("Client ran out of questions before server signaled completion.");
-                   setIsAnimating(false); 
-                }
+              }  
+              if (out.updatedProgress) {
+                  setTableProgress(out.updatedProgress);
+              }
+              navigate(out.passed ? '/results' : '/way-to-go', { replace: true,state: { sessionTimeSeconds } });
+              
           } else if (out.practice) {
-                  setIsTimerPaused(true);
-                  setPausedTime(Date.now());
-                  setInterventionQuestion(mapQuestionToFrontend(out.practice));
-                  setShowLearningModule(true);
-                  navigate('/learning');
-                  setIsAnimating(false);
-          }else {
-             setIsAnimating(false);
+              // Incorrect answer (or inactivity fail on non-black belt), triggers intervention
+              // This is necessary because optimistic advance should not happen on incorrect/intervention.
+              
+              // Set state for intervention
+              setIsTimerPaused(true);
+              setPausedTime(Date.now());
+              setInterventionQuestion(mapQuestionToFrontend(out.practice));
+              setShowLearningModule(true);
+              
+              // Navigate and ensure UI is unlocked
+              navigate('/learning');
+              setIsAnimating(false); 
+
+          } else if (uiAdvancedOptimistically) {
+              // UI already advanced. Server confirmed 'continue' and sent stats.
+              // Only update authoritative stats.
+              if (out.dailyStats) {
+                  setCorrectCount(out.dailyStats.correctCount);
+                  setDailyTotalMs(out.dailyStats.totalActiveMs);
+                  if (out.dailyStats.grandTotal !== undefined) {
+                      setGrandTotalCorrect(out.dailyStats.grandTotal); 
+                  }
+                  setQuizStartTime(Date.now()); // Ensure timer base is correct
+              }
+          } else {
+              // Fallback for non-optimistic, non-terminal cases (should not occur if logic is right)
+               console.warn("Quiz is in an unexpected non-terminal, non-advancing state.");
+               setIsAnimating(false);
           }
       } catch (e) {
           console.error('Quiz Answer/State update failed:', e.message);
@@ -695,7 +706,7 @@ const useMathGame = () => {
     speedTestPopupVisible, speedTestPopupAnimation, speedTestNumbers,
     currentSpeedTestIndex, speedTestStartTime, speedTestTimes,
     speedTestComplete, speedTestStarted, speedTestCorrectCount,
-    speedTestShowTick, studentReactionSpeed, selectedTheme,
+    speedTestShowTick, studentReactionSpeed, 
   };
 };
 
