@@ -118,6 +118,7 @@ const useMathGame = () => {
       clearTimeout(inactivityTimeoutId.current);
       inactivityTimeoutId.current = null;
     }
+    setChildName('');
     setQuizQuestions([]);
     setQuizRunId(null);
     setPreQuizPracticeItems([]);
@@ -151,8 +152,10 @@ const useMathGame = () => {
 
 
   const handlePinSubmit = useCallback(
-    async (pinValue) => {
+    async (pinValue,nameValue) => {
       const oldPin = localStorage.getItem('math-child-pin');
+      // localStorage.setItem('math-child-name', nameValue.trim());
+      // setChildName(nameValue.trim());
       if (oldPin !== pinValue) {
         // Reset local state for new user
         hardResetQuizState();
@@ -163,8 +166,7 @@ const useMathGame = () => {
 
       try {
         // 1. Login first to get user data
-        const loginResponse = await authLogin(pinValue, childName.trim() || 'Player');
-
+       const loginResponse = await authLogin(pinValue, nameValue.trim());
         localStorage.setItem('math-child-name', loginResponse.user.name);
         setChildName(loginResponse.user.name);
 
@@ -198,10 +200,15 @@ const useMathGame = () => {
         }
 
       } catch (e) {
+        localStorage.removeItem('math-child-name');
+        localStorage.removeItem('math-child-pin');
+        setChildPin('');
+        setChildName(''); // Keep the name input value on the screen
+        
         throw new Error(e.message || 'Login failed.');
       }
     },
-    [childName, navigate, hardResetQuizState]
+    [navigate, hardResetQuizState]
   );
 
   //New function to persist theme to backend and navigate

@@ -8,8 +8,26 @@ export async function loginPin(req, res, next) {
     if (!pin) return res.status(400).json({ error: 'PIN required' });
 
     let user = await User.findOne({ pin });
-    if (!user) {
-      user = await User.create({ pin, name: name || 'Player' });
+    if (user) {
+      // Existing User: Check if the provided name matches the stored name
+      if (user.name.toLowerCase() !== name.toLowerCase()) {
+        // UPDATED: Return a specific 401 response with a descriptive error message
+        return res.status(401).json({ 
+          error: { 
+            message: 'Pin already exists, please enter correct name.',
+            code: 'INCORRECT_NAME' // Add a custom code for easier debugging if needed
+          }
+        });
+      }
+      // If it matches, continue with login
+    } else {
+      // New User: Create new user with the provided pin and name
+      if (!name) {
+          // Safety check: Should not happen if frontend validates name
+          return res.status(400).json({ error: 'Name required for new user signup.' });
+      }
+      user = await User.create({ pin, name });
+      
       // unlock first level + white belt by default
       const key = 'L1';
       user.progress.set(key, { 
@@ -43,6 +61,9 @@ export async function loginPin(req, res, next) {
       token: pin 
     }); 
   } catch (e) {
+    if (e.code === 11000) { // MongoDB duplicate key error (PIN already exists)
+        return res.status(409).json({ error: 'Passcode already in use. Please enter your name with that passcode.' });
+    }
     next(e);
   }
 }

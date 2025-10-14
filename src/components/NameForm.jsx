@@ -5,6 +5,8 @@ import { MathGameContext } from '../App.jsx';
 const NameForm = () => {
   const {
     childPin,
+    childName, 
+    handleNameChange,
     handlePinChange,
     handlePinSubmit,
   } = useContext(MathGameContext);
@@ -17,16 +19,22 @@ const NameForm = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!childPin || childPin.trim().length < 2) {
-      setError('Please enter a valid PIN (at least 2 characters).');
+    const nameToSubmit = childName.trim(); // Use current childName from context
+    const pinToSubmit = childPin.trim(); 
+    if (!nameToSubmit || nameToSubmit.length < 2) { //  Name validation
+        setError('Please enter a valid name (at least 2 characters).');
+        return;
+    }
+    if (!pinToSubmit || pinToSubmit.length < 2) {
+      setError('Please enter a valid Passcode (at least 2 characters).');
       return;
     }
     setError('');
     
     try {
-        await handlePinSubmit(childPin.trim());
+        await handlePinSubmit(pinToSubmit, nameToSubmit); // Pass both PIN and Name
     } catch (err) {
-        setError(err.message || 'Login failed. Please check your PIN.');
+        setError(err.message || 'Login failed. Please check your name and passcode.');
     }
   };
 
@@ -69,6 +77,21 @@ const KeypadButton = ({ value, label, className }) => (
       <div className="bg-white/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-full flex flex-col items-center relative z-10 mx-2 sm:mx-4 w-full max-w-sm backdrop-blur-md">
 
         <form onSubmit={onSubmit} className="w-full flex flex-col items-center" autoComplete="off">
+          {/* Name Input Field */}
+          <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
+             Enter Your Name
+          </label>
+          <input
+            className="w-full max-w-[380px] mb-4 sm:mb-6 px-4 sm:px-6 py-2 sm:py-2 rounded-4xl sm:rounded-4xl opacity-80 text-white font-bold text-center text-4xl tracking-widest transition-all duration-200 bg-gray-800/50 outline-none focus:ring focus:ring-white/40"
+            value={childName}
+            onChange={handleNameChange} // Use handleNameChange from context
+            type="text"
+            maxLength={15}
+            // placeholder="Name"
+            autoFocus 
+            autoComplete="name"
+          />
+          {/* Passcode Input Field */}
           <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
              Enter Your Passcode
           </label>

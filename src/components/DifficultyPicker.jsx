@@ -62,7 +62,7 @@ const DifficultyPicker = () => {
         } else {
             // All other colored belts: unlocked if the previous belt is COMPLETED.
             const prevBelt = COLOR_BELTS[idx - 1];
-            console.log('Checking unlock for', belt, 'prev:', prevBelt, 'levelProgress:', levelProgress);
+            // console.log('Checking unlock for', belt, 'prev:', prevBelt, 'levelProgress:', levelProgress);
             const isPrevCompleted = !!levelProgress?.[prevBelt]?.completed;
             
             // Fallback: Also include the explicit 'unlocked' flag from the backend
