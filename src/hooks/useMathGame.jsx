@@ -68,6 +68,8 @@ const useMathGame = () => {
   const [childPin, setChildPin] = useState(() => localStorage.getItem('math-child-pin') || '');
   const [tableProgress, setTableProgress] = useState({});
 
+  const [currentStreak, setCurrentStreak] = useState(0); 
+
   // Misc UI
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -138,6 +140,9 @@ const useMathGame = () => {
     setShowResult(false);
     setIsAnimating(false);
     setInterventionQuestion(null);
+
+    // --- RESET STREAK STATE ---
+    setCurrentStreak(0);
   }, []);
 
   // --- API / LIFECYCLE ---
@@ -191,6 +196,8 @@ const useMathGame = () => {
         setDailyTotalMs(stats?.totalActiveMs || 0); 
         setCorrectCount(stats?.correctCount || 0); 
         setGrandTotalCorrect(stats?.grandTotal || 0); // Store Grand Total
+
+        setCurrentStreak(loginResponse.user.currentStreak || 0);
 
         // navigate('/pre-test-popup');
         if (themeKeyFromBackend && themeKeyFromBackend.length > 0 && themeKeyFromBackend !== 'null') {
@@ -411,6 +418,9 @@ const useMathGame = () => {
                   if (out.dailyStats.grandTotal !== undefined) {
                       setGrandTotalCorrect(out.dailyStats.grandTotal); 
                   }
+                   if (out.dailyStats.currentStreak !== undefined) {
+                      setCurrentStreak(out.dailyStats.currentStreak); 
+                  }
               }  
               if (out.updatedProgress) {
                   setTableProgress(out.updatedProgress);
@@ -439,6 +449,9 @@ const useMathGame = () => {
                   setDailyTotalMs(out.dailyStats.totalActiveMs);
                   if (out.dailyStats.grandTotal !== undefined) {
                       setGrandTotalCorrect(out.dailyStats.grandTotal); 
+                  }
+                  if (out.dailyStats.currentStreak !== undefined) {
+                      setCurrentStreak(out.dailyStats.currentStreak); 
                   }
                   setQuizStartTime(Date.now()); // Ensure timer base is correct
               }
@@ -707,6 +720,8 @@ const useMathGame = () => {
     currentSpeedTestIndex, speedTestStartTime, speedTestTimes,
     speedTestComplete, speedTestStarted, speedTestCorrectCount,
     speedTestShowTick, studentReactionSpeed, 
+    currentStreak, 
+
   };
 };
 

@@ -14,7 +14,8 @@ export async function getToday(req, res, next) {
         
     res.json({ 
         ...todayData, // Use the extracted data
-        grandTotal: grandTotal // Add grand total
+        grandTotal: grandTotal,
+        currentStreak: req.user.currentStreak || 0  
     });
   } catch (e) { next(e); }
 }

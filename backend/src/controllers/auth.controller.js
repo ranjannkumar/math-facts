@@ -1,6 +1,30 @@
 // backend/src/controllers/auth.controller.js
 import User from '../models/User.js';
 import { getToday as getTodaySvc, getGrandTotalCorrect as getGrandTotalCorrectSvc } from '../services/daily.service.js';
+import dayjs from 'dayjs';
+
+
+function updateStreak(user) {
+    const today = dayjs().format('YYYY-MM-DD');
+    const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+
+    if (user.lastLoginDate === today) {
+        // Already logged in today, streak is preserved
+        return user.currentStreak;
+    }
+    
+    if (user.lastLoginDate === yesterday) {
+        // Logged in yesterday, increment streak
+        user.currentStreak = (user.currentStreak || 0) + 1;
+    } else {
+        // Missed a day or first login, start/reset streak
+        user.currentStreak = 1;
+    }
+    
+    user.lastLoginDate = today;
+    return user.currentStreak;
+}
+
 
 export async function loginPin(req, res, next) {
   try {
@@ -38,6 +62,8 @@ export async function loginPin(req, res, next) {
       await user.save();
     }
 
+     const newStreak = updateStreak(user);
+
      // Fetch required daily stats and embed into single response ---
     const [todayDoc] = await Promise.all([
       getTodaySvc(user._id),
@@ -56,7 +82,8 @@ export async function loginPin(req, res, next) {
         dailyStats: { 
           correctCount: todayDoc.correctCount || 0,
           totalActiveMs: todayDoc.totalActiveMs || 0,
-        }
+        },
+        currentStreak: newStreak,
       }, 
       token: pin 
     }); 

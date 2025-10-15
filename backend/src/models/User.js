@@ -48,7 +48,9 @@ const UserSchema = new mongoose.Schema({
     type: Map,
     of: DailyStatsSchema,
     default: {}
-  }
+  },
+   currentStreak: { type: Number, default: 0 },
+  lastLoginDate: { type: String, default: null },
 }, { timestamps: true });
 
 export default mongoose.model('User', UserSchema);
