@@ -142,7 +142,7 @@ const useMathGame = () => {
     setInterventionQuestion(null);
 
     // --- RESET STREAK STATE ---
-    setCurrentStreak(0);
+    // setCurrentStreak(0);
   }, []);
 
   // --- API / LIFECYCLE ---

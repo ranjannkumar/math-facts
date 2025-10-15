@@ -63,19 +63,16 @@ const KeypadButton = ({ value, label, className }) => (
         {label || value}
     </button>
 );
+// put this near the top of the component, before return:
+const inputBaseClass =
+  "block w-full max-w-xs mx-auto box-border mb-4 sm:mb-6 px-4 sm:px-6 h-14 sm:h-16 " +
+  "rounded-xl sm:rounded-2xl opacity-80 text-white font-bold text-center text-4xl tracking-widest " +
+  "transition-all duration-200 bg-gray-800/50 " +
+  "appearance-none outline-none ring-0 border-0 shadow-none " +
+  "focus:outline-none focus:ring-0 focus:border-0";
 
-const commonInputClass = [
-  "w-full max-w-[380px] box-border",            // same width behaviour
-  "h-16 sm:h-[66px]",
-  "px-4 sm:px-6 py-0",
-  "rounded-[14px] border border-white/30",      // softer border like passcode
-  "bg-gray-800/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]",
-  "text-white font-bold text-center text-4xl tracking-widest leading-none",
-  "appearance-none outline-none ring-0 focus:ring-0 focus:outline-none",
-  "focus:border-white/30",                      // no bright ring on focus
-  "placeholder:text-white/50",
-  "read-only:opacity-100 read-only:bg-gray-800/60"
-].join(" ");
+
+
 
   return (
     <div
@@ -87,30 +84,60 @@ const commonInputClass = [
         backgroundRepeat: 'no-repeat',
       }}
     >
+      <style>{`
+        /* kill autofill white */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #ffffff !important;
+          -webkit-box-shadow: 0 0 0px 1000px rgba(31,41,55,0.5) inset !important;
+          transition: background-color 9999s ease-in-out 0s !important;
+          caret-color: #ffffff;
+        }
+        /* nuke any UA border/shadow/focus ring on our inputs */
+        input[data-flat-input]{
+          border:0 !important;
+          outline:0 !important;
+          box-shadow:none !important;
+          -webkit-appearance:none !important;
+                  appearance:none !important;
+        }
+        input[data-flat-input]:focus,
+        input[data-flat-input]:focus-visible{
+          border:0 !important;
+          outline:0 !important;
+          box-shadow:none !important;
+        }
+      `}</style>
+
+
       <div className="bg-white/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-full flex flex-col items-center relative z-10 mx-2 sm:mx-4 w-full max-w-sm backdrop-blur-md">
 
         <form onSubmit={onSubmit} className="w-full flex flex-col items-center" autoComplete="off">
           {/* Name Input Field */}
           <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
-            Enter Your Name
+             Enter Your Name
           </label>
           <input
-            className={commonInputClass}
+            data-flat-input
+            className={inputBaseClass}
             value={childName}
             onChange={handleNameChange}
             type="text"
             maxLength={15}
             autoFocus
-            autoComplete="name"
+            autoComplete="off"
+            name="child-name"
           />
-
           {/* Passcode Input Field */}
           <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
-            Enter Your Passcode
+             Enter Your Passcode
           </label>
+
           <input
-            className={`${commonInputClass} select-none caret-transparent`}
-            value={childPin || ""}
+          data-flat-input
+            className={inputBaseClass}
+            value={childPin || ''}
             readOnly
             type="password"
             maxLength={4}
@@ -119,7 +146,7 @@ const commonInputClass = [
             name="passcode"
           />
 
-          <div className="grid grid-cols-4 gap-3 mb-4 mx-auto justify-items-center">
+          <div className="grid grid-cols-4 gap-2 mb-1 mx-auto justify-items-center">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <KeypadButton key={num} value={String(num)} />
             ))}
@@ -129,7 +156,7 @@ const commonInputClass = [
               value="C" 
               className="col-span-2" 
               label={<span className="text-lg w-full text-center">CLEAR</span>} 
-/>
+            />
             {/* <KeypadButton value="<" label="⌫" /> */}
           </div>
 
