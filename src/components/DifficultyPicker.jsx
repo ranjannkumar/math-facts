@@ -3,6 +3,7 @@ import React, { useContext, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { MathGameContext } from '../App.jsx';
+import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
 
 const COLOR_BELTS = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
 const beltImages = {
@@ -182,6 +183,8 @@ const DifficultyPicker = () => {
       >
         <FaArrowLeft size={24} />
       </button>
+
+      <DailyStreakCounter />
 
       {/* Centered content (title + grid) */}
       <div className="w-full max-w-5xl mx-auto flex flex-col items-center">

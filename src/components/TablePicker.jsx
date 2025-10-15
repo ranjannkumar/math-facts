@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { MathGameContext } from '../App.jsx';
 import { themeConfigs } from '../utils/mathGameLogic.js';
-import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
+// import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
 
 const TOTAL_LEVELS = 12; // only 12 levels as required
 const COLOR_BELTS = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
@@ -135,7 +135,7 @@ const TablePicker = () => {
         <FaArrowLeft size={24} />
       </button>
 
-      <DailyStreakCounter />
+      {/* <DailyStreakCounter /> */}
 
       {/* Centered column: Welcome + Card controls */}
       <div className="w-full max-w-5xl flex flex-col items-center justify-center min-h-[calc(100vh-4rem)]">
