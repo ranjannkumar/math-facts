@@ -59,10 +59,10 @@ export async function loginPin(req, res, next) {
           unlocked: true, // Mark level as unlocked
           white: { unlocked: true, completed: false } // Mark white belt as unlocked for L1
       });
-      await user.save();
     }
 
      const newStreak = updateStreak(user);
+     await user.save();
 
      // Fetch required daily stats and embed into single response ---
     const [todayDoc] = await Promise.all([
