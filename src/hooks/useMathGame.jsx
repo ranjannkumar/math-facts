@@ -6,8 +6,6 @@ import { themeConfigs } from '../utils/mathGameLogic.js';
 // Import API functions
 import {
   authLogin,
-  // userGetProgress,
-  // userGetDailyStats, 
   mapQuestionToFrontend,
   quizHandleInactivity,
   quizPracticeAnswer,
@@ -161,10 +159,10 @@ const useMathGame = () => {
       const oldPin = localStorage.getItem('math-child-pin');
       // localStorage.setItem('math-child-name', nameValue.trim());
       // setChildName(nameValue.trim());
-      if (oldPin !== pinValue) {
-        // Reset local state for new user
-        hardResetQuizState();
-      }
+      // if (oldPin !== pinValue) {
+      //   // Reset local state for new user
+      //   hardResetQuizState();
+      // }
       
       localStorage.setItem('math-child-pin', pinValue);
       setChildPin(pinValue);
@@ -215,7 +213,7 @@ const useMathGame = () => {
         throw new Error(e.message || 'Login failed.');
       }
     },
-    [navigate, hardResetQuizState]
+    [navigate, setChildPin, setChildName]
   );
 
   //New function to persist theme to backend and navigate
