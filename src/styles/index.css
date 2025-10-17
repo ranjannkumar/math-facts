@@ -86,3 +86,30 @@ code {
 .animate-pop-out {
   animation: pop-out 0.5s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards !important;
 }
+
+@layer utilities {
+  @keyframes sweep {
+    0%   { transform: translateX(-10%) scale(1); opacity: .7; }
+    50%  { transform: translateX(10%)  scale(1.02); opacity: .9; }
+    100% { transform: translateX(-10%) scale(1); opacity: .7; }
+  }
+  .animate-sweep {
+    animation: sweep 3.2s ease-in-out infinite;
+  }
+
+  @keyframes ring-pop {
+    0%   { transform: scale(0.6); opacity: 0.0; }
+    30%  { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+  .animate-ring-pop {
+    animation: ring-pop 700ms cubic-bezier(.22,.93,.34,.99) forwards;
+  }
+
+  @keyframes timer-stroke {
+    to { stroke-dashoffset: 0; }
+  }
+  .animate-timer-stroke {
+    animation: timer-stroke linear forwards;
+  }
+}

@@ -1,6 +1,7 @@
 // src/components/QuizScreen.jsx
 import React, { useRef, useEffect, useContext } from 'react';
 import { MathGameContext } from '../App.jsx';
+import StreakAnimation from './StreakAnimation.jsx';
 
 const QuizScreen = () => {
   const {
@@ -11,7 +12,12 @@ const QuizScreen = () => {
     isAnimating,
     showResult,
     selectedDifficulty,
-    isTimerPaused
+    isTimerPaused,
+    // <<< NEW CONTEXT PROPS
+    showStreakAnimation,
+    animationStreakCount,
+    isPerfectStreak,
+    handleStreakAnimationComplete
   } = useContext(MathGameContext);
 
   const answerRefs = useRef([]);
@@ -43,6 +49,13 @@ const QuizScreen = () => {
       }}
     >
       <div className="w-full min-h-screen flex flex-col items-center justify-center relative">
+        {showStreakAnimation && (
+            <StreakAnimation 
+                streakCount={animationStreakCount}
+                symbolType={isPerfectStreak ? 'lightning' : 'mixed'}
+                onAnimationComplete={handleStreakAnimationComplete}
+            />
+        )}
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6">
           <div className="flex justify-center items-center mb-2 space-x-1">
             {answerSymbols.map((answer, index) => (
