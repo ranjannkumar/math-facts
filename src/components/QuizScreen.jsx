@@ -1,5 +1,5 @@
 // src/components/QuizScreen.jsx
-import React, { useRef, useEffect, useContext } from 'react';
+import React, { useRef, useEffect, useContext, useState } from 'react';
 import { MathGameContext } from '../App.jsx';
 import StreakAnimation from './StreakAnimation.jsx';
 
@@ -21,12 +21,24 @@ const QuizScreen = () => {
   } = useContext(MathGameContext);
 
   const answerRefs = useRef([]);
+  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
 
   useEffect(() => {
     if (currentQuestion) {
       answerRefs.current = currentQuestion.answers.map((_, i) => answerRefs.current[i] || React.createRef());
+      setIsAnswerSubmitted(false);
     }
   }, [currentQuestion]);
+
+  const handleAnswerClick = (answer) => {
+    if (isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion) return;
+    
+    // Set flag immediately to prevent subsequent clicks
+    setIsAnswerSubmitted(true); 
+    
+    // The handleAnswer function in the hook is robust, but for the UI we set this flag.
+    handleAnswer(answer);
+  }
 
   const maxQuestions =
     selectedDifficulty === 'brown'
@@ -102,8 +114,8 @@ const QuizScreen = () => {
                 <button
                   key={index}
                   ref={answerRefs.current[index]}
-                  onClick={() => handleAnswer(answer, index)}
-                  disabled={isAnimating || !currentQuestion || showResult || isTimerPaused}
+                  onClick={() => handleAnswerClick(answer)}
+                  disabled={isAnimating || !currentQuestion || showResult || isTimerPaused || isAnswerSubmitted}
                   className={
                     [
                       // Base look

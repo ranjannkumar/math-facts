@@ -74,11 +74,42 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     return { completed: true, passed: false, reason: 'timeup',sessionCorrectCount:  Number(run.stats.correct)};
   }
 
-  const item = run.items[run.currentIndex];
-  // Check if the submitted answer is for the current question
-  if (!item || String(item.questionId) !== String(questionId)) {
-    throw new Error('Not the current question');
+  // --- START FIX for double click race condition ---
+  const submittedId = String(questionId);
+  const currentItem = run.items[run.currentIndex];
+
+  // --- START FIX: Robust Idempotency Check ---
+  
+  // Check if the submitted questionId is for the *current* question
+  if (currentItem && String(currentItem.questionId) === submittedId) {
+      // It's the current question. Proceed normally.
+      var item = currentItem;
+  } 
+  // Check if it's the IMMEDIATELY PRECEDING question
+  else if (run.currentIndex > 0) {
+      const previousItem = run.items[run.currentIndex - 1];
+      if (previousItem && String(previousItem.questionId) === submittedId) {
+          // This is a duplicate request for the previous question that was correctly processed.
+          // The index has already advanced. Safely ignore it to prevent the crash.
+          console.warn(`[RACE CONDITION IGNORED] Duplicate submission detected for question ${submittedId} on run ${runId}. Current Index: ${run.currentIndex}.`);
+          // Returning a "continue" signal safely aligns the client state.
+          return { nextIndex: run.currentIndex }; 
+      }
+      // If it's not the current, and not the just-finished previous question, throw the error.
+      throw new Error('Not the current question');
+  } 
+  else {
+       // Index is 0, and currentItem check failed. Must be an invalid ID.
+       throw new Error('Not the current question');
   }
+  
+  // --- END FIX: Robust Idempotency Check ---
+
+  // const item = run.items[run.currentIndex];
+  // // Check if the submitted answer is for the current question
+  // if (!item || String(item.questionId) !== String(questionId)) {
+  //   throw new Error('Not the current question');
+  // }
 
   const q = await GeneratedQuestion.findById(questionId);
   const isCorrect = Number(answer) === q.correctAnswer;
