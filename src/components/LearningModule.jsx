@@ -186,7 +186,7 @@ useEffect(() => {
     if (isClosing) return;
     const initializePractice = (rawQuestion) => {
         const mappedQ = mapQuestionToFrontend(rawQuestion);
-        console.log('Initialized Practice Question:', mappedQ);
+        // console.log('Initialized Practice Question:', mappedQ);
         setPracticeQ(mappedQ);
         setSelectedAnswer(null); 
         setShowAdvanceButton(false);
