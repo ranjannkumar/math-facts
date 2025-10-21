@@ -3,10 +3,16 @@ import User from '../models/User.js';
 import { getToday as getTodaySvc, getGrandTotalCorrect as getGrandTotalCorrectSvc } from '../services/daily.service.js';
 import dayjs from 'dayjs';
 
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const PACIFIC_TIMEZONE = 'America/Los_Angeles'; // US Pacific Time Zone
 
 function updateStreak(user) {
-    const today = dayjs().format('YYYY-MM-DD');
-    const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+    const today = dayjs().tz(PACIFIC_TIMEZONE).format('YYYY-MM-DD');
+    const yesterday = dayjs().tz(PACIFIC_TIMEZONE).subtract(1, 'day').format('YYYY-MM-DD');
 
     if (user.lastLoginDate === today) {
         // Already logged in today, streak is preserved

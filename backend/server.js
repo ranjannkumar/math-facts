@@ -1,12 +1,20 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import { createServer } from 'http';
-import cors from 'cors';                    // ← add
+import cors from 'cors';                    
 import app from './src/app.js';
 import connectDB from './src/config/db.js';
 
 import dayjs from 'dayjs'; 
 import { sendDailyReport } from './src/services/email.service.js'; 
+
+// ADD DAYJS CONFIGURATION
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const PACIFIC_TIMEZONE = 'America/Los_Angeles'; // US Pacific Time Zone
 
 const PORT = process.env.PORT || 8080;
 
@@ -37,16 +45,14 @@ app.options('*', cors());
 
 // --- DAILY REPORT SCHEDULING ---
 const REPORT_HOUR = 1; // Run the check after 1 AM
-// let lastRunDate = null; // Track when it last successfully ran
 
 const startDailyReportScheduler = () => {
   const checkAndRun = async () => {
-    const now = dayjs();
+   const now = dayjs().tz(PACIFIC_TIMEZONE);
     
     // Only attempt the run if it's past the scheduled hour. 
-    // The persistence check (was it already sent?) is handled inside sendDailyReport.
     if (now.hour() >= REPORT_HOUR) { 
-      console.log(`Attempting scheduled report run for yesterday's data...`);
+      console.log(`Attempting scheduled report run for yesterday's data (PST/PDT time: ${now.format('HH:mm')})...`);
       try {
         await sendDailyReport(); 
         console.log('Scheduled report run check complete.');
@@ -55,7 +61,7 @@ const startDailyReportScheduler = () => {
         // Note: The error is logged but not re-thrown to keep the server running.
       }
     } else {
-        console.log(`It's before ${REPORT_HOUR} AM. Skipping daily report check.`);
+        console.log(`It's before ${REPORT_HOUR} AM PST/PDT (${now.format('HH:mm')}). Skipping daily report check.`);
     }
   };
 

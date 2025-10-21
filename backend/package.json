@@ -19,7 +19,9 @@
     "mongoose": "^8.6.0",
     "morgan": "^1.10.0",
     "nodemailer": "^6.10.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "dayjs-plugin-utc": "latest",
+    "dayjs-plugin-timezone": "latest"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"

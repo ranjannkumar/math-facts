@@ -180,33 +180,130 @@ async function createDigitQuestionObject(level, beltOrDegree, d){
   );
 }
 
+// --- START NEW HELPER FUNCTIONS FOR BLACK BELT LOGIC ---
+const BELTS = ['white','yellow','green','blue','red','brown'];
+
+/* --- Get all canonical pairs for a specific level (all 6 colored belts) ----*/
+async function getCanonicalPairsForLevel(operation, level){
+  const pairs = [];
+  for (const b of BELTS){
+      const p = await getCanonicalPair(operation, level, b);
+      if (p) pairs.push(p);
+  }
+  return pairs;
+}
+
+/* ---  Get all canonical pairs from previous levels (1 to level-1) ----*/
+async function getCanonicalPairsUpToLevelMinusOne(operation, level){
+  const pairs = [];
+  for (let l=1; l<level; l++){
+    for (const b of BELTS){
+      const p = await getCanonicalPair(operation, l, b);
+      if (p) pairs.push(p);
+    }
+  }
+  return pairs;
+}
+
+/* --- Create all question variations (a+b, b+a) from a list of [a,b] pairs ----*/
+async function createAllQuestionsFromPairs(operation, level, beltOrDegree, pairs, source) {
+  const questionObjects = [];
+  for (const [a, b] of pairs) {
+    // 1. Always include a + b
+    questionObjects.push(await createQuestionObject(operation, level, beltOrDegree, a, b, source));
+    // 2. If a != b, include b + a (the commutated fact)
+    if (a !== b) {
+      questionObjects.push(await createQuestionObject(operation, level, beltOrDegree, b, a, source));
+    }
+  }
+  return questionObjects;
+}
+
+/* ---  Sample a set of questions for black belt quiz from a pool ----*/
+function sampleBlackQuestionsFromPool(pool, n, source, level, beltOrDegree){
+  if (!pool.length || n <= 0) return [];
+  const out = [];
+  for (let i=0;i<n;i++){
+    // Sample a random pair from the pool
+    const [a,b] = pool[Math.floor(Math.random()*pool.length)];
+    // Randomly decide between a+b and b+a for non-identical pairs, 
+    // ensuring identical pairs remain a+a.
+    const [qA, qB] = (a !== b && Math.random() < 0.5) ? [b, a] : [a, b]; 
+
+    out.push({
+      operation: 'add',
+      level, 
+      beltOrDegree,
+      params: { a: qA, b: qB },
+      question: `${qA} + ${qB}`,
+      correctAnswer: qA + qB,
+      choices: choiceSet(qA + qB),
+      source,
+      seed: newSeed()
+    }); 
+  }
+  return out;
+}
+
 // Helper to build the black belt question array (in-memory objects)
 async function buildQuizForBlackObject(operation, level, beltOrDegree){
   const { questions: totalQuestions } = getBlackTiming(beltOrDegree); 
   
-  let numDigitQuestions = 0;
   let questionObjects = [];
+  // L1 Black Belt has 3 digit recognition questions in addition to canonical questions
+  const numDigitQuestions = (level === 1) ? 3 : 0;
 
+ // --- 1. Mandatory: Include ALL facts questions for the CURRENT level (white-brown) ---
+  const currentLevelCanonicalPairs = await getCanonicalPairsForLevel(operation, level);
+  const mandatoryQuestions = await createAllQuestionsFromPairs(
+      operation, 
+      level, 
+      beltOrDegree, 
+      currentLevelCanonicalPairs, 
+      'current'
+  );
+  questionObjects.push(...mandatoryQuestions);
+
+  // --- 2. Calculate remaining canonical questions needed ---
+  const questionsNeeded = totalQuestions - numDigitQuestions;
+  const alreadyIncluded = questionObjects.length;
+  let remainingNeeded = questionsNeeded - alreadyIncluded;
+
+  if (remainingNeeded > 0) {
+    
+    // --- 3. Remaining from PREVIOUS levels (Levels 1 to level - 1) ---
+    let fillPool = await getCanonicalPairsUpToLevelMinusOne(operation, level);
+    let source = 'previous';
+
+    // --- 4. Fallback: If previous levels yield no facts, sample from the CURRENT level's canonical pairs ---
+    if (fillPool.length === 0) {
+        fillPool = currentLevelCanonicalPairs;
+        source = 'current';
+    }
+    
+    // --- 5. Sample the remaining questions from the determined pool ---
+    if (fillPool.length > 0) {
+        const remainingQuestions = sampleBlackQuestionsFromPool(
+            fillPool, 
+            remainingNeeded, 
+            source, 
+            level, 
+            beltOrDegree
+        );
+        questionObjects.push(...remainingQuestions);
+    }
+  }
+
+  // --- 6. Add L1 Digit Recognition Questions if necessary ---
   if (level === 1) {
-    numDigitQuestions = 3; 
     for (let i = 0; i < numDigitQuestions; i++) {
         const d = Math.floor(Math.random() * 10);
+        // Digit questions are always considered 'previous' for tracking purposes
         questionObjects.push(await createDigitQuestionObject(level, beltOrDegree, d));
     }
   }
 
-  const numCanonicalQuestions = totalQuestions - numDigitQuestions;
-  if (numCanonicalQuestions <= 0) return questionObjects; 
-
-  const pool = await getAllCanonicalPairsUpToLevel(operation, level); 
-  if (!pool.length) return questionObjects;
-
-  for (let i = 0; i < numCanonicalQuestions; i++) {
-    const [a,b] = pool[Math.floor(Math.random()*pool.length)];
-    questionObjects.push(await createQuestionObject(operation, level, beltOrDegree, a, b, 'previous')); 
-  }
-  
-  return questionObjects; 
+  return questionObjects;
 }
 
 // Helper to return in-memory question objects (no DB call)
@@ -305,8 +402,6 @@ export async function buildQuizSet(operation, level, beltOrDegree){
   return reorderNoConsecutiveDuplicates(shuffledInsertedQuestions);
 }
 
-/* ---------- previous pool builders and helpers (remain mostly same) ---------- */
-const BELTS = ['white','yellow','green','blue','red','brown'];
 
 async function getPreviousPool(operation, level, belt){
   const idx = BELTS.indexOf(belt);

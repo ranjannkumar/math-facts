@@ -7,6 +7,14 @@ import dayjs from 'dayjs';
 import nodemailer from 'nodemailer'; 
 import { getDailySummariesForYesterday,getGrandTotalCorrect,isReportSent,setReportSent } from './daily.service.js';
 
+// ADD IMPORTS AND CONFIGURATION
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const PACIFIC_TIMEZONE = 'America/Los_Angeles'; // US Pacific Time Zone
+
 // Configuration from environment variables
 const REPORT_RECIPIENT = process.env.DAILY_REPORT_EMAIL;
 const GMAIL_USER = process.env.GMAIL_USER;
@@ -32,7 +40,7 @@ export async function sendDailyReport() {
     
     console.log(`--- Starting Daily Report Job for ${REPORT_RECIPIENT} ---`);
 
-    const yesterday = dayjs().subtract(1, 'day');
+    const yesterday = dayjs().tz(PACIFIC_TIMEZONE).subtract(1, 'day');
     const yesterdayFormatted = yesterday.format('YYYY-MM-DD');
      // --- FIX: Persistent check to prevent double-send on server restart ---
     if (await isReportSent(yesterdayFormatted)) {

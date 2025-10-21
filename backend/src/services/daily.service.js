@@ -1,12 +1,22 @@
 import dayjs from 'dayjs';
 import DailySummary from '../models/DailySummary.js';
 
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const PACIFIC_TIMEZONE = 'America/Los_Angeles'; // US Pacific Time Zone
+
+// HELPER TO GET NOW IN PST/PDT
+const nowInPacific = () => dayjs().tz(PACIFIC_TIMEZONE);
+
 // Sentinel value to track report sending status globally.
 // This is used as a hardcoded ID for a non-user specific DailySummary entry.
 const REPORT_SENTINEL_USER_ID = '000000000000000000000000';
 
 export async function incDaily(userId, addCorrect = 0, addActiveMs = 0) {
-  const date = dayjs().format('YYYY-MM-DD');
+  const date = nowInPacific().format('YYYY-MM-DD');
   const doc = await DailySummary.findOneAndUpdate(
     { user: userId, date },
     { $inc: { correctCount: addCorrect, totalActiveMs: addActiveMs } },
@@ -17,7 +27,7 @@ export async function incDaily(userId, addCorrect = 0, addActiveMs = 0) {
 }
 
 export async function getToday(userId) {
-  const date = dayjs().format('YYYY-MM-DD');
+  const date = nowInPacific().format('YYYY-MM-DD');
   const doc = await DailySummary.findOne({ user: userId, date });
   return doc || { correctCount: 0, totalActiveMs: 0 };
 }
@@ -51,7 +61,7 @@ export async function getGrandTotalCorrect(userId) {
 }
 
 export async function getDailySummariesForYesterday() {
-  const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+ const yesterday = nowInPacific().subtract(1, 'day').format('YYYY-MM-DD');
   
   // Populate the 'user' field to include the user's name and pin
   const summaries = await DailySummary.find({
