@@ -113,3 +113,19 @@ code {
     animation: timer-stroke linear forwards;
   }
 }
+
+@layer utilities {
+  @keyframes sweep {
+    0%   { transform: translateX(-8%) scale(1); opacity: .65; }
+    50%  { transform: translateX(8%)  scale(1.02); opacity: .9; }
+    100% { transform: translateX(-8%) scale(1); opacity: .65; }
+  }
+  .animate-sweep { animation: sweep 3.2s ease-in-out infinite; }
+
+  @keyframes ring-pop {
+    0%   { transform: scale(0.6); opacity: 0.0; }
+    28%  { transform: scale(1.18); opacity: 1; }
+    100% { transform: scale(1.9); opacity: 0; }
+  }
+  .animate-ring-pop { animation: ring-pop 720ms cubic-bezier(.22,.93,.34,.99) forwards; }
+}

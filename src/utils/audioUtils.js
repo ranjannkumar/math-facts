@@ -47,6 +47,7 @@ class AudioManager {
       this._loadAudio('startNext', '/start+next.mp3');
       this._loadAudio('wrong', '/wrong_sound.mp3');
       this._loadAudio('green', '/green_tick_sound.mp3');
+      this._loadAudio('animation', '/animation_sound.mp3');
   }
 
   // New method to play an audio buffer
@@ -172,6 +173,11 @@ class AudioManager {
   playCheckSound() {
       // Using start+next.mp3 for simple tick
       this._playBuffer('green', 0.6); 
+  }
+
+  playAnimationSound() {
+      // Using start+next.mp3 for simple tick
+      this._playBuffer('animation', 0.6); 
   }
 
 
