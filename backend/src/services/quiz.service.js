@@ -101,14 +101,8 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     // Do NOT advance index
     await run.save();
     const practiceQ = await GeneratedQuestion.findById(questionId).lean();
-    // For Black Belt, a wrong answer means immediate failure (WayToGoScreen)
-    if (isBlackBeltRun) {
-        run.status = 'failed';
-        await run.save();
-        // Use 'wrong' reason for WayToGoScreen logic
-        return { completed: true, passed: false, reason: 'wrong', sessionCorrectCount:  Number(run.stats.correct), summary: { totalActiveMs: run.totalActiveMs } };
-    }
-    return { practice: practiceQ, reason: 'wrong' }; // This triggers the LearningModule intervention
+   
+  return { practice: practiceQ, reason: 'wrong' };
   }
 
   // Correct answer: advance
@@ -221,16 +215,6 @@ export async function inactivity(runId, questionId) {
     reason: 'inactivity'
   });
   
-  const isBlackBeltRun = isBlack(run.beltOrDegree);
-
-  // If Black Belt, inactivity is immediate failure (no intervention/practice)
-  if (isBlackBeltRun) {
-    run.status = 'failed';
-    await run.save();
-    // Return completion response to trigger WayToGoScreen on the frontend
-    return { completed: true, passed: false, reason: 'inactivity-fail', sessionCorrectCount:  Number(run.stats.correct), summary: { totalActiveMs: run.totalActiveMs }};
-  }
-
   // Colored belt: proceed to practice intervention
   await run.save();
   const q = await GeneratedQuestion.findById(questionId).lean();
