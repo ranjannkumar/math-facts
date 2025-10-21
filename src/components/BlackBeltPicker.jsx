@@ -74,6 +74,10 @@ const BlackBeltPicker = () => {
           </button>
         </div>
 
+        <h1 className="text-white text-3xl font-extrabold drop-shadow mb-3 text-center">
+          Level {selectedTable}
+        </h1>
+
         <h1 className="text-white text-3xl font-extrabold drop-shadow text-center mb-4">
           Black Belt Degrees
         </h1>

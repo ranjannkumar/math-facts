@@ -193,7 +193,7 @@ export default function StreakAnimation({ streakCount, symbolType, onAnimationCo
         exit={{ opacity: 0 }}
       >
         {/* Backdrop + ambient energy */}
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-black" />
         <div className="absolute inset-0 animate-sweep bg-[radial-gradient(85%_60%_at_50%_35%,rgba(255,255,255,0.12),transparent),conic-gradient(from_220deg_at_50%_50%,rgba(16,185,129,0.16),rgba(34,197,94,0.16),rgba(16,185,129,0.16))]" />
 
         {/* Absolute center anchor (0,0) */}
