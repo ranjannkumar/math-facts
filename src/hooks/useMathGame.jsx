@@ -549,11 +549,20 @@ const useMathGame = () => {
                setIsAnimating(false);
           }
       } catch (e) {
-          console.error('Quiz Answer/State update failed:', e.message);
-          alert('Error during quiz: ' + e.message);
+         console.error('Quiz Answer/State update failed:', e.message);
+
+          // Benign race: ignore quietly and just unlock UI
+          if (String(e.message || '').toLowerCase().includes('not the current question')) {
+            setIsAnimating(false);
+            return;
+          }
+
+          // Real errors: show a message and navigate away if that’s your current flow
           setIsAnimating(false);
+          alert('Error during quiz: ' + (e.message || 'Unknown error'));
           navigate('/belts');
       }
+
     },
     [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions, quizQuestions, currentQuestionIndex,currentQuizStreak, isPerfectStreak]
   );

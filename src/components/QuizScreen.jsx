@@ -21,24 +21,42 @@ const QuizScreen = () => {
   } = useContext(MathGameContext);
 
   const answerRefs = useRef([]);
+  
+  const lastClickRef = useRef({ qid: null, t: 0 });
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
 
   useEffect(() => {
     if (currentQuestion) {
       answerRefs.current = currentQuestion.answers.map((_, i) => answerRefs.current[i] || React.createRef());
       setIsAnswerSubmitted(false);
+      lastClickRef.current = { qid: currentQuestion.id, t: 0 };
     }
   }, [currentQuestion]);
 
   const handleAnswerClick = (answer) => {
-    if (isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion) return;
-    
-    // Set flag immediately to prevent subsequent clicks
-    setIsAnswerSubmitted(true); 
-    
-    // The handleAnswer function in the hook is robust, but for the UI we set this flag.
-    handleAnswer(answer);
+  // Don’t proceed if UI is animating/paused/etc.
+  if (isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion) return;
+
+  // --- NEW: Ignore rapid re-clicks on the same question BEFORE locking the UI ---
+  const now = Date.now();
+  if (lastClickRef.current.qid === currentQuestion.id && now - lastClickRef.current.t < 700) {
+    return; // just ignore; do NOT lock
   }
+  lastClickRef.current = { qid: currentQuestion.id, t: now };
+
+  setIsAnswerSubmitted(true); // lock for this question
+  // Call into hook; add a small failsafe to auto-unlock if question didn't advance
+  Promise.resolve(handleAnswer(answer))
+    .finally(() => {
+      // Safety unlock: if question hasn't changed after ~1.2s, re-enable buttons
+      setTimeout(() => {
+        if (currentQuestion && lastClickRef.current.qid === currentQuestion.id) {
+          setIsAnswerSubmitted(false);
+        }
+      }, 200);
+    });
+};
+
 
   const maxQuestions =
     selectedDifficulty === 'brown'

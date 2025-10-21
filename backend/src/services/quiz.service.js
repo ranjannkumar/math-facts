@@ -74,12 +74,10 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
     return { completed: true, passed: false, reason: 'timeup',sessionCorrectCount:  Number(run.stats.correct)};
   }
 
-  // --- START FIX for double click race condition ---
+  // --- FIX for double click race condition ---
   const submittedId = String(questionId);
   const currentItem = run.items[run.currentIndex];
 
-  // --- START FIX: Robust Idempotency Check ---
-  
   // Check if the submitted questionId is for the *current* question
   if (currentItem && String(currentItem.questionId) === submittedId) {
       // It's the current question. Proceed normally.
@@ -102,8 +100,6 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
        // Index is 0, and currentItem check failed. Must be an invalid ID.
        throw new Error('Not the current question');
   }
-  
-  // --- END FIX: Robust Idempotency Check ---
 
   // const item = run.items[run.currentIndex];
   // // Check if the submitted answer is for the current question
