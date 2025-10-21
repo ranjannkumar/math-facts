@@ -86,6 +86,9 @@ const BlackBeltPicker = () => {
           {degrees.map((deg) => {
             const locked = !isUnlocked(deg);
             const isDisabled = locked || isQuizStarting; 
+            if (isCompleted(deg)) {
+                return null;
+            }
             return (
               <button
                 key={deg}

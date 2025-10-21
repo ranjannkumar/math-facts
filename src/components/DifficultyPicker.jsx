@@ -121,6 +121,10 @@ const DifficultyPicker = () => {
     const locked = !unlockedMap[belt];
     const { hasCompleted } = getBeltProgress(belt);
 
+    if (hasCompleted) {
+        return null; // Hide the completed belt card
+    }
+
     return (
       <button
         key={belt}
