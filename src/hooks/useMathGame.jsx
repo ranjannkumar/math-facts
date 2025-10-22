@@ -346,10 +346,11 @@ const useMathGame = () => {
       let newQuizStreak = currentQuizStreak;
       let symbol;
       let triggerStreakMessage = null; 
+      const timeTaken = responseMs / 1000;
+      const streakMilestone = [3, 5, 10]; // Milestones to check
       // --- END STREAK TRACKING ---
       
       // Update client-side UI first (optimistic symbol)
-      const timeTaken = responseMs / 1000;
        if (isCorrect) {
         newQuizStreak += 1; // Increment streak
         
@@ -363,24 +364,24 @@ const useMathGame = () => {
             audioManager.playCompleteSound(); 
         }
 
-        // Check for streak milestone (3, 5, 10)
-        if ([3, 5, 10].includes(newQuizStreak)) {
-            const streakText = `${newQuizStreak} in a row!`;
-            
+       // Check for streak milestone (3, 5, 10)
+        if (streakMilestone.includes(newQuizStreak)) {
             // Check previous symbols to see if the streak is "perfect" (all lightning)
+            // Use the last (N-1) symbols from answerSymbols + the current one
             const streakSlice = answerSymbols.slice(-newQuizStreak + 1);
             const isLightningStreak = streakSlice.every(a => a.symbol === '⚡') && symbol === '⚡';
             
             triggerStreakMessage = {
-                text: streakText,
-                colorClass: isLightningStreak ? 'text-yellow-400' : 'text-green-500'
+                text: `${newQuizStreak} IN A ROW!`,
+                symbolType: isLightningStreak ? 'lightning' : 'check', // 'lightning' or 'check'
+                count: newQuizStreak,
             };
         }
         // Update streak states
         setCurrentQuizStreak(newQuizStreak);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
-        // setSessionCorrectCount(s => s + 1); // Optimistically update session score
+        setSessionCorrectCount(s => s + 1); // Optimistically update session score
       } else {
         // Wrong answer: Reset streak
         newQuizStreak = 0;
@@ -594,6 +595,8 @@ const useMathGame = () => {
         }
         try {
             const out = await quizHandleInactivity(quizRunId, currentQuestion.id, childPin);
+            setCurrentQuizStreak(0);
+            setTransientStreakMessage(null);
 
              if (out.completed) { // Check for immediate completion flag
                  // Black belt immediate failure due to inactivity/time up (handled by backend logic)

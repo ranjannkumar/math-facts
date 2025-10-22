@@ -79,25 +79,33 @@ const QuizScreen = () => {
       <div className="w-full min-h-screen flex flex-col items-center justify-center relative">
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6">
           
-          {/* --- NEW TRANSIENT STREAK MESSAGE --- */}
-          <div className="relative h-6 sm:h-8 mb-2">
+          {/* --- NEW TRANSIENT STREAK BOX --- */}
+          <div className="relative  h-36 sm:h-14 mb-8 sm:mb-6">
             <AnimatePresence>
               {transientStreakMessage && (
                 <motion.div
-                  key="streak-message"
-                  initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                  key="streak-message-box"
+                  initial={{ opacity: 0, y: 30, scale: 0.8 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className={`absolute left-1/2 -translate-x-1/2 -top-1 sm:-top-2 z-20 
-                              text-3xl sm:text-4xl font-extrabold whitespace-nowrap 
-                              ${transientStreakMessage.colorClass} drop-shadow-lg`}
+                  className={`absolute left-1/2 -translate-x-1/2 top-0 z-20 
+                              px-5 py-2 rounded-full border-4 font-extrabold text-white text-xl sm:text-2xl 
+                              whitespace-nowrap shadow-xl drop-shadow-lg`}
+                  style={{
+                    // Dynamic styling based on symbolType
+                    borderColor: transientStreakMessage.symbolType === 'lightning' ? '#FFD700' : '#10B981',
+                    background: transientStreakMessage.symbolType === 'lightning' 
+                        ? 'linear-gradient(90deg, #FF9800 0%, #FFCC80 100%)' // Orange/Yellow for lightning
+                        : 'linear-gradient(90deg, #10B981 0%, #34D399 100%)', // Green for check
+                  }}
                 >
                   {transientStreakMessage.text}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
+          {/* --- END NEW TRANSIENT STREAK BOX --- */}
           <div className="flex justify-center items-center mb-2 space-x-1">
             {answerSymbols.map((answer, index) => (
               <span
