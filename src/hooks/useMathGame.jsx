@@ -173,7 +173,7 @@ const useMathGame = () => {
       try {
         // 1. Login first to get user data
        const loginResponse = await authLogin(pinValue, nameValue.trim());
-        localStorage.setItem('math-child-name', loginResponse.user.name);
+        // localStorage.setItem('math-child-name', loginResponse.user.name);
         setChildName(loginResponse.user.name);
 
         // 2. Process results - ADD THEME RETRIEVAL
@@ -208,7 +208,7 @@ const useMathGame = () => {
         }
 
       } catch (e) {
-        localStorage.removeItem('math-child-name');
+        // localStorage.removeItem('math-child-name');
         localStorage.removeItem('math-child-pin');
         setChildPin('');
         setChildName(''); // Keep the name input value on the screen
