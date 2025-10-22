@@ -52,10 +52,7 @@ const useMathGame = () => {
 
    // --- ADD STREAK STATE ---
    const [currentQuizStreak, setCurrentQuizStreak] = useState(0); // Current streak in the running quiz
-   const [isPerfectStreak, setIsPerfectStreak] = useState(true); // Tracks if current streak is all ⚡
-   const [showStreakAnimation, setShowStreakAnimation] = useState(false); // Controls animation display
-   const [animationStreakCount, setAnimationStreakCount] = useState(0); // Streak count to display in animation
-   // --- END ADD STREAK STATE ---
+   const [transientStreakMessage, setTransientStreakMessage] = useState(null);
 
   // Timers
   const [quizStartTime, setQuizStartTime] = useState(null);
@@ -146,14 +143,7 @@ const useMathGame = () => {
     setIsAnimating(false);
     setInterventionQuestion(null);
 
-    // --- RESET STREAK STATE ---
     setCurrentQuizStreak(0); // Reset quiz streak
-    setIsPerfectStreak(true); // Reset perfect streak flag
-    setShowStreakAnimation(false); // Ensure animation is off
-    setAnimationStreakCount(0); // Reset animation count
-
-    // --- RESET STREAK STATE ---
-    // setCurrentStreak(0);
   }, []);
 
   // --- API / LIFECYCLE ---
@@ -337,26 +327,6 @@ const useMathGame = () => {
     [navigate, childPin, hardResetQuizState, determineMaxQuestions, startActualQuiz]
   );
 
-  // New: Handles completion of streak animation
-  const handleStreakAnimationComplete = useCallback(() => {
-      setShowStreakAnimation(false);
-      setIsTimerPaused(false);
-      
-      // Resume timer client-side by correcting quizStartTime
-      if (pausedTime) setQuizStartTime((prev) => (prev ? prev + (Date.now() - pausedTime) : prev));
-      setPausedTime(0);
-      
-      // Manually advance the question loop to continue the quiz
-      const nextIndex = currentQuestionIndex + 1;
-      if (nextIndex < quizQuestions.length) {
-          setCurrentQuestion(quizQuestions[nextIndex]); 
-          setCurrentQuestionIndex(nextIndex);
-          questionStartTimestamp.current = Date.now();
-          setIsAnimating(false);
-      }
-      
-  }, [pausedTime, currentQuestionIndex, quizQuestions]);
-  
   // 3. Answer
   const handleAnswer = useCallback(
     async (selectedAnswer) => {
@@ -372,81 +342,49 @@ const useMathGame = () => {
         inactivityTimeoutId.current = null;
       }
 
-      // --- STREAK TRACKING ---
+     // --- STREAK TRACKING ---
       let newQuizStreak = currentQuizStreak;
-      let wasPerfect = isPerfectStreak;
+      let symbol;
+      let triggerStreakMessage = null; 
       // --- END STREAK TRACKING ---
       
       // Update client-side UI first (optimistic symbol)
       const timeTaken = responseMs / 1000;
-      let symbol;
        if (isCorrect) {
         newQuizStreak += 1; // Increment streak
+        
+        // Determine symbol and color
         if (timeTaken <= 1.5) {
             symbol = '⚡';
             audioManager.playLightningSound(); 
         } 
-        else if (timeTaken <= 5) {
+        else {
             symbol = '✓';
             audioManager.playCompleteSound(); 
-            wasPerfect = false; // Not a perfect streak if it contains a ✓
-        } else {
-            symbol = '✓'; 
-            audioManager.playWrongSound();
-            wasPerfect = false; // Not a perfect streak if it contains a ✓
         }
 
+        // Check for streak milestone (3, 5, 10)
+        if ([3, 5, 10].includes(newQuizStreak)) {
+            const streakText = `${newQuizStreak} in a row!`;
+            
+            // Check previous symbols to see if the streak is "perfect" (all lightning)
+            const streakSlice = answerSymbols.slice(-newQuizStreak + 1);
+            const isLightningStreak = streakSlice.every(a => a.symbol === '⚡') && symbol === '⚡';
+            
+            triggerStreakMessage = {
+                text: streakText,
+                colorClass: isLightningStreak ? 'text-yellow-400' : 'text-green-500'
+            };
+        }
         // Update streak states
         setCurrentQuizStreak(newQuizStreak);
-        setIsPerfectStreak(wasPerfect && (symbol === '⚡')); // Update perfect streak flag
-
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
-        setSessionCorrectCount(s => s + 1); // Optimistically update session score
-        // --- STREAK MILESTONE CHECK ---
-        const isMilestone = [3, 5, 10].includes(newQuizStreak);
-        const isTerminalQuestion = (currentQuestionIndex + 1) === quizQuestions.length;
-
-        if (isMilestone && !isTerminalQuestion) {
-            // Pause timer and trigger Streak Animation
-            setIsTimerPaused(true);
-            setPausedTime(Date.now());
-            setAnimationStreakCount(newQuizStreak);
-            setShowStreakAnimation(true);
-            
-            setIsAnimating(false); // Unlock UI for the animation overlay
-            
-            // Send answer to backend in a non-blocking way
-            quizSubmitAnswer(
-                quizRunId,
-                questionId,
-                selectedAnswer,
-                responseMs,
-                selectedTable,
-                selectedDifficulty,
-                childPin
-            ).then(out => {
-                 // Update authoritative stats from non-blocking call
-                if (!out.completed && !out.practice && out.dailyStats) {
-                    setCorrectCount(out.dailyStats.correctCount);
-                    setDailyTotalMs(out.dailyStats.totalActiveMs);
-                    if (out.dailyStats.grandTotal !== undefined) {
-                        setGrandTotalCorrect(out.dailyStats.grandTotal); 
-                    }
-                    if (out.dailyStats.currentStreak !== undefined) {
-                        setCurrentStreak(out.dailyStats.currentStreak); 
-                    }
-                }
-            }).catch(console.error);
-            
-            return; // EXIT: Animation logic takes over the rest of the flow
-        }
-        // --- END STREAK MILESTONE CHECK ---
+        // setSessionCorrectCount(s => s + 1); // Optimistically update session score
       } else {
         // Wrong answer: Reset streak
         newQuizStreak = 0;
         setCurrentQuizStreak(0);
-        setIsPerfectStreak(true);
         symbol = '';
         audioManager.playWrongSound();
         setWrongCount((w) => w + 1);
@@ -462,6 +400,13 @@ const useMathGame = () => {
           setCurrentQuestion(quizQuestions[nextIndex]); 
           setCurrentQuestionIndex(nextIndex);
           questionStartTimestamp.current = Date.now();
+
+          // Set the transient streak message if triggered, and clear it on the new question.
+          setTransientStreakMessage(triggerStreakMessage); 
+          if (triggerStreakMessage) {
+              // Clear the message very soon so it's a quick flash.
+              setTimeout(() => setTransientStreakMessage(null), 500); 
+          }
           
           // Unlock the UI immediately (before the slow API call returns)
           setIsAnimating(false); 
@@ -469,7 +414,15 @@ const useMathGame = () => {
           
           // Optimistically update session score for accurate UI display 
           setSessionCorrectCount(s => s + 1);
-      } 
+      } else {
+          // Last question answered (correctly or incorrectly)
+          setIsAnimating(false);
+          setTransientStreakMessage(triggerStreakMessage); 
+          if (triggerStreakMessage) {
+               // If it's the last question, clear the message quickly so it doesn't linger 
+              setTimeout(() => setTransientStreakMessage(null), 1000); 
+          }
+      }
       // ---  UI ADVANCE ---
       
       // Send answer to backend to get next state (Awaited for terminal/stat updates)
@@ -564,7 +517,7 @@ const useMathGame = () => {
       }
 
     },
-    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions, quizQuestions, currentQuestionIndex,currentQuizStreak, isPerfectStreak]
+    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions, quizQuestions, currentQuestionIndex,currentQuizStreak]
   );
   
   // 4. Handle Practice Answer Submission (for LearningModule intervention)
@@ -757,13 +710,7 @@ const useMathGame = () => {
     startQuizWithDifficulty,
     startActualQuiz,
     handleAnswer,
-
-    // --- EXPOSED STREAK STATE & HANDLER ---
-    showStreakAnimation,
-    animationStreakCount,
-    isPerfectStreak,
-    handleStreakAnimationComplete,
-    // --- END EXPOSED STREAK STATE
+    transientStreakMessage,
     // UI & Progress
     isAnimating, setIsAnimating,
     showResult, setShowResult,

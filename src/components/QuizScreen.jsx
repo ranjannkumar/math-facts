@@ -1,7 +1,8 @@
 // src/components/QuizScreen.jsx
 import React, { useRef, useEffect, useContext, useState } from 'react';
 import { MathGameContext } from '../App.jsx';
-import StreakAnimation from './StreakAnimation.jsx';
+// import StreakAnimation from './StreakAnimation.jsx';
+import { motion, AnimatePresence } from "framer-motion";
 
 const QuizScreen = () => {
   const {
@@ -14,10 +15,7 @@ const QuizScreen = () => {
     selectedDifficulty,
     isTimerPaused,
     // <<< NEW CONTEXT PROPS
-    showStreakAnimation,
-    animationStreakCount,
-    isPerfectStreak,
-    handleStreakAnimationComplete
+    transientStreakMessage,
   } = useContext(MathGameContext);
 
   const answerRefs = useRef([]);
@@ -79,14 +77,27 @@ const QuizScreen = () => {
       }}
     >
       <div className="w-full min-h-screen flex flex-col items-center justify-center relative">
-        {showStreakAnimation && (
-            <StreakAnimation 
-                streakCount={animationStreakCount}
-                symbolType={isPerfectStreak ? 'lightning' : 'mixed'}
-                onAnimationComplete={handleStreakAnimationComplete}
-            />
-        )}
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6">
+          
+          {/* --- NEW TRANSIENT STREAK MESSAGE --- */}
+          <div className="relative h-6 sm:h-8 mb-2">
+            <AnimatePresence>
+              {transientStreakMessage && (
+                <motion.div
+                  key="streak-message"
+                  initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  className={`absolute left-1/2 -translate-x-1/2 -top-1 sm:-top-2 z-20 
+                              text-3xl sm:text-4xl font-extrabold whitespace-nowrap 
+                              ${transientStreakMessage.colorClass} drop-shadow-lg`}
+                >
+                  {transientStreakMessage.text}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <div className="flex justify-center items-center mb-2 space-x-1">
             {answerSymbols.map((answer, index) => (
               <span

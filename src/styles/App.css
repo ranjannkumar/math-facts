@@ -914,25 +914,3 @@ html {
   }
 }
 
-/* Pulse for the streak icon */
-@keyframes pulse-streak {
-  0%, 100% {
-    transform: scale(1) rotate(0deg);
-  }
-  50% {
-    transform: scale(1.15) rotate(5deg);
-  }
-}
-
-.animate-streak-in {
-  animation: streak-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-.animate-streak-out {
-  animation: streak-out 0.5s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
-}
-
-.animate-pulse-streak {
-  animation: pulse-streak 1.5s ease-in-out infinite;
-}
-
