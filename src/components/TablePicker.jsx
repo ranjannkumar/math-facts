@@ -8,6 +8,7 @@ import { themeConfigs } from '../utils/mathGameLogic.js';
 
 const TOTAL_LEVELS = 12; // only 12 levels as required
 const COLOR_BELTS = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
+const ALL_BELTS_FOR_DISPLAY = ['white', 'yellow', 'green', 'blue', 'red', 'brown', 'black'];
 
 /* ----------------- Progress helpers (Updated to rely on Context/Hook) ----------------- */
 function areColorBeltsCompleted(level, tableProgress) {
@@ -20,7 +21,28 @@ function countCompletedBelts(level, tableProgress) {
   const lvlKey = `L${level}`;
   const levelProgress = tableProgress?.[lvlKey];
   if (!levelProgress) return 0;
-  return COLOR_BELTS.filter((belt) => !!levelProgress[belt]?.completed).length;
+  
+  // Count the first six color belts completed
+  let completedCount = COLOR_BELTS.filter((belt) => !!levelProgress[belt]?.completed).length; 
+  
+  // Check if the Black Belt section is fully completed (Degree 7)
+  const isBlackCompleted = levelProgress?.black?.completedDegrees?.includes(7);
+  if (isBlackCompleted) {
+    completedCount = ALL_BELTS_FOR_DISPLAY.length; // Max out the stars
+  } else if (completedCount === COLOR_BELTS.length && levelProgress?.black?.unlocked) {
+  }
+  
+  //  Use the total number of belts for the maximum display count
+  const totalStars = ALL_BELTS_FOR_DISPLAY.length; 
+  let currentStars = completedCount;
+  
+  if (!!levelProgress?.black?.completedDegrees?.includes(7)) {
+    currentStars = 7;
+  } else if (!!levelProgress?.brown?.completed) {
+    currentStars = 6;
+  }
+
+  return currentStars;
 }
 function isPreviousLevelCompleted(level, tableProgress) {
   const prevLevel = level - 1;
@@ -93,7 +115,7 @@ const TablePicker = () => {
   // The rest of the state and handlers for navigation (goPrev/goNext) are removed.
   
   const completedBelts = countCompletedBelts(levelNumber, tableProgress);
-  const starDisplay = '⭐'.repeat(completedBelts) + '☆'.repeat(COLOR_BELTS.length - completedBelts);
+  const starDisplay = '⭐'.repeat(completedBelts) + '☆'.repeat(ALL_BELTS_FOR_DISPLAY.length - completedBelts);
   // Theme-driven visuals for THIS level (index is levelNumber - 1)
   const themeIdx = levelNumber > 0 ? levelNumber - 1 : 0;
   const emojiForLevel = currentTheme?.tableEmojis?.[themeIdx] ?? '⭐';
