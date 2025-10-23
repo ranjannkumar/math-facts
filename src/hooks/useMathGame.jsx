@@ -417,35 +417,49 @@ const useMathGame = () => {
       let symbol;
       let triggerStreakMessage = null; 
       const timeTaken = responseMs / 1000;
-      const streakMilestone = [3, 5, 10,15,20]; // Milestones to check
+      const streakMilestone = [3,5,10,15,20]; // Milestones to check
+      // const isStreakMilestoneHit = streakMilestone.includes(newQuizStreak);
       // --- END STREAK TRACKING ---
       
       // Update client-side UI first (optimistic symbol)
        if (isCorrect) {
         newQuizStreak += 1; // Increment streak
+        const isStreakMilestoneHit = streakMilestone.includes(newQuizStreak);
         
         // Determine symbol and color
         if (timeTaken <= 1.5) {
             symbol = '⚡';
-            audioManager.playLightningSound(); 
+            // Only play 'lightning' sound if it's NOT a streak milestone.
+            if (!isStreakMilestoneHit) { 
+                 audioManager.playLightningSound();
+            } 
         } 
         else {
             symbol = '✓';
-            audioManager.playCompleteSound(); 
+            // Only play 'complete' sound if it's NOT a streak milestone.
+            if (!isStreakMilestoneHit) {
+                audioManager.playCompleteSound();
+            } 
         }
 
        // Check for streak milestone (3, 5, 10)
-        if (streakMilestone.includes(newQuizStreak)) {
+        if (isStreakMilestoneHit) {
             // Check previous symbols to see if the streak is "perfect" (all lightning)
             // Use the last (N-1) symbols from answerSymbols + the current one
             const streakSlice = answerSymbols.slice(-newQuizStreak + 1);
             const isLightningStreak = streakSlice.every(a => a.symbol === '⚡') && symbol === '⚡';
             
             triggerStreakMessage = {
-                text: `${newQuizStreak} in a row !`,
+                text: `${newQuizStreak} in a row`,
                 symbolType: isLightningStreak ? 'lightning' : 'check', // 'lightning' or 'check'
                 count: newQuizStreak,
             };
+               // Play streak sound ---
+            if (isLightningStreak) {
+                audioManager.playLightningStreakSound(newQuizStreak);
+            } else {
+                audioManager.playStreakSound(newQuizStreak);
+            }
         }
         // Update streak states
         setCurrentQuizStreak(newQuizStreak);
