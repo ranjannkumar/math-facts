@@ -48,6 +48,16 @@ class AudioManager {
       this._loadAudio('wrong', '/wrong_sound.mp3');
       this._loadAudio('green', '/green_tick_sound.mp3');
       this._loadAudio('animation', '/animation_sound.mp3');
+      this._loadAudio('3_streak', '/3_streak_sound.mp3');
+      this._loadAudio('5_streak', '/5_streak_sound.mp3');
+      this._loadAudio('10_streak', '/10_streak_sound.mp3');
+      this._loadAudio('15_streak', '/15_streak_sound.mp3');
+      this._loadAudio('20_streak', '/20_streak_sound.mp3');
+      this._loadAudio('3_lightning_streak', '/3_streak_sound.mp3');
+      this._loadAudio('5_lightning_streak', '/5_streak_sound.mp3');
+      this._loadAudio('10_lightning_streak', '/10_streak_sound.mp3');
+      this._loadAudio('15_lightning_streak', '/15_streak_sound.mp3');
+      this._loadAudio('20_lightning_streak', '/20_streak_sound.mp3');
   }
 
   // New method to play an audio buffer
@@ -180,6 +190,33 @@ class AudioManager {
       this._playBuffer('animation', 0.6); 
   }
 
+  playStreakSound(streakCount) {
+    if (streakCount === 3) {
+      this._playBuffer('3_streak', 0.8);
+    } else if (streakCount === 5) {
+      this._playBuffer('5_streak', 0.8);
+    } else if (streakCount === 10) {
+      this._playBuffer('10_streak', 0.8);
+    } else if (streakCount === 15) {
+      this._playBuffer('15_streak', 0.8);
+    } else if (streakCount === 20) {
+      this._playBuffer('20_streak', 0.8);
+    }
+  }
+
+  playLightningStreakSound(streakCount) {
+    if (streakCount === 3) {
+      this._playBuffer('3_lightning_streak', 0.8);
+    } else if (streakCount === 5) {
+      this._playBuffer('5_lightning_streak', 0.8);
+    } else if (streakCount === 10) {
+      this._playBuffer('10_lightning_streak', 0.8);
+    } else if (streakCount === 15) {
+      this._playBuffer('15_lightning_streak', 0.8);
+    } else if (streakCount === 20) {
+      this._playBuffer('20_lightning_streak', 0.8);
+    }
+  }
 
   // Stop and cleanup ----------------------------------------------------------
 

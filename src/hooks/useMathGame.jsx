@@ -488,7 +488,7 @@ const useMathGame = () => {
           setTransientStreakMessage(triggerStreakMessage); 
           if (triggerStreakMessage) {
                // If it's the last question, clear the message quickly so it doesn't linger 
-              setTimeout(() => setTransientStreakMessage(null), 1000); 
+              setTimeout(() => setTransientStreakMessage(null), 500); 
           }
       }
       // ---  UI ADVANCE ---
