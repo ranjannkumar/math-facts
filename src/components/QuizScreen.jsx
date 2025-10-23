@@ -16,6 +16,7 @@ const QuizScreen = () => {
     isTimerPaused,
     // <<< NEW CONTEXT PROPS
     transientStreakMessage,
+    isAwaitingInactivityResponse,
   } = useContext(MathGameContext);
 
   const answerRefs = useRef([]);
@@ -33,7 +34,7 @@ const QuizScreen = () => {
 
   const handleAnswerClick = (answer) => {
   // Don’t proceed if UI is animating/paused/etc.
-  if (isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion) return;
+  if (isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion ) return;
 
   // --- NEW: Ignore rapid re-clicks on the same question BEFORE locking the UI ---
   const now = Date.now();
@@ -80,7 +81,7 @@ const QuizScreen = () => {
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6">
           
           {/* --- NEW TRANSIENT STREAK BOX --- */}
-          <div className="relative  h-36 sm:h-14 mb-8 sm:mb-6">
+          <div className="relative  h-48 sm:h-20 mb-8 sm:mb-10">
             <AnimatePresence>
               {transientStreakMessage && (
                 <motion.div
@@ -89,8 +90,8 @@ const QuizScreen = () => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className={`absolute left-1/2 -translate-x-1/2 top-0 z-20 
-                              px-5 py-2 rounded-full border-4 font-extrabold text-white text-xl sm:text-2xl 
+                  className={`absolute left-[35%] -translate-x-1/2 top-0 z-20 
+                              px-6 py-3.5 rounded-full border-4 font-extrabold text-white text-2xl sm:text-3xl 
                               whitespace-nowrap shadow-xl drop-shadow-lg`}
                   style={{
                     // Dynamic styling based on symbolType
@@ -152,7 +153,7 @@ const QuizScreen = () => {
                   key={index}
                   ref={answerRefs.current[index]}
                   onClick={() => handleAnswerClick(answer)}
-                  disabled={isAnimating || !currentQuestion || showResult || isTimerPaused || isAnswerSubmitted}
+                  disabled={isAnimating || !currentQuestion || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
                   className={
                     [
                       // Base look

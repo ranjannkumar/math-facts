@@ -78,6 +78,7 @@ const useMathGame = () => {
   const [showResetModal, setShowResetModal] = useState(false);
 
    const [isQuizStarting, setIsQuizStarting] = useState(false);
+   const [isAwaitingInactivityResponse, setIsAwaitingInactivityResponse] = useState(false);
 
   // --- ADD MISSING PRE-TEST STATE DECLARATIONS ---
   const [preTestSection, setPreTestSection] = useState('addition');
@@ -372,7 +373,7 @@ const useMathGame = () => {
             const isLightningStreak = streakSlice.every(a => a.symbol === '⚡') && symbol === '⚡';
             
             triggerStreakMessage = {
-                text: `${newQuizStreak} IN A ROW!`,
+                text: `${newQuizStreak} in a row !`,
                 symbolType: isLightningStreak ? 'lightning' : 'check', // 'lightning' or 'check'
                 count: newQuizStreak,
             };
@@ -406,7 +407,7 @@ const useMathGame = () => {
           setTransientStreakMessage(triggerStreakMessage); 
           if (triggerStreakMessage) {
               // Clear the message very soon so it's a quick flash.
-              setTimeout(() => setTransientStreakMessage(null), 500); 
+              setTimeout(() => setTransientStreakMessage(null), 1000); 
           }
           
           // Unlock the UI immediately (before the slow API call returns)
@@ -593,6 +594,8 @@ const useMathGame = () => {
             clearTimeout(inactivityTimeoutId.current);
             inactivityTimeoutId.current = null;
         }
+        // Set block flag immediately before API call 
+        setIsAwaitingInactivityResponse(true);
         try {
             const out = await quizHandleInactivity(quizRunId, currentQuestion.id, childPin);
             setCurrentQuizStreak(0);
@@ -602,6 +605,7 @@ const useMathGame = () => {
                  // Black belt immediate failure due to inactivity/time up (handled by backend logic)
                 setQuizStartTime(null); // Stop timer
                 setSessionCorrectCount(out.sessionCorrectCount || 0);
+                setIsAwaitingInactivityResponse(false);
                 // navigate to way-to-go on inactivity fail for black belt
                 navigate('/way-to-go', { replace: true });
                 return;
@@ -612,12 +616,14 @@ const useMathGame = () => {
                 setPausedTime(Date.now());
                 setInterventionQuestion(mapQuestionToFrontend(out.practice));
                 setShowLearningModule(true);
+                setIsAwaitingInactivityResponse(false);
                 navigate('/learning');
             }
         } catch(e) {
             console.error('Inactivity API failed:', e.message);
             setIsTimerPaused(true);
             setPausedTime(Date.now());
+            setIsAwaitingInactivityResponse(false);
             navigate('/belts');
         }
     }, INACTIVITY_TIMEOUT_MS); 
@@ -735,6 +741,7 @@ const useMathGame = () => {
     getQuizTimeLimit: () => quizTimeLimit,
     // Learning/Practice
     isQuizStarting,
+    isAwaitingInactivityResponse,
     showLearningModule, setShowLearningModule,
     learningModuleContent, setLearningModuleContent,
     pendingDifficulty, setPendingDifficulty,
