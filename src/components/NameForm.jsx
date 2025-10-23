@@ -9,6 +9,7 @@ const NameForm = () => {
     handleNameChange,
     handlePinChange,
     handlePinSubmit,
+    isLoginLoading,
   } = useContext(MathGameContext);
 
   const [error, setError] = useState('');
@@ -29,6 +30,7 @@ const NameForm = () => {
       setError('Please enter a valid Passcode (at least 2 characters).');
       return;
     }
+    if (isLoginLoading) return;
     setError('');
     
     try {
@@ -170,7 +172,7 @@ const inputBaseClass =
             type="submit"
             className="bg-green-800 hover:bg-green-900 text-white font-bold py-1.5 sm:py-2 px-6 sm:px-8 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg mt-2"
           >
-            Start
+           {isLoginLoading ? 'Loading...' : 'Start'}
           </button>
         </form>
       </div>

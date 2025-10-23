@@ -6,7 +6,7 @@ import SessionTimer from './ui/SessionTimer';
 import SettingsModal from './SettingsModal';
 import { MathGameContext } from '../App.jsx';
 
-const MainLayout = () => {
+const MainLayout = ({ hideStats }) => {
   const {
     showSettings,
     setShowSettings,
@@ -21,6 +21,7 @@ const MainLayout = () => {
 
   const location = useLocation();
   const showStats = !(location.pathname === '/' || location.pathname === '/name');
+  const shouldRenderStats = showStats && !hideStats;
 
   return (
     <div
@@ -44,7 +45,7 @@ const MainLayout = () => {
 
       <Outlet />
 
-      {showStats && (
+       {shouldRenderStats && (
         <div
           style={{
             position: 'fixed',

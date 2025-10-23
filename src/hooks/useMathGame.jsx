@@ -77,6 +77,12 @@ const useMathGame = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
 
+  // LOGIN & SIBLING CHECK STATE 
+   const [isLoginLoading, setIsLoginLoading] = useState(false);
+   const [showSiblingCheck, setShowSiblingCheck] = useState(false);
+   const [loginPendingName, setLoginPendingName] = useState(null);
+   const [loginPendingResponse, setLoginPendingResponse] = useState(null);
+
    const [isQuizStarting, setIsQuizStarting] = useState(false);
    const [isAwaitingInactivityResponse, setIsAwaitingInactivityResponse] = useState(false);
 
@@ -145,6 +151,11 @@ const useMathGame = () => {
     setInterventionQuestion(null);
 
     setCurrentQuizStreak(0); // Reset quiz streak
+    // Also reset sibling check and loading states
+    setIsLoginLoading(false); 
+    setShowSiblingCheck(false); 
+    setLoginPendingName(null);
+    setLoginPendingResponse(null);
   }, []);
 
   // --- API / LIFECYCLE ---
@@ -157,23 +168,79 @@ const useMathGame = () => {
       }
   }, [quizStartTime, dailyTotalMs]); // Triggers on login fetch or quiz completion update.
 
+  // ---  Final step of login, called after sibling check confirmation ---
+  const processLoginFinal = useCallback((loginResponse) => {
+
+    // localStorage.setItem('math-child-name', loginResponse.user.name);
+    setChildName(loginResponse.user.name);
+
+    const themeKeyFromBackend = loginResponse.user.theme || null;
+    setUserThemeKey(themeKeyFromBackend); 
+    
+    if (themeKeyFromBackend && themeKeyFromBackend.length > 0) {
+        const config = themeConfigs[themeKeyFromBackend];
+         if (config) setSelectedTheme({ key: themeKeyFromBackend, ...config });
+    } else {
+         setSelectedTheme(null);
+    }
+    const progressResponse = loginResponse.user.progress || {};
+    const stats = loginResponse.user.dailyStats || {};
+
+    setTableProgress(progressResponse);
+    setDailyTotalMs(stats?.totalActiveMs || 0); 
+    setCorrectCount(stats?.correctCount || 0); 
+    setGrandTotalCorrect(stats?.grandTotal || 0); 
+    setCurrentStreak(loginResponse.user.currentStreak || 0);
+
+    // Final Navigation
+    if (themeKeyFromBackend && themeKeyFromBackend.length > 0 && themeKeyFromBackend !== 'null') {
+         navigate('/levels');
+    } else {
+         navigate('/theme');
+    }
+
+  }, [navigate, setChildName, setTableProgress, setDailyTotalMs, setCorrectCount, setGrandTotalCorrect, setCurrentStreak]);
+
+
+  // ---Handler for Sibling Check Modal ---
+  const handleSiblingCheck = useCallback(async (isConfirmed) => {
+    // Clear pending states regardless of the outcome
+    setShowSiblingCheck(false);
+    
+    if (isConfirmed && loginPendingResponse) {
+      // YES: Proceed with the final login logic
+      processLoginFinal(loginPendingResponse);
+    } else {
+      // NO: Log out (clear stored PIN/Name) and navigate to the home screen
+      localStorage.removeItem('math-child-pin');
+      setChildPin('');
+      setChildName('');
+      navigate('/');
+    }
+    setLoginPendingName(null);
+    setLoginPendingResponse(null);
+  }, [navigate, processLoginFinal, setChildPin, setChildName, loginPendingResponse]);
+  // --- END  Sibling Check Modal Handler ---
+
 
   const handlePinSubmit = useCallback(
     async (pinValue,nameValue) => {
       const oldPin = localStorage.getItem('math-child-pin');
-      // localStorage.setItem('math-child-name', nameValue.trim());
-      // setChildName(nameValue.trim());
-      // if (oldPin !== pinValue) {
-      //   // Reset local state for new user
-      //   hardResetQuizState();
-      // }
-      
       localStorage.setItem('math-child-pin', pinValue);
       setChildPin(pinValue);
 
       try {
+        setIsLoginLoading(true);
         // 1. Login first to get user data
        const loginResponse = await authLogin(pinValue, nameValue.trim());
+       // ---  SIBLING CHECK LOGIC ---
+        // Store the successful login info temporarily
+        setLoginPendingName(loginResponse.user.name);
+        setLoginPendingResponse(loginResponse);
+        setShowSiblingCheck(true);
+        setIsLoginLoading(false); // STOP LOADING once we have the response and show the modal
+        // --- END SIBLING CHECK LOGIC ---
+
         // localStorage.setItem('math-child-name', loginResponse.user.name);
         setChildName(loginResponse.user.name);
 
@@ -209,6 +276,7 @@ const useMathGame = () => {
         }
 
       } catch (e) {
+        setIsLoginLoading(false); // STOP LOADING on error
         // localStorage.removeItem('math-child-name');
         localStorage.removeItem('math-child-pin');
         setChildPin('');
@@ -755,6 +823,11 @@ const useMathGame = () => {
     userSavedThemeKey: userThemeKey, // EXPOSED: Key to check if theme is locked
     selectedTheme,
     setSelectedTheme: updateThemeAndNavigate, 
+
+    isLoginLoading,
+    showSiblingCheck,
+    loginPendingName,
+    handleSiblingCheck,
     
     handleResetProgress: handleInitiateReset,
     handleConfirmReset, handleCancelReset,

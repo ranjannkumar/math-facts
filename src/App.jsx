@@ -2,6 +2,7 @@ import React, { useEffect, createContext, lazy, Suspense } from 'react';
 import useMathGame from './hooks/useMathGame.jsx';
 
 // NEW: Lazy loading imports for Code Splitting
+import SiblingCheckModal from './components/SiblingCheckModal.jsx';
 const StartScreen = lazy(() => import('./components/StartScreen.jsx'));
 const NameForm = lazy(() => import('./components/NameForm.jsx'));
 const ThemePicker = lazy(() => import('./components/ThemePicker.jsx'));
@@ -30,6 +31,8 @@ const App = () => {
   const location = useLocation();
   const ctx = useMathGame();
 
+  const { showSiblingCheck } = ctx; 
+
   useEffect(() => () => clearShootingStars(), []);
 
   // stop sounds when leaving interactive screens
@@ -55,7 +58,7 @@ const App = () => {
         {/* <Route path="/pre-test-popup" element={<PreTestPopup />} /> */}
         {/* <Route path="/pre-test" element={<PreTestScreen />} /> */}
 
-        <Route element={<MainLayout />}>
+        <Route element={<MainLayout hideStats={showSiblingCheck} />}> 
           <Route path="/levels" element={<TablePicker />} />
           <Route path="/belts" element={<DifficultyPicker />} />
           <Route path="/black" element={<BlackBeltPicker />} /> {/* ✅ BLACK ROUTE */}
@@ -70,6 +73,21 @@ const App = () => {
         </Route>
       </Routes>
       </Suspense>
+
+        {showSiblingCheck && (
+        <div 
+            className="fixed inset-0 z-[99] bg-black/90"
+            style={{ 
+                backgroundImage: "url('/night_sky_landscape.jpg')", 
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+            }}
+        >
+             <SiblingCheckModal />
+        </div>
+      )}
+
 
       {/* Optional overlays kept here if you use them */}
       {ctx.showQuitModal && (

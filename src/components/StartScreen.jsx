@@ -57,7 +57,7 @@ const StartScreen = () => {
                             inputMode="none"
                             tabIndex="-1"
                         >
-                            Version 3.4
+                            Version 3.5
                         </button>
                     </div>
           
