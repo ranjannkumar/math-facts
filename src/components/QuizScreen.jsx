@@ -86,10 +86,10 @@ const QuizScreen = () => {
               {transientStreakMessage && (
                 <motion.div
                   key="streak-message-box"
-                  initial={{ opacity: 0, y: 30, scale: 0.8 }}
+                  initial={{ opacity: 0, y: 0, scale: 1 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  exit={{ opacity: 0, scale: 1 }}
+                  transition={{ duration: 0 }}
                   className={`absolute left-[35%] -translate-x-1/2 top-0 z-20 
                               px-6 py-3.5 rounded-full border-4 font-extrabold text-white text-2xl sm:text-3xl 
                               whitespace-nowrap shadow-xl drop-shadow-lg`}

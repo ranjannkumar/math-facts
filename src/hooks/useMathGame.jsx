@@ -333,6 +333,7 @@ const useMathGame = () => {
     async (selectedAnswer) => {
       if (isAnimating || showResult || isTimerPaused || !currentQuestion || !quizRunId) return;
       setIsAnimating(true);
+      setTransientStreakMessage(null);
       
       const responseMs = Date.now() - questionStartTimestamp.current;
       const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
@@ -348,7 +349,7 @@ const useMathGame = () => {
       let symbol;
       let triggerStreakMessage = null; 
       const timeTaken = responseMs / 1000;
-      const streakMilestone = [3, 5, 10]; // Milestones to check
+      const streakMilestone = [3, 5, 10,15,20]; // Milestones to check
       // --- END STREAK TRACKING ---
       
       // Update client-side UI first (optimistic symbol)
@@ -391,6 +392,7 @@ const useMathGame = () => {
         audioManager.playWrongSound();
         setWrongCount((w) => w + 1);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
+        setTransientStreakMessage(null);
       }
       
       // ---   UI ADVANCE FOR INSTANT TRANSITION ---
@@ -405,10 +407,6 @@ const useMathGame = () => {
 
           // Set the transient streak message if triggered, and clear it on the new question.
           setTransientStreakMessage(triggerStreakMessage); 
-          if (triggerStreakMessage) {
-              // Clear the message very soon so it's a quick flash.
-              setTimeout(() => setTransientStreakMessage(null), 1000); 
-          }
           
           // Unlock the UI immediately (before the slow API call returns)
           setIsAnimating(false); 
