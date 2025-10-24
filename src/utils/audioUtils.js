@@ -129,21 +129,12 @@ class AudioManager {
 
   // Sound effects -------------------------------------------------------------
 
-  // Replaced with generic tick/flash sound
-  // playCorrectSound() {
-  //   this._playBuffer('green', 0.8); // Use flash_sound.mp3 for a general "correct" sound
-  // }
-
   playCorrectSound() {
     this.playTone(523.25, 0.12, 'sine', 0.18); // C5
     setTimeout(() => this.playTone(659.25, 0.12, 'sine', 0.18), 80); // E5
     // setTimeout(() => this.playTone(783.99, 0.16, 'sine', 0.18), 50); // G5
   }
 
-  // Replaced with soft click (using start+next.mp3 as a generic tick/next sound)
-  // playWrongSound() {
-  //   this._playBuffer('wrong', 0.5); // Use a low volume, quick sound for wrong answer feedback
-  // }
 
   playWrongSound() {
     // Play a different sound for wrong answers - lower pitch with different waveform
@@ -169,7 +160,7 @@ class AudioManager {
     // setTimeout(() => this.playTone(783.99, 0.25, 'sine', 0.2), 300);
   }
   
-  // NEW (Part 2): Sounds for specific correct symbols
+  // Sounds for specific correct symbols
   playLightningSound() {
       // flash_sound.mp3
       this._playBuffer('flash', 0.9); 
@@ -192,27 +183,27 @@ class AudioManager {
 
   playStreakSound(streakCount) {
     if (streakCount === 3) {
-      this._playBuffer('3_streak', 0.8);
+      this._playBuffer('15_streak', 0.8);
     } else if (streakCount === 5) {
-      this._playBuffer('5_streak', 0.8);
+      this._playBuffer('15_streak', 0.8);
     } else if (streakCount === 10) {
-      this._playBuffer('10_streak', 0.8);
+      this._playBuffer('15_streak', 0.8);
     } else if (streakCount === 15) {
       this._playBuffer('15_streak', 0.8);
     } else if (streakCount === 20) {
-      this._playBuffer('20_streak', 0.8);
+      this._playBuffer('15_streak', 0.8);
     }
   }
 
   playLightningStreakSound(streakCount) {
     if (streakCount === 3) {
-      this._playBuffer('3_lightning_streak', 0.8);
+      this._playBuffer('20_lightning_streak', 0.8);
     } else if (streakCount === 5) {
-      this._playBuffer('5_lightning_streak', 0.8);
+      this._playBuffer('20_lightning_streak', 0.8);
     } else if (streakCount === 10) {
-      this._playBuffer('10_lightning_streak', 0.8);
+      this._playBuffer('20_lightning_streak', 0.8);
     } else if (streakCount === 15) {
-      this._playBuffer('15_lightning_streak', 0.8);
+      this._playBuffer('20_lightning_streak', 0.8);
     } else if (streakCount === 20) {
       this._playBuffer('20_lightning_streak', 0.8);
     }
