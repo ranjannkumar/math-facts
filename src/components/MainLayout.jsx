@@ -18,7 +18,6 @@ const MainLayout = ({ hideStats }) => {
     elapsedTime,
     handleQuit,
     handleResetProgress,
-    childPin
   } = useContext(MathGameContext);
 
   const location = useLocation();
@@ -45,7 +44,7 @@ const MainLayout = ({ hideStats }) => {
         <FaCog />
       </button>
 
-       {childPin && <UserInfoBadge />}
+      <UserInfoBadge />
 
       <Outlet />
 

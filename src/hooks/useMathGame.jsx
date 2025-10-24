@@ -131,7 +131,7 @@ const useMathGame = () => {
       clearTimeout(inactivityTimeoutId.current);
       inactivityTimeoutId.current = null;
     }
-    setChildName('');
+    // setChildName('');
     setQuizQuestions([]);
     setQuizRunId(null);
     setPreQuizPracticeItems([]);
