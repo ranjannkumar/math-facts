@@ -1,5 +1,3 @@
-// src/components/VideoPlayerScreen.jsx
-
 import React, { useContext, useEffect, useState } from 'react';
 import { MathGameContext } from '../App.jsx';
 import { useNavigate } from 'react-router-dom';
@@ -47,15 +45,10 @@ const VideoPlayerScreen = () => {
   }, [selectedTable]);
 
   const handleVideoEnd = (skip = false) => {
-    // Determine the safe fallback route if tempNextRoute is null/stale
-    const finalDestination = tempNextRoute || (() => {
-        const isBlack = String(selectedDifficulty).startsWith('black');
-        if (isBlack) return '/black';
-        else if (selectedDifficulty === 'brown') return '/black';
-        else return '/belts';
-    })();
+    
+    const finalDestination = tempNextRoute || '/levels';
 
-    console.log(`Video ${skip ? 'skipped' : 'ended'}, navigating to:`, finalDestination);
+    // console.log(`Video ${skip ? 'skipped' : 'ended'}, navigating to:`, finalDestination);
     
     setQuizRunId(null);
     setTempNextRoute(null);
@@ -82,9 +75,7 @@ const VideoPlayerScreen = () => {
         controls={false} // Hide controls for seamless playback
         className="max-w-full max-h-screen"
         style={{ width: '100vw', height: '100vh', objectFit: 'contain' }}
-        // Use an onTimeUpdate to create a skip button, just in case.
         onLoadedData={(e) => {
-             // You can add logic here to display a "Skip" button after a few seconds
              console.log(`Video loaded: ${e.currentTarget.duration}s`);
         }}
       >

@@ -75,21 +75,26 @@ const ResultsScreen = () => {
     const timeLabel = `${sessionTimeSecs}s`; 
 
     // --- Black Belt Degree 7 completion auto-nav ---
-   useEffect(() => {
+ useEffect(() => {
         if (isBlack && degree === 7 && allCorrect) {
             // Determine the final destination (next level picker)
             const finalRoute = '/levels';
             
+            // Clear local storage for quiz duration right before navigating away
+            localStorage.removeItem('math-last-quiz-duration'); 
+            setQuizRunId(null);
+
             // Set up a short delay before transitioning to the video screen
             const t = setTimeout(() => {
                  setTempNextRoute(finalRoute); // Set next route
-                 navigate('/video', { replace: true }); // Go to video screen
+                 // Navigate to video, use replace=true to prevent back button
+                 navigate('/video', { replace: true }); 
             }, 1000);
             
             return () => clearTimeout(t);
         }
     // Added setTempNextRoute to dependencies
-    }, [isBlack, degree, allCorrect, navigate, setTempNextRoute]);
+    }, [isBlack, degree, allCorrect, navigate, setTempNextRoute, setQuizRunId]); // Added setQuizRunId to deps
 
     // --- Display Logic ---
     const beltName = (() => {
