@@ -16,6 +16,7 @@ const QuizScreen = () => {
     isTimerPaused,
     // <<< NEW CONTEXT PROPS
     transientStreakMessage,
+    streakPosition,
     isAwaitingInactivityResponse,
   } = useContext(MathGameContext);
 
@@ -80,61 +81,68 @@ const QuizScreen = () => {
       <div className="w-full min-h-screen flex flex-col items-center justify-center relative">
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6">
           
-          {/* --- NEW TRANSIENT STREAK BOX --- */}
-          <div className="relative  h-48 sm:h-20 mb-8 sm:mb-10">
+         {/* --- STREAK MESSAGE & PROGRESS BAR CONTAINER --- */}
+          <div className="relative h-20 mb-4">
+            
+            {/* Answer Symbols (shifted slightly up) */}
+            <div className="flex justify-center items-center absolute w-full top-0 space-x-1">
+              {answerSymbols.map((answer, index) => (
+                <span
+                  key={`answer-${index}`}
+                  className={`text-2xl font-bold ${
+                    answer.symbol === '⚡'
+                      ? 'text-yellow-400'
+                      : answer.symbol === '✓'
+                      ? 'text-green-500'
+                      : answer.symbol.trim() === ''
+                      ? 'text-transparent'
+                      : 'text-red-500'
+                  }`}
+                  title={`${answer.timeTaken.toFixed(1)}s - ${answer.isCorrect ? 'Correct' : 'Wrong'}`}
+                  style={{ minWidth: answer.symbol.trim() === '' ? '0' : 'auto' }}
+                >
+                  {answer.symbol}
+                </span>
+              ))}
+            </div>
+
+            {/* Transient Streak Message (Above the bar, dynamically positioned) */}
             <AnimatePresence>
               {transientStreakMessage && (
                 <motion.div
                   key="streak-message-box"
-                  initial={{ opacity: 0, y: 0, scale: 1 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1 }}
-                  transition={{ duration: 0 }}
-                  className={`absolute left-[35%] -translate-x-1/2 top-0 z-20 
-                              px-6 py-3.5 rounded-full border-4 font-extrabold text-white text-2xl sm:text-3xl 
-                              whitespace-nowrap shadow-xl drop-shadow-lg`}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0, 
+                             left: `${Math.min(90, Math.max(20, streakPosition))}%`,
+                             x: '-100%' // Shift left by 100% of its own width for right-alignment
+                          }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ 
+                    duration: 0.2, 
+                    type: "tween", 
+                    ease: "easeOut",
+                    left: { duration: 0.5 } // Separate transition for horizontal movement
+                  }}
+                  className={`absolute z-20 bottom-4 sm:bottom-5 text-xl font-extrabold whitespace-nowrap`}
                   style={{
-                    // Dynamic styling based on symbolType
-                    borderColor: transientStreakMessage.symbolType === 'lightning' ? '#FFD700' : '#10B981',
-                    background: transientStreakMessage.symbolType === 'lightning' 
-                        ? 'linear-gradient(90deg, #FF9800 0%, #FFCC80 100%)' // Orange/Yellow for lightning
-                        : 'linear-gradient(90deg, #10B981 0%, #34D399 100%)', // Green for check
+                    // Dynamic text color based on symbolType
+                    color: transientStreakMessage.symbolType === 'lightning' ? '#FBBF24' : '#10B981', // text-yellow-400 vs text-green-500
+                    textShadow: '0 0 4px rgba(0,0,0,0.5)', // Subtle shadow for visibility
                   }}
                 >
                   {transientStreakMessage.text}
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-          {/* --- END NEW TRANSIENT STREAK BOX --- */}
-          <div className="flex justify-center items-center mb-2 space-x-1">
-            {answerSymbols.map((answer, index) => (
-              <span
-                key={`answer-${index}`}
-                className={`text-2xl font-bold ${
-                  answer.symbol === '⚡'
-                    ? 'text-yellow-400'
-                    : answer.symbol === '⭐'
-                    ? 'text-yellow-500'
-                    : answer.symbol === '✓'
-                    ? 'text-green-500'
-                    : answer.symbol.trim() === ''
-                    ? 'text-transparent'
-                    : 'text-red-500'
-                }`}
-                title={`${answer.timeTaken.toFixed(1)}s - ${answer.isCorrect ? 'Correct' : 'Wrong'}`}
-                style={{ minWidth: answer.symbol.trim() === '' ? '0' : 'auto' }}
-              >
-                {answer.symbol}
-              </span>
-            ))}
-          </div>
+            
+            {/* Progress Bar (Positioned at the bottom of this container) */}
+            <div className="absolute bottom-0 w-full bg-gray-300 rounded-full h-3 sm:h-4 overflow-hidden shadow-lg">
+              <div
+                className="bg-green-500 h-full rounded-full transition-all duration-500 ease-out shadow-sm"
+                style={{ width: `${quizProgress}%` }}
+              />
+            </div>
 
-          <div className="bg-gray-300 rounded-full h-3 sm:h-4 overflow-hidden shadow-lg">
-            <div
-              className="bg-green-500 h-full rounded-full transition-all duration-500 ease-out shadow-sm"
-              style={{ width: `${quizProgress}%` }}
-            />
           </div>
           {/* <div className="text-center mt-1 text-xs text-gray-300">{answerSymbols.length}/{maxQuestions}</div> */}
         </div>

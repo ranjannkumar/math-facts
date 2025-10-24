@@ -53,6 +53,8 @@ const useMathGame = () => {
    // --- ADD STREAK STATE ---
    const [currentQuizStreak, setCurrentQuizStreak] = useState(0); // Current streak in the running quiz
    const [transientStreakMessage, setTransientStreakMessage] = useState(null);
+   //  calculated position of the streak message above the progress bar
+    const [streakPosition, setStreakPosition] = useState(0);
 
   // Timers
   const [quizStartTime, setQuizStartTime] = useState(null);
@@ -151,6 +153,7 @@ const useMathGame = () => {
     setInterventionQuestion(null);
 
     setCurrentQuizStreak(0); // Reset quiz streak
+    setStreakPosition(0);
     // Also reset sibling check and loading states
     setIsLoginLoading(false); 
     setShowSiblingCheck(false); 
@@ -167,6 +170,14 @@ const useMathGame = () => {
           setTotalTimeToday(Math.floor(dailyTotalMs / 1000));
       }
   }, [quizStartTime, dailyTotalMs]); // Triggers on login fetch or quiz completion update.
+
+  // --- Calculate Streak Position whenever quizProgress changes ---
+  useEffect(() => {
+      // Calculate position as a percentage of the bar width
+      // We want the text to align with the END of the progress bar (i.e., at quizProgress)
+      // The logic for the bar's width is quizProgress%.
+      setStreakPosition(quizProgress);
+  }, [quizProgress]);
 
   // ---  Final step of login, called after sibling check confirmation ---
   const processLoginFinal = useCallback((loginResponse) => {
@@ -418,6 +429,9 @@ const useMathGame = () => {
       let triggerStreakMessage = null; 
       const timeTaken = responseMs / 1000;
       const streakMilestone = [3,5,10,15,20]; // Milestones to check
+       // Calculate next progress step for streak positioning
+      const nextIndex = currentQuestionIndex + 1;
+      const newProgress = Math.min(nextIndex * (100 / maxQuestions), 100);
       // const isStreakMilestoneHit = streakMilestone.includes(newQuizStreak);
       // --- END STREAK TRACKING ---
       
@@ -450,7 +464,7 @@ const useMathGame = () => {
             const isLightningStreak = streakSlice.every(a => a.symbol === '⚡') && symbol === '⚡';
             
             triggerStreakMessage = {
-                text: `${newQuizStreak} in a row`,
+                text: `${newQuizStreak} IN A ROW`,
                 symbolType: isLightningStreak ? 'lightning' : 'check', // 'lightning' or 'check'
                 count: newQuizStreak,
             };
@@ -464,7 +478,8 @@ const useMathGame = () => {
         // Update streak states
         setCurrentQuizStreak(newQuizStreak);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
-        setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
+        // setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
+        setQuizProgress(newProgress); 
         setSessionCorrectCount(s => s + 1); // Optimistically update session score
       } else {
         // Wrong answer: Reset streak
@@ -478,7 +493,7 @@ const useMathGame = () => {
       }
       
       // ---   UI ADVANCE FOR INSTANT TRANSITION ---
-      const nextIndex = currentQuestionIndex + 1;
+      // const nextIndex = currentQuestionIndex + 1;
       let uiAdvancedOptimistically = false;
       
       if (isCorrect && nextIndex < quizQuestions.length) {
@@ -800,6 +815,7 @@ const useMathGame = () => {
     startActualQuiz,
     handleAnswer,
     transientStreakMessage,
+    streakPosition, 
     // UI & Progress
     isAnimating, setIsAnimating,
     showResult, setShowResult,
