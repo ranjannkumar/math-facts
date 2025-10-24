@@ -5,6 +5,7 @@ import DailyStatsCounter from './ui/DailyStatsCounter';
 import SessionTimer from './ui/SessionTimer';
 import SettingsModal from './SettingsModal';
 import { MathGameContext } from '../App.jsx';
+import UserInfoBadge from './ui/UserInfoBadge.jsx';
 
 const MainLayout = ({ hideStats }) => {
   const {
@@ -17,6 +18,7 @@ const MainLayout = ({ hideStats }) => {
     elapsedTime,
     handleQuit,
     handleResetProgress,
+    childPin
   } = useContext(MathGameContext);
 
   const location = useLocation();
@@ -42,6 +44,8 @@ const MainLayout = ({ hideStats }) => {
       >
         <FaCog />
       </button>
+
+       {childPin && <UserInfoBadge />}
 
       <Outlet />
 

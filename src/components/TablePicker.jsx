@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { MathGameContext } from '../App.jsx';
 import { themeConfigs } from '../utils/mathGameLogic.js';
-import UserInfoBadge from './ui/UserInfoBadge.jsx';
+// import UserInfoBadge from './ui/UserInfoBadge.jsx';
 // import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
 
 const TOTAL_LEVELS = 12; // only 12 levels as required
@@ -158,7 +158,7 @@ const TablePicker = () => {
         <FaArrowLeft size={24} />
       </button>
 
-      <UserInfoBadge />
+      {/* <UserInfoBadge /> */}
 
       {/* <DailyStreakCounter /> */}
 
