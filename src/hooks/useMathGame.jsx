@@ -74,6 +74,8 @@ const useMathGame = () => {
 
   const [currentStreak, setCurrentStreak] = useState(0); 
 
+  const [tempNextRoute, setTempNextRoute] = useState(null);
+
   // Misc UI
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -816,6 +818,8 @@ const useMathGame = () => {
     handleAnswer,
     transientStreakMessage,
     streakPosition, 
+    tempNextRoute,
+    setTempNextRoute,
     // UI & Progress
     isAnimating, setIsAnimating,
     showResult, setShowResult,

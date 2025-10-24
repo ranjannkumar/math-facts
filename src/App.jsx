@@ -14,6 +14,7 @@ const ResultsScreen = lazy(() => import('./components/ResultsScreen.jsx'));
 const WayToGoScreen = lazy(() => import('./components/WayToGoScreen.jsx'));
 const LearningModule = lazy(() => import('./components/LearningModule.jsx'));
 const MainLayout = lazy(() => import('./components/MainLayout.jsx'));
+const VideoPlayerScreen = lazy(() => import('./components/VideoPlayerScreen.jsx'));
 const SpeedTestScreen = lazy(() => import('./components/ui/SpeedTestScreen.jsx'));
 import PreTestPopup from './components/PreTestPopup.jsx';
 import PreTestScreen from './components/PreTestScreen.jsx';
@@ -57,6 +58,8 @@ const App = () => {
         <Route path="/name" element={<NameForm />} />
         {/* <Route path="/pre-test-popup" element={<PreTestPopup />} /> */}
         {/* <Route path="/pre-test" element={<PreTestScreen />} /> */}
+
+        <Route path="/video" element={<VideoPlayerScreen />} />
 
         <Route element={<MainLayout hideStats={showSiblingCheck} />}> 
           <Route path="/levels" element={<TablePicker />} />

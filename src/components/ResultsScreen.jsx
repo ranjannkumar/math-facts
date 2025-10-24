@@ -19,7 +19,8 @@ const ResultsScreen = () => {
         setShowResult,
         quizRunId,
         childPin,
-       setQuizRunId, 
+       setQuizRunId,
+       setTempNextRoute, 
     } = useContext(MathGameContext);
 
     // --- Quiz Info ---
@@ -74,13 +75,21 @@ const ResultsScreen = () => {
     const timeLabel = `${sessionTimeSecs}s`; 
 
     // --- Black Belt Degree 7 completion auto-nav ---
-    useEffect(() => {
-        if (isBlack && degree === 7 && allCorrect) {
-            const t = setTimeout(() => navigate('/levels', { replace: true }), 3000);
-            return () => clearTimeout(t);
-        }
-    }, [isBlack, degree, allCorrect, navigate]);
-
+   useEffect(() => {
+        if (isBlack && degree === 7 && allCorrect) {
+            // Determine the final destination (next level picker)
+            const finalRoute = '/levels';
+            
+            // Set up a short delay before transitioning to the video screen
+            const t = setTimeout(() => {
+                 setTempNextRoute(finalRoute); // Set next route
+                 navigate('/video', { replace: true }); // Go to video screen
+            }, 1000);
+            
+            return () => clearTimeout(t);
+        }
+    // Added setTempNextRoute to dependencies
+    }, [isBlack, degree, allCorrect, navigate, setTempNextRoute]);
 
     // --- Display Logic ---
     const beltName = (() => {

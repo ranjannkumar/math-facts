@@ -17,7 +17,7 @@ export const tableBgColors = [
 ];
 
 export const showShootingStars = () => {
-  console.log('🎆 Shooting stars function called!');
+  // console.log('🎆 Shooting stars function called!');
   const leftStarSpeeds = [550, 500, 450, 575, 525];
   const rightStarSpeeds = [550, 500, 450, 575, 525];
   const starColors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#ffd700', '#96ceb4'];
