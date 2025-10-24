@@ -117,3 +117,52 @@ export async function sendDailyReport() {
         throw new Error('Nodemailer failed to send email. Check your GMAIL_PASS (App Password) and GMAIL_USER credentials.');
     }
 }
+
+/**
+ *  Sends an immediate email report for video rating.
+ */
+export async function sendRatingReport(user, rating, level, beltOrDegree) {
+    if (!REPORT_RECIPIENT || !GMAIL_USER || !GMAIL_PASS) {
+        console.warn('Skipping rating report email: Email credentials or recipient missing in environment variables.');
+        return;
+    }
+
+    const todayFormatted = dayjs().tz(PACIFIC_TIMEZONE).format('YYYY-MM-DD HH:mm:ss (PST/PDT)');
+    const userName = user.name || 'Unknown User';
+    const userPin = user.pin || 'N/A';
+    const subject = `Video Rated: ${userName} - ${rating}/10 on L${level} ${beltOrDegree} Belt`;
+    
+    const reportBody = `
+Child: ${userName} (PIN: ${userPin})
+Date: ${todayFormatted}
+Level Completed: L${level} ${beltOrDegree} Belt
+Video Rating: ${rating}/10
+`;
+    
+    const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <h2 style="color: #4CAF50;">Immediate Video Rating Report</h2>
+            <p><strong>Child:</strong> ${userName} (PIN: ${userPin})</p>
+            <p><strong>Date:</strong> ${todayFormatted}</p>
+            <p><strong>Level Completed:</strong> L${level} ${beltOrDegree} Belt</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+            <p style="font-size: 24px; font-weight: bold; color: #2196F3;">Video Rating: <span style="color: #FF9800;">${rating}/10</span></p>
+            <p style="margin-top: 20px; font-size: 0.8em; color: #777;">Report automatically generated. Please do not reply to this email.</p>
+        </div>
+    `;
+
+    const mailOptions = {
+        from: `Maths-Fact Report <${GMAIL_USER}>`,
+        to: REPORT_RECIPIENT, 
+        subject: subject,
+        text: reportBody,
+        html: htmlBody,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+    } catch (error) {
+        console.error('❌ Error sending rating email:', error.message);
+        throw new Error('Nodemailer failed to send rating email.');
+    }
+}

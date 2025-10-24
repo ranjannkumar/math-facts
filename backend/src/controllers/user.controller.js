@@ -2,6 +2,7 @@
 import { getToday as getTodaySvc, getGrandTotalCorrect as getGrandTotalCorrectSvc } from '../services/daily.service.js';
 import { resetAllProgress as resetAllProgressSvc } from '../services/progression.service.js';
 import User from '../models/User.js'; 
+import { sendRatingReport } from '../services/email.service.js';
 
 export async function getToday(req, res, next) {
   try {
@@ -54,4 +55,25 @@ export async function updateTheme(req, res, next) {
 
     res.status(200).json({ success: true, theme: req.user.theme });
   } catch (e) { next(e); }
+}
+
+// Handle video rating submission and email 
+export async function rateVideo(req, res, next) {
+  try {
+    const { rating, level, beltOrDegree } = req.body;
+    if (!rating || !level || !beltOrDegree) {
+      return res.status(400).json({ error: 'Rating, level, and beltOrDegree are required.' });
+    }
+    
+    // Send email 
+    await sendRatingReport(req.user, rating, level, beltOrDegree); 
+
+    res.status(200).json({ success: true, message: 'Rating received and report sent.' });
+  } catch (e) { 
+    // Return 500 if email service threw a critical error.
+    if (e.message.includes('Nodemailer failed')) {
+        return res.status(500).json({ success: false, message: e.message });
+    }
+    next(e); 
+  }
 }

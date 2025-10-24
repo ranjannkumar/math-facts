@@ -88,6 +88,10 @@ export const userGetProgress = async (pin) => {
   return callApi('/user/progress', 'GET', null, pin);
 };
 
+export const submitVideoRating = async (rating, level, beltOrDegree, pin) => {
+  return callApi('/user/rate-video', 'POST', { rating, level, beltOrDegree }, pin);
+};
+
 /**
  * Maps a backend question object (from GeneratedQuestion model) to the frontend format.
  * Includes FIX for missing 'choices' array (answers) and displays for L1 White Belt (digit identification).
