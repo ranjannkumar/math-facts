@@ -10,6 +10,7 @@ const NameForm = () => {
     handlePinChange,
     handlePinSubmit,
     isLoginLoading,
+    handleDemoLogin,
   } = useContext(MathGameContext);
 
   const [error, setError] = useState('');
@@ -74,7 +75,11 @@ const inputBaseClass =
   "focus:outline-none focus:ring-0 focus:border-0";
 
 
-
+const handleDemoClick = () => {
+      if (isLoginLoading) return;
+      setError('');
+      handleDemoLogin(); // Call the new handler from the hook
+  };
 
   return (
     <div
@@ -168,12 +173,26 @@ const inputBaseClass =
             </div>
           )}
 
-          <button
-            type="submit"
-            className="bg-green-800 hover:bg-green-900 text-white font-bold py-1.5 sm:py-2 px-6 sm:px-8 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg mt-2"
-          >
-           {isLoginLoading ? 'Loading...' : 'Start'}
-          </button>
+          {/* MODIFIED: Wrap buttons in a div for horizontal layout */}
+          <div className="flex justify-center space-x-4 mt-2">
+            <button
+              type="submit"
+              className="bg-green-800 hover:bg-green-900 text-white font-bold py-1.5 sm:py-2 px-4 sm:px-6 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1"
+              disabled={isLoginLoading}
+            >
+              {isLoginLoading ? 'Loading...' : 'Start'}
+            </button>
+            
+            {/* NEW: Demo Login Button */}
+            <button
+              type="button" // Important: type="button" prevents accidental form submission
+              onClick={handleDemoClick}
+              className="bg-green-800 hover:bg-green-900 text-white font-bold py-1.5 sm:py-2 px-4 sm:px-6 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1"
+              disabled={isLoginLoading}
+            >
+              Demo 
+            </button>
+          </div>
         </form>
       </div>
     </div>

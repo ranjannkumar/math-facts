@@ -90,6 +90,9 @@ const useMathGame = () => {
    const [isQuizStarting, setIsQuizStarting] = useState(false);
    const [isAwaitingInactivityResponse, setIsAwaitingInactivityResponse] = useState(false);
 
+   //   DEMO STATE
+   const [isDemoMode, setIsDemoMode] = useState(false);
+
   // --- ADD MISSING PRE-TEST STATE DECLARATIONS ---
   const [preTestSection, setPreTestSection] = useState('addition');
   const [preTestQuestions, setPreTestQuestions] = useState([]);
@@ -161,6 +164,7 @@ const useMathGame = () => {
     setShowSiblingCheck(false); 
     setLoginPendingName(null);
     setLoginPendingResponse(null);
+    setIsDemoMode(false);
   }, []);
 
   // --- API / LIFECYCLE ---
@@ -235,6 +239,30 @@ const useMathGame = () => {
   }, [navigate, processLoginFinal, setChildPin, setChildName, loginPendingResponse]);
   // --- END  Sibling Check Modal Handler ---
 
+  
+  // --- NEW: Demo Login Handler ---
+  const handleDemoLogin = useCallback(() => {
+    // 1. Reset current game state (but keep stats/progress logic separate for now)
+    hardResetQuizState(); 
+    
+    // 2. Set the "Demo" user details
+    setChildName('Demo Player');
+    setChildPin('9999'); // Use a constant dummy PIN for API calls
+    setIsDemoMode(true);
+    
+    // 3. Reset stats for demo mode to show a fresh start
+    setCorrectCount(0); 
+    setGrandTotalCorrect(0);
+    setCurrentStreak(0);
+    setTableProgress({});
+    
+    // 4. Bypass theme check and go straight to theme picker to select the "adventure"
+    setSelectedTheme(null);
+    setUserThemeKey(null);
+    
+    // 5. Navigate to theme picker
+    navigate('/theme');
+  }, [navigate, hardResetQuizState]);
 
   const handlePinSubmit = useCallback(
     async (pinValue,nameValue) => {
@@ -244,6 +272,7 @@ const useMathGame = () => {
 
       try {
         setIsLoginLoading(true);
+        setIsDemoMode(false);
         // 1. Login first to get user data
        const loginResponse = await authLogin(pinValue, nameValue.trim());
        // ---  SIBLING CHECK LOGIC ---
@@ -298,17 +327,18 @@ const useMathGame = () => {
         throw new Error(e.message || 'Login failed.');
       }
     },
-    [navigate, setChildPin, setChildName]
+    [navigate, setChildPin, setChildName,setIsDemoMode]
   );
 
   //New function to persist theme to backend and navigate
   const updateThemeAndNavigate = useCallback(async (themeObject) => {
       const themeKey = themeObject?.key;
       if (!themeKey) return;
+      const pinToUse = isDemoMode ? '9999' : childPin;
       
       // 1. Persist to backend (will fail with 403 if theme is already locked)
       try {
-          await userUpdateTheme(themeKey, childPin);
+          await userUpdateTheme(themeKey, pinToUse);
           // 2. Update local state
           setUserThemeKey(themeKey); 
           setSelectedTheme(themeObject);
@@ -321,7 +351,7 @@ const useMathGame = () => {
           setSelectedTheme(themeObject);
           navigate('/levels');
       }
-  }, [childPin, navigate]);
+  }, [childPin, navigate, isDemoMode]);
 
   const startActualQuiz = useCallback(
     async (runId) => {
@@ -333,8 +363,9 @@ const useMathGame = () => {
           navigate('/belts');
           return;
       }
+      const pinToUse = isDemoMode ? '9999' : childPin;
       try {
-       const { questions: backendQuestions } = await quizStart(idToUse, childPin);
+       const { questions: backendQuestions } = await quizStart(idToUse, pinToUse);
 
         if (!backendQuestions || backendQuestions.length === 0) throw new Error("No questions returned from quiz start.");
         const mappedQuestions = backendQuestions.map(mapQuestionToFrontend);
@@ -359,7 +390,7 @@ const useMathGame = () => {
         navigate('/belts');
       }
     },
-    [navigate, childPin, quizRunId, mapQuestionToFrontend]
+    [navigate, childPin, quizRunId, mapQuestionToFrontend, isDemoMode]
   );
 
   // 1. Prepare (called from DifficultyPicker/BlackBeltPicker -> startQuizWithDifficulty)
@@ -372,12 +403,13 @@ const useMathGame = () => {
       setMaxQuestions(determineMaxQuestions(difficulty));
 
        setIsQuizStarting(true);
+       const pinToUse = isDemoMode ? '9999' : childPin;
 
       try {
         const { quizRunId: newRunId, practice: practiceItems } = await quizPrepare(
           table,
           difficulty,
-          childPin
+          pinToUse
         );
         
         setQuizRunId(newRunId);
@@ -406,7 +438,7 @@ const useMathGame = () => {
         navigate('/belts');
       }
     },
-    [navigate, childPin, hardResetQuizState, determineMaxQuestions, startActualQuiz]
+    [navigate, childPin, hardResetQuizState, determineMaxQuestions, startActualQuiz, isDemoMode]
   );
 
   // 3. Answer
@@ -523,6 +555,8 @@ const useMathGame = () => {
           }
       }
       // ---  UI ADVANCE ---
+
+      const pinToUse = isDemoMode ? '9999' : childPin;
       
       // Send answer to backend to get next state (Awaited for terminal/stat updates)
       try {
@@ -533,7 +567,7 @@ const useMathGame = () => {
               responseMs,
               selectedTable,
               selectedDifficulty,
-              childPin
+              pinToUse
           );
 
           // --- HANDLE SERVER RESPONSE (For terminal states and authoritative stats) ---
@@ -616,7 +650,7 @@ const useMathGame = () => {
       }
 
     },
-    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions, quizQuestions, currentQuestionIndex,currentQuizStreak]
+    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions, quizQuestions, currentQuestionIndex,currentQuizStreak,isDemoMode]
   );
   
   // 4. Handle Practice Answer Submission (for LearningModule intervention)
@@ -625,9 +659,11 @@ const useMathGame = () => {
       console.error('Quiz not active for practice answer.');
       return { stillPracticing: true, completed: false };
     }
+
+    const pinToUse = isDemoMode ? '9999' : childPin;
     
     try {
-      const out = await quizPracticeAnswer(quizRunId, questionId, answer, childPin);
+      const out = await quizPracticeAnswer(quizRunId, questionId, answer, pinToUse);
 
        if (out.completed) { 
         // This path is triggered when the practice answer is correct on the *last* question,
@@ -666,7 +702,7 @@ const useMathGame = () => {
       setPausedTime(Date.now());
       return { stillPracticing: true, error: e.message };
     }
-  }, [quizRunId, childPin, pausedTime]);
+  }, [quizRunId, childPin, pausedTime, isDemoMode]);
 
 
   // 5. Inactivity Timer Effect
@@ -680,6 +716,7 @@ const useMathGame = () => {
     }
 
     if (inactivityTimeoutId.current) clearTimeout(inactivityTimeoutId.current);
+    const pinToUse = isDemoMode ? '9999' : childPin;
 
     inactivityTimeoutId.current = setTimeout(async () => {
       audioManager.playSoftClick();
@@ -694,7 +731,7 @@ const useMathGame = () => {
         // Set block flag immediately before API call 
         setIsAwaitingInactivityResponse(true);
         try {
-            const out = await quizHandleInactivity(quizRunId, currentQuestion.id, childPin);
+            const out = await quizHandleInactivity(quizRunId, currentQuestion.id, pinToUse);
             setCurrentQuizStreak(0);
             setTransientStreakMessage(null);
 
@@ -731,7 +768,7 @@ const useMathGame = () => {
           inactivityTimeoutId.current = null;
       }
     };
-  }, [currentQuestion, isTimerPaused, showResult, quizRunId, childPin, navigate]);
+  }, [currentQuestion, isTimerPaused, showResult, quizRunId, childPin, navigate, isDemoMode]);
 
   // Timer Effect (client-side time tracking)
   useEffect(() => {
@@ -764,7 +801,7 @@ const useMathGame = () => {
   const handleCancelReset = useCallback(() => setShowResetModal(false), []);
 
   const handleConfirmReset = useCallback(async () => {
-    if (childPin) {
+    if (!isDemoMode && childPin) {
       try {
         // 1. Reset progress on the backend (clear DB data)
         await userResetProgress(childPin);
@@ -772,6 +809,9 @@ const useMathGame = () => {
         console.error('Backend progress reset failed:', e.message);
         // Continue to client-side reset/logout even if backend failed
       }
+    }else if (isDemoMode) {
+       // If in demo mode, clear the demo state without touching local storage/DB
+       console.log('Skipping backend reset for Demo Player.');
     }
     
     // 2. Reset client-side state and logout (clear local storage)
@@ -783,7 +823,7 @@ const useMathGame = () => {
     setTableProgress({});
     setShowResetModal(false); // Close the modal
     navigate('/', { replace: true }); // Use replace to prevent back button from returning to previous screen
-  }, [navigate, hardResetQuizState, childPin]);
+  }, [navigate, hardResetQuizState, childPin, isDemoMode]);
 
 
   const handleNameChange = useCallback((e) => setChildName(e.target.value), []);
@@ -853,6 +893,9 @@ const useMathGame = () => {
     childAge, setChildAge, handleAgeChange,
     childPin, setChildPin, handlePinChange,
     handlePinSubmit,
+
+    handleDemoLogin, // NEW: Export handler
+    isDemoMode, //
 
     userSavedThemeKey: userThemeKey, // EXPOSED: Key to check if theme is locked
     selectedTheme,
