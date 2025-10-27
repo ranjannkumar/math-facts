@@ -6,97 +6,123 @@ import { MathGameContext } from '../App.jsx';
 import { useNavigate } from 'react-router-dom';
 import { quizComplete } from '../api/mathApi.js';
 
+// Helper function to determine the correct destination after video/rating
+const calculateFinalRoute = (selectedDifficulty, isBlack, degree) => {
+    // 1. Black Belt Degree 7 completion -> /levels
+    if (isBlack && degree === 7) {
+        return '/levels';
+    } 
+    // 2. Black Belts (Degrees 1-6) or Brown Belt completion -> /black (degrees)
+    else if (isBlack || selectedDifficulty === 'brown') {
+        return '/black'; 
+    } 
+    // 3. Colored Belts (White to Red) completion -> /belts
+    else {
+        return '/belts';
+    }
+};
+
 const ResultsScreen = () => {
-    const navigate = useNavigate();
-    const [leaving, setLeaving] = useState(false);
+    const navigate = useNavigate();
+    const [leaving, setLeaving] = useState(false);
+    const completionSentRef = useRef(false);
+    const starsShownRef = useRef(false); // To prevent multiple star effects
 
-    const {
-        selectedDifficulty,
-        selectedTable,
-        sessionCorrectCount,
-        correctCount,
-        grandTotalCorrect,
-        setShowResult,
-        quizRunId,
-        childPin,
-       setQuizRunId,
-       setTempNextRoute, 
-    } = useContext(MathGameContext);
+    const {
+        selectedDifficulty,
+        sessionCorrectCount,
+        correctCount,
+        grandTotalCorrect,
+        setShowResult,
+        quizRunId,
+        childPin,
+        setQuizRunId,
+        setTempNextRoute, 
+    } = useContext(MathGameContext);
 
-    // --- Quiz Info ---
-    const isBlack = String(selectedDifficulty).startsWith('black');
-    const degree = isBlack ? parseInt(String(selectedDifficulty).split('-')[1] || '1', 10) : null;
-    const maxQuestions = isBlack ? 20 : 10;
-    const allCorrect = sessionCorrectCount === maxQuestions;  
+    // --- Quiz Info ---
+    const isBlack = String(selectedDifficulty).startsWith('black');
+    const degree = isBlack ? parseInt(String(selectedDifficulty).split('-')[1] || '1', 10) : null;
+    const maxQuestions = isBlack ? 20 : 10;
+    const allCorrect = sessionCorrectCount === maxQuestions;  
 
-    // 1. Redirect if not perfect score
-    useEffect(() => {
-        // Redundant safeguard: navigation in hook should prevent this.
-        if (!allCorrect) {
-            navigate('/way-to-go', { replace: true });
-        }
-    }, [allCorrect, navigate]);
-    
-    // 2. Mark complete on the backend (optional, but good for final record keeping)
-    const completionSentRef = useRef(false);
-    useEffect(() => {
-        if (allCorrect && !completionSentRef.current && quizRunId) {
-            completionSentRef.current = true;
-            // Progression already handled by the final /quiz/answer call. This is non-critical.
-            quizComplete(quizRunId, childPin).catch(console.error);
-        }
-    }, [allCorrect, quizRunId, childPin]);
+    // 1. Redirect if not perfect score
+    useEffect(() => {
+        if (!allCorrect) {
+            navigate('/way-to-go', { replace: true });
+        }
+    }, [allCorrect, navigate]);
+    
+    // 2. Auto-navigate to the video screen after a short delay (for ALL successful quizzes)
+    useEffect(() => {
+        if (allCorrect && !leaving) {
+            
+            // a. Determine the final destination after the video/rating
+            const finalRoute = calculateFinalRoute(selectedDifficulty, isBlack, degree);
 
-    // 3. Shooting stars/Confetti (client-side visual effect)
-    const starsShownRef = useRef(false);
-    useEffect(() => {
-        if (allCorrect && !starsShownRef.current) {
-            starsShownRef.current = true;
-            showShootingStars();
-        }
-        return () => clearShootingStars();
-    }, [allCorrect]);
+            // b. Mark completion on the backend and handle cleanup (non-critical)
+            if (!completionSentRef.current && quizRunId) {
+                completionSentRef.current = true;
+                quizComplete(quizRunId, childPin).catch(console.error);
+            }
+            
+            // c. Start visual effect
+            if (!starsShownRef.current) {
+                starsShownRef.current = true;
+                showShootingStars(); 
+            }
+            
+            // d. Set a short delay before navigating to the video screen
+            const autoNavDelay = setTimeout(() => {
+                localStorage.removeItem('math-last-quiz-duration'); 
+                setQuizRunId(null);
+                setTempNextRoute(finalRoute); // Set the correct next destination
+                // Navigate to video screen
+                navigate('/video', { replace: true }); 
+            }, 2500); // 2.5 seconds for celebration visual
 
+            return () => {
+                clearTimeout(autoNavDelay);
+                clearShootingStars();
+            };
+        }
+    }, [allCorrect, leaving, isBlack, degree, selectedDifficulty, quizRunId, childPin, setQuizRunId, setTempNextRoute, navigate]);
+
+
+    // 3. Manual navigation (Override to skip the delay)
+    const handlePrimary = () => {
+        // Calculate the destination immediately
+        const nextRoute = calculateFinalRoute(selectedDifficulty, isBlack, degree);
+
+        if (allCorrect && !leaving) {
+            setLeaving(true);
+            clearShootingStars();
+            localStorage.removeItem('math-last-quiz-duration'); 
+            setQuizRunId(null);
+            
+            if (!completionSentRef.current && quizRunId) {
+                completionSentRef.current = true;
+                quizComplete(quizRunId, childPin).catch(console.error);
+            }
+            
+            setTempNextRoute(nextRoute); // Set the correct next destination
+            // Navigate immediately to the video screen
+            navigate('/video', { replace: true }); 
+        }
+    };
 
     // Only proceed with the rest of the logic if allCorrect is true
-    if (!allCorrect) {
+    if (!allCorrect || leaving) {
         return null;
     }
 
-    const [timeSecs, setTimeSecs] = useState(() => {
+    const [timeSecs] = useState(() => {
         const ls = Number(localStorage.getItem('math-last-quiz-duration') || 0);
         return Number.isFinite(ls) ? ls : 0;
     });
-    // FIX: Format total time today in minutes and seconds
     const sessionTimeSecs = Math.round(timeSecs);
-    const mins = Math.floor(sessionTimeSecs / 60); //
-    const secs = sessionTimeSecs % 60; //
-    // Using seconds format as per previous context to fit tiles better on mobile
     const timeLabel = `${sessionTimeSecs}s`; 
 
-    // --- Black Belt Degree 7 completion auto-nav ---
- useEffect(() => {
-        if (isBlack && degree === 7 && allCorrect) {
-            // Determine the final destination (next level picker)
-            const finalRoute = '/levels';
-            
-            // Clear local storage for quiz duration right before navigating away
-            localStorage.removeItem('math-last-quiz-duration'); 
-            setQuizRunId(null);
-
-            // Set up a short delay before transitioning to the video screen
-            const t = setTimeout(() => {
-                 setTempNextRoute(finalRoute); // Set next route
-                 // Navigate to video, use replace=true to prevent back button
-                 navigate('/video', { replace: true }); 
-            }, 1000);
-            
-            return () => clearTimeout(t);
-        }
-    // Added setTempNextRoute to dependencies
-    }, [isBlack, degree, allCorrect, navigate, setTempNextRoute, setQuizRunId]); // Added setQuizRunId to deps
-
-    // --- Display Logic ---
     const beltName = (() => {
         if (isBlack) return `Black (Degree ${degree})`;
         switch (selectedDifficulty) {
@@ -109,24 +135,11 @@ const ResultsScreen = () => {
             default: return 'Unknown';
         }
     })();
-    // NOTE: pointsEarned calculation here is flawed as `correctCount` is the daily total, 
-    // but preserving the logic as requested not to remove anything else.
-    const handlePrimary = () => {
-        setShowResult(false);
-        clearShootingStars();
-        setLeaving(true);
-       setQuizRunId(null); 
-        if (isBlack) navigate('/black', { replace: true });
-        else if (selectedDifficulty === 'brown') navigate('/black', { replace: true });
-        else navigate('/belts', { replace: true });
-    };
-
-    if (leaving) return null;
     const pointsEarned = maxQuestions;
     return (
         <div
             className={
-                "min-h-screen full-height-safe w-full relative px-4 py-6 flex items-center justify-center overflow-auto" // Increased horizontal padding
+                "min-h-screen full-height-safe w-full relative px-4 py-6 flex items-center justify-center overflow-auto"
             }
         >
             <Confetti
@@ -166,7 +179,7 @@ const ResultsScreen = () => {
                         CONGRATULATIONS
                     </h2>
                 </div>
-                {/* 👇 NEW Wrapper DIV for the Popup Box Style */}
+                 {/* 👇 Wrapper DIV for the Popup Box Style */}
                   <div className="bg-green-100/70 border-2 border-green-300 rounded-2xl py-2 sm:py-6 px-2 mb-6 sm:mb-8 mx-auto max-w-md w-full shadow-lg">
                     <p className="text-green-700 font-extrabold text-2xl sm:text-3xl md:text-4xl">
                         You earned <span className="font-extrabold text-green-1000">{pointsEarned}</span> points!
@@ -205,7 +218,7 @@ const ResultsScreen = () => {
                         className="px-6 py-3 rounded-2xl bg-green-600 text-white font-semibold hover:opacity-90 transition text-base sm:text-lg"
                         onClick={handlePrimary}
                     >
-                        {isBlack ? 'Go to Degrees' : 'Go to Belts'}
+                        Continue to Video
                     </button>
                 </div>
             </div>
