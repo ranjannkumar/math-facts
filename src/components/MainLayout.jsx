@@ -6,6 +6,7 @@ import SessionTimer from './ui/SessionTimer';
 import SettingsModal from './SettingsModal';
 import { MathGameContext } from '../App.jsx';
 import UserInfoBadge from './ui/UserInfoBadge.jsx';
+import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
 
 const MainLayout = ({ hideStats }) => {
   const {
@@ -45,6 +46,7 @@ const MainLayout = ({ hideStats }) => {
       </button>
 
       <UserInfoBadge />
+      <DailyStreakCounter />
 
       <Outlet />
 

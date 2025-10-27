@@ -246,7 +246,7 @@ const useMathGame = () => {
     hardResetQuizState(); 
     
     // 2. Set the "Demo" user details
-    setChildName('Demo Player');
+    setChildName('Guest');
     setChildPin('9999'); // Use a constant dummy PIN for API calls
     setIsDemoMode(true);
     
