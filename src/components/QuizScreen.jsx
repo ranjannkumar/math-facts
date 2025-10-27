@@ -111,23 +111,18 @@ const QuizScreen = () => {
               {transientStreakMessage && (
                 <motion.div
                   key="streak-message-box"
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0, 
-                             left: `${Math.min(90, Math.max(20, streakPosition))}%`,
-                             x: '-100%' // Shift left by 100% of its own width for right-alignment
-                          }}
-                  exit={{ opacity: 0, y: -5 }}
-                  transition={{ 
-                    duration: 0.2, 
-                    type: "tween", 
-                    ease: "easeOut",
-                    left: { duration: 0.5 } // Separate transition for horizontal movement
-                  }}
-                  className={`absolute z-20 bottom-4 sm:bottom-5 text-xl font-extrabold whitespace-nowrap`}
+                  // Fade + slight vertical rise only. No horizontal animation.
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  className="absolute z-20 bottom-4 sm:bottom-5 text-xl font-extrabold whitespace-nowrap"
                   style={{
-                    // Dynamic text color based on symbolType
-                    color: transientStreakMessage.symbolType === 'lightning' ? '#FBBF24' : '#10B981', // text-yellow-400 vs text-green-500
-                    textShadow: '0 0 4px rgba(0,0,0,0.5)', // Subtle shadow for visibility
+                    // Keep left anchored to progress position, but DO NOT animate it.
+                    left: `${Math.min(70, Math.max(10, streakPosition))}%`,
+                    transform: 'translateX(-50%)', // center on the point without x tweening
+                    color: transientStreakMessage.symbolType === 'lightning' ? '#FBBF24' : '#10B981',
+                    textShadow: '0 0 4px rgba(0,0,0,0.5)',
                   }}
                 >
                   {transientStreakMessage.text}
