@@ -7,7 +7,7 @@ import { themeConfigs } from '../utils/mathGameLogic.js';
 // import UserInfoBadge from './ui/UserInfoBadge.jsx';
 // import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
 
-const TOTAL_LEVELS = 12; // only 12 levels as required
+const TOTAL_LEVELS = 19; // only 12 levels as required
 const COLOR_BELTS = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
 const ALL_BELTS_FOR_DISPLAY = ['white', 'yellow', 'green', 'blue', 'red', 'brown', 'black'];
 

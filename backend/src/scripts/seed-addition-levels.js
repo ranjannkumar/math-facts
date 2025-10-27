@@ -105,6 +105,62 @@ const SPEC = {
     red:   [7,7],
     brown: [7,8],
   },
+  13: {
+     white: [0, 16],
+     yellow: [0, 17],
+     green: [0, 18],
+     blue: [0, 19],
+     red: [0, 20],
+     brown: [1, 15],
+  },
+  14: { 
+    white: [1, 16], 
+    yellow: [1, 17],
+    green: [1, 18],
+    blue: [2, 14],
+    red: [2, 15],
+    brown: [2, 16],
+  },
+  15: { 
+    white: [2, 17], 
+    yellow: [3, 13], 
+    green: [3, 14], 
+    blue: [3, 15], 
+    red: [3, 16], 
+    brown: [4, 12], 
+  },
+  16: { 
+    white: [4, 13], 
+    yellow: [4, 14], 
+    green: [4, 15], 
+    blue: [5, 11], 
+    red: [5, 12], 
+    brown: [5, 13],
+  },
+  17: { 
+    white: [5, 14], 
+    yellow: [6, 10], 
+    green: [6, 11], 
+    blue: [6, 12], 
+    red: [6, 13], 
+    brown: [7, 9] 
+  },
+  18: { 
+    white: [7, 10], 
+    yellow: [7, 11], 
+    green: [7, 12], 
+    blue: [8, 8], 
+    red: [8, 9], 
+    brown: [8, 10],
+  },
+  19: { 
+    white: [8, 11], 
+    yellow: [9, 9], 
+    green: [9, 10], 
+    blue: [10, 10], 
+    red: [10, 11], 
+    brown: [10, 12], 
+  },
 };
 
 const ADD = 'add';
@@ -143,9 +199,9 @@ async function seedLevel(level) {
 
 (async () => {
   await connectDB();
-  for (let lvl=1; lvl<=12; lvl++) {
+  for (let lvl=1; lvl<=19; lvl++) {
     await seedLevel(lvl);
   }
-  console.log('✅ Seeded one canonical (a,b) per belt for levels 1..12 (addition)');
+  console.log('✅ Seeded one canonical (a,b) per belt for levels 1..19 (addition)');
   await mongoose.disconnect();
 })();

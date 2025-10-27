@@ -116,13 +116,14 @@ const QuizScreen = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.18, ease: "easeOut" }}
-                  className="absolute z-20 bottom-4 sm:bottom-5 text-xl font-extrabold whitespace-nowrap"
+                  className="absolute z-20 bottom-4 sm:bottom-5 text-2xl font-black whitespace-nowrap"
                   style={{
                     // Keep left anchored to progress position, but DO NOT animate it.
                     left: `${Math.min(70, Math.max(10, streakPosition))}%`,
                     transform: 'translateX(-50%)', // center on the point without x tweening
                     color: transientStreakMessage.symbolType === 'lightning' ? '#FBBF24' : '#10B981',
                     textShadow: '0 0 4px rgba(0,0,0,0.5)',
+                    fontWeight: 900, 
                   }}
                 >
                   {transientStreakMessage.text}
