@@ -13,9 +13,9 @@ const calculateFinalRoute = (selectedDifficulty, isBlack, degree) => {
         return '/levels';
     } 
     // 2. Black Belts (Degrees 1-6) or Brown Belt completion -> /black (degrees)
-    else if (isBlack || selectedDifficulty === 'brown') {
+    if (isBlack) {
         return '/black'; 
-    } 
+    }
     // 3. Colored Belts (White to Red) completion -> /belts
     else {
         return '/belts';

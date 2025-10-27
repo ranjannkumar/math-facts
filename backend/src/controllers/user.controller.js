@@ -66,7 +66,12 @@ export async function rateVideo(req, res, next) {
     }
     
     // Send email 
-    await sendRatingReport(req.user, rating, level, beltOrDegree); 
+    sendRatingReport(req.user, rating, level, beltOrDegree)
+      .catch(e => {
+        // Log the error but DO NOT block the response.
+        console.error('[NON-BLOCKING EMAIL FAIL]: Failed to send rating report email:', e.message);
+        // Do NOT re-throw or return an HTTP error status code.
+      });
 
     res.status(200).json({ success: true, message: 'Rating received and report sent.' });
   } catch (e) { 
