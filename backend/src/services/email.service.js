@@ -22,7 +22,10 @@ const GMAIL_PASS = process.env.GMAIL_PASS;
 
 // Setup Nodemailer Transporter
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+   host: 'smtp.gmail.com', 
+    port: 587,             // Standard port for STARTTLS
+    secure: false,         // Set to false for port 587 (use STARTTLS)
+    requireTLS: true,
     auth: {
         user: GMAIL_USER,
         pass: GMAIL_PASS, // App Password
@@ -78,14 +81,14 @@ export async function sendDailyReport() {
         const timeInMinutes = (summary.totalActiveMs / 60000).toFixed(2);
         const grandTotal = summary.grandTotal || 0; 
         
-        reportBody += `Child: ${userName} (PIN: ${userPin})\n`;
+        reportBody += `Student: ${userName} (PIN: ${userPin})\n`;
         reportBody += `  Correct Answers (Today): ${summary.correctCount}\n`;
         reportBody += `  Active Time: ${timeInMinutes} minutes\n`;
         reportBody += `  Grand Total Score: ${grandTotal}\n\n`; // <-- ADDED Grand Total to Text
 
         htmlBody += `
             <div style="margin-bottom: 15px; padding: 10px; border-left: 4px solid #2196F3; background-color: #f9f9f9;">
-                <p style="margin: 0;"><strong>Child: ${userName}</strong> (PIN: ${userPin})</p>
+                <p style="margin: 0;"><strong>Student: ${userName}</strong> (PIN: ${userPin})</p>
                 <ul style="list-style-type: none; padding: 0; margin-top: 5px;">
                     <li>✅ Correct Answers (Today): <strong style="color: #4CAF50;">${summary.correctCount}</strong></li>
                     <li>⏱️ Active Time: <strong style="color: #FF9800;">${timeInMinutes} minutes</strong></li>
@@ -133,7 +136,7 @@ export async function sendRatingReport(user, rating, level, beltOrDegree) {
     const subject = `Video Rated: ${userName} - ${rating}/10 on L${level} ${beltOrDegree} Belt`;
     
     const reportBody = `
-Child: ${userName} (PIN: ${userPin})
+Student: ${userName} (PIN: ${userPin})
 Date: ${todayFormatted}
 Level Completed: L${level} ${beltOrDegree} Belt
 Video Rating: ${rating}/10
@@ -142,7 +145,7 @@ Video Rating: ${rating}/10
     const htmlBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
             <h2 style="color: #4CAF50;">Immediate Video Rating Report</h2>
-            <p><strong>Child:</strong> ${userName} (PIN: ${userPin})</p>
+            <p><strong>Student:</strong> ${userName} (PIN: ${userPin})</p>
             <p><strong>Date:</strong> ${todayFormatted}</p>
             <p><strong>Level Completed:</strong> L${level} ${beltOrDegree} Belt</p>
             <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
