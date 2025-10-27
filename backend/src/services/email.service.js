@@ -22,7 +22,7 @@ const GMAIL_PASS = process.env.GMAIL_PASS;
 
 // Setup Nodemailer Transporter
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    service: 'smtp.gmail.com',
     auth: {
         user: GMAIL_USER,
         pass: GMAIL_PASS, // App Password
