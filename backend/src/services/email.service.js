@@ -23,6 +23,8 @@ const GMAIL_PASS = process.env.GMAIL_PASS;
 // Setup Nodemailer Transporter
 const transporter = nodemailer.createTransport({
     service: 'smtp.gmail.com',
+    port: 465,              // Secure port for SSL/TLS
+    secure: true,
     auth: {
         user: GMAIL_USER,
         pass: GMAIL_PASS, // App Password
