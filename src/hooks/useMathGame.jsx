@@ -74,6 +74,9 @@ const useMathGame = () => {
 
   const [currentStreak, setCurrentStreak] = useState(0); 
 
+  const [showDailyStreakAnimation, setShowDailyStreakAnimation] = useState(false);
+  const [streakCountToDisplay, setStreakCountToDisplay] = useState(0);
+
   const [tempNextRoute, setTempNextRoute] = useState(null);
 
   // Misc UI
@@ -207,7 +210,14 @@ const useMathGame = () => {
     setDailyTotalMs(stats?.totalActiveMs || 0); 
     setCorrectCount(stats?.correctCount || 0); 
     setGrandTotalCorrect(stats?.grandTotal || 0); 
-    setCurrentStreak(loginResponse.user.currentStreak || 0);
+    const newStreak = loginResponse.user.currentStreak || 0; 
+    setCurrentStreak(newStreak); 
+
+    if (newStreak > 0) {
+      setStreakCountToDisplay(newStreak);
+      setShowDailyStreakAnimation(true);
+      setTimeout(() => setShowDailyStreakAnimation(false), 2000); 
+    }
 
     // Final Navigation
     if (themeKeyFromBackend && themeKeyFromBackend.length > 0 && themeKeyFromBackend !== 'null') {
@@ -879,6 +889,9 @@ const useMathGame = () => {
     showSiblingCheck,
     loginPendingName,
     handleSiblingCheck,
+
+    showDailyStreakAnimation, 
+    streakCountToDisplay,
     
     handleResetProgress: handleInitiateReset,
     handleConfirmReset, handleCancelReset,
