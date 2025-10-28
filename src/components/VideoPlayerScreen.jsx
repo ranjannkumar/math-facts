@@ -34,9 +34,9 @@ const RatingPanel = ({ onRate, onSkip, isSubmitting }) => {
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-8 shadow-2xl max-w-lg w-full flex flex-col items-center animate-pop-in">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Rate this video (1-10)</h2>
-        
+      <div className="bg-gray-800 rounded-xl p-8 shadow-2xl max-w-lg w-full flex flex-col items-center animate-pop-in">
+        <h2 className="text-2xl font-bold text-gray-200 mb-6">Rate this video</h2>
+
         {/* Rating Grid */}
         <div className="grid grid-cols-5 gap-3 w-full max-w-md mb-6">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((r) => (
@@ -46,7 +46,7 @@ const RatingPanel = ({ onRate, onSkip, isSubmitting }) => {
               disabled={isSubmitting}
               className={`py-3 px-2 rounded-lg font-semibold text-lg transition-all duration-200 
                 ${selectedRating === r 
-                  ? 'bg-yellow-500 text-white shadow-xl scale-105' 
+                  ? 'bg-green-500 text-white shadow-xl scale-105' 
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
             >
               {r}
@@ -59,18 +59,18 @@ const RatingPanel = ({ onRate, onSkip, isSubmitting }) => {
           <button
             onClick={() => onRate(selectedRating)}
             disabled={selectedRating === 0 || isSubmitting}
-            className={`kid-btn text-white transition-all ${
+            className={`kid-btn text-white transition-all bg-gray-600 ${
               selectedRating === 0 ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
             }`}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+            {isSubmitting ? 'Submitting...' : 'Submit '}
           </button>
           <button
             onClick={() => onSkip()}
             disabled={isSubmitting}
-            className="kid-btn bg-gray-300 hover:bg-gray-400 text-gray-800"
+            className="kid-btn bg-gray-800 hover:bg-gray-900 text-gray-800"
           >
-            Skip Rating
+            Skip 
           </button>
         </div>
       </div>

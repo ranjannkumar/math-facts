@@ -3,6 +3,7 @@ import { getToday as getTodaySvc, getGrandTotalCorrect as getGrandTotalCorrectSv
 import { resetAllProgress as resetAllProgressSvc } from '../services/progression.service.js';
 import User from '../models/User.js'; 
 import { sendRatingReport } from '../services/email.service.js';
+import VideoRating from '../models/VideoRating.js';
 
 export async function getToday(req, res, next) {
   try {
@@ -64,6 +65,13 @@ export async function rateVideo(req, res, next) {
     if (!rating || !level || !beltOrDegree) {
       return res.status(400).json({ error: 'Rating, level, and beltOrDegree are required.' });
     }
+
+    const newRating = await VideoRating.create({
+      user: req.user._id, // User is attached to req.user by pinAuth middleware
+      rating: Number(rating),
+      level: Number(level),
+      beltOrDegree: beltOrDegree,
+    });
     
     // Send email 
     sendRatingReport(req.user, rating, level, beltOrDegree)
@@ -73,7 +81,7 @@ export async function rateVideo(req, res, next) {
         // Do NOT re-throw or return an HTTP error status code.
       });
 
-    res.status(200).json({ success: true, message: 'Rating received and report sent.' });
+    res.status(200).json({ success: true, message: 'Rating received and report sent.', ratingId: newRating._id });
   } catch (e) { 
     // Return 500 if email service threw a critical error.
     if (e.message.includes('Nodemailer failed')) {
