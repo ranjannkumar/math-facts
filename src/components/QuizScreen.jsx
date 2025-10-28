@@ -122,7 +122,7 @@ const QuizScreen = () => {
                     left: `${Math.min(70, Math.max(10, streakPosition))}%`,
                     transform: 'translateX(-50%)', // center on the point without x tweening
                     color: transientStreakMessage.symbolType === 'lightning' ? '#FBBF24' : '#10B981',
-                    textShadow: '0 0 4px rgba(0,0,0,0.5)',
+                    textShadow: '0 0 **6px** rgba(0,0,0,0.7), 0 0 **3px** rgba(0,0,0,0.5)',
                     fontWeight: 900, 
                   }}
                 >
