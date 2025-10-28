@@ -3,16 +3,29 @@ import { MathGameContext } from '../App.jsx';
 import { useNavigate } from 'react-router-dom';
 import { submitVideoRating } from '../api/mathApi.js';
 
-/**
- * Maps the completed level to the appropriate video path.
- */
-const getVideoPath = (level) => {
-  const levelNum = parseInt(level, 10);
-  if (levelNum === 1) return '/level1_video.mp4';
-  if (levelNum === 2) return '/level2_video.mp4';
-  // Use level3_video for all other levels (3+)
-  if (levelNum >= 3) return '/level3_video.mp4';
-  return null; // Fallback
+
+const getVideoPath = (difficulty) => {
+  if (!difficulty) return null;
+
+  // Colored Belts
+  switch (difficulty) {
+    case 'white': return '/white_video.mp4';
+    case 'yellow': return '/yellow_video.mp4';
+    case 'green': return '/green_video.mp4';
+    case 'blue': return '/blue_video.mp4';
+    case 'red': return '/red_video.mp4';
+    case 'brown': return '/brown_video.mp4';
+  }
+
+  // Black Belt Degrees
+  if (difficulty.startsWith('black-')) {
+    const degree = parseInt(difficulty.split('-')[1], 10);
+    if (degree === 1) return '/degree1_video.mp4';
+    if (degree === 2) return '/degree2_video.mp4';
+    if (degree >= 3 && degree <= 7) return '/degree3_video.mp4'; 
+  }
+  
+  return null;
 };
 
 //Rating Panel Component
@@ -83,7 +96,7 @@ const VideoPlayerScreen = () => {
 
   useEffect(() => {
     // 1. Determine video path based on the completed level
-    const path = getVideoPath(selectedTable);
+    const path = getVideoPath(selectedDifficulty);
     
     if (path) {
       setVideoSrc(path);
@@ -93,7 +106,7 @@ const VideoPlayerScreen = () => {
     }
 
     return () => setTempNextRoute(null); // Clear the temp route on unmount
-  }, [selectedTable,setTempNextRoute]);
+  }, [selectedDifficulty, setTempNextRoute]);
 
   const handleNavigation = useCallback(() => {
     // Determine the final destination
