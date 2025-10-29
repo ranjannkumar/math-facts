@@ -60,6 +60,15 @@ export async function getGrandTotalCorrect(userId) {
   return result[0]?.grandTotal || 0;
 }
 
+export async function getGrandTotalActiveMs(userId) { 
+  if (userId === REPORT_SENTINEL_USER_ID) return 0; 
+  const result = await DailySummary.aggregate([ 
+    { $match: { user: userId } }, 
+    { $group: { _id: null, grandTotalMs: { $sum: '$totalActiveMs' } } } 
+  ]); 
+  return result[0]?.grandTotalMs || 0; 
+}
+
 export async function getDailySummariesForYesterday() {
  const yesterday = nowInPacific().subtract(1, 'day').format('YYYY-MM-DD');
   

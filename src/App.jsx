@@ -25,6 +25,7 @@ import { clearShootingStars } from './utils/mathGameLogic.js';
 import audioManager from './utils/audioUtils.js';
 
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+const AdminDashboard = lazy(() => import('./components/AdminDashboard.jsx'));
 
 export const MathGameContext = createContext({});
 
@@ -57,6 +58,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<StartScreen />} />
         <Route path="/name" element={<NameForm />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
         {/* <Route path="/pre-test-popup" element={<PreTestPopup />} /> */}
         {/* <Route path="/pre-test" element={<PreTestScreen />} /> */}
 

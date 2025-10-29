@@ -158,7 +158,7 @@ export async function submitAnswer(runId, questionId, answer, responseMs) {
   const updatedDaily = await incDaily(run.user, 1, timeDelta);
 
   // Atomically increment the grand total on the User document
-  await User.findByIdAndUpdate(run.user, { $inc: { grandTotalCorrect: 1 } }); 
+  // await User.findByIdAndUpdate(run.user, { $inc: { grandTotalCorrect: 1 } }); 
   
 
   // next index
