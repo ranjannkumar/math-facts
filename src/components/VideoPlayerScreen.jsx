@@ -169,7 +169,7 @@ if (!videoSrc) {
         </video>
       )}
 
-      {/* Button to skip video and go to rating */}
+      {/* Button to skip video and go to rating
       {!videoEnded && (
         <button 
             onClick={() => setVideoEnded(true)} // Skip video -> show rating panel
@@ -177,7 +177,7 @@ if (!videoSrc) {
         >
             Skip Video
         </button>
-      )}
+      )} */}
 
       {/* Rating Panel Overlay */}
       {videoEnded && (
