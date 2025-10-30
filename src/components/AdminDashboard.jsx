@@ -63,6 +63,11 @@ const AdminDashboard = () => {
       fetchStats();
   };
 
+  const sortedStats = [...stats].sort((a, b) => {
+    // Sort descending (b - a) to put the highest score on top.
+    return b.grandTotalCorrect - a.grandTotalCorrect;
+  });
+
   const dashboardStyle = {
     backgroundImage: "url('/night_sky_landscape.jpg')",
     backgroundSize: 'cover',
@@ -146,7 +151,7 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700 text-white">
-              {stats.map((student) => (
+              {sortedStats.map((student) => (
                 <tr 
                   key={student._id} 
                   className="hover:bg-gray-700/50 transition-colors"

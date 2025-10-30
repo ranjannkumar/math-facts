@@ -216,7 +216,7 @@ const useMathGame = () => {
     if (newStreak > 0) {
       setStreakCountToDisplay(newStreak);
       setShowDailyStreakAnimation(true);
-      setTimeout(() => setShowDailyStreakAnimation(false), 2000); 
+      // setTimeout(() => setShowDailyStreakAnimation(false), 2000); 
     }
 
     // Final Navigation
@@ -227,6 +227,11 @@ const useMathGame = () => {
     }
 
   }, [navigate, setChildName, setTableProgress, setDailyTotalMs, setCorrectCount, setGrandTotalCorrect, setCurrentStreak]);
+
+  //  DISMISS STREAK ANIMATION 
+  const handleDailyStreakNext = useCallback(() => {
+    setShowDailyStreakAnimation(false);
+  }, []);
 
 
   // ---Handler for Sibling Check Modal ---
@@ -892,6 +897,7 @@ const useMathGame = () => {
 
     showDailyStreakAnimation, 
     streakCountToDisplay,
+    handleDailyStreakNext,
     
     handleResetProgress: handleInitiateReset,
     handleConfirmReset, handleCancelReset,
