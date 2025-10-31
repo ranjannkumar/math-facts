@@ -412,7 +412,7 @@ const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
             </div>
             <div className="flex justify-center">
               <button
-                className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-6 sm:px-8 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-base sm:text-lg shadow-lg"
+                className="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-6 sm:px-8 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-base sm:text-lg shadow-lg"
                 onClick={handleNext}
               >
                 Next
@@ -447,7 +447,7 @@ const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
             </div>
             <div className="flex justify-center">
               <button
-                className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-6 sm:px-8 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-base sm:text-lg shadow-lg"
+                className="bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-6 sm:px-8 rounded-lg sm:rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 text-base sm:text-lg shadow-lg"
                 onClick={handleNext}
               >
                 Next

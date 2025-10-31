@@ -161,7 +161,7 @@ const WayToGoScreen = () => {
 
                 <div className="flex justify-center">
                     <button
-                        className="px-6 py-3 rounded-2xl bg-gray-900 text-white font-semibold hover:opacity-90 transition text-base sm:text-lg"
+                        className="px-6 py-3 rounded-2xl bg-green-600 text-white font-semibold hover:opacity-90 transition text-base sm:text-lg"
                         onClick={handleBackToBelts}
                         disabled={isDisabled}
                     >

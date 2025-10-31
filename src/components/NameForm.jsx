@@ -110,7 +110,8 @@ const AdminPinModal = ({
                         className="bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 sm:py-2 px-4 sm:px-6 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1"
                         disabled={adminPin.length !== 4 || isAdminLoading}
                     >
-                        {isAdminLoading ? 'Checking...' : 'Enter'}
+                        {/* {isAdminLoading ? 'Checking...' : 'Enter'} */}
+                        Enter
                     </button>
                     <button
                         type="button"
@@ -327,7 +328,7 @@ const handleDemoClick = () => {
               className="bg-green-800 hover:bg-green-900 text-white font-bold py-1.5 sm:py-2 px-4 sm:px-6 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1"
               disabled={isLoginLoading}
             >
-              {isLoginLoading ? 'Loading...' : 'Start'}
+              Start
             </button>
             
             <button
@@ -341,6 +342,23 @@ const handleDemoClick = () => {
           </div>
         </form>
       </div>
+
+      {isLoginLoading && (  
+        <div 
+            className="fixed inset-0 z-[101] flex items-center justify-center animate-fade-in" 
+            style={{ 
+                backgroundImage: "url('/night_sky_landscape.jpg')", 
+                backgroundSize: 'cover', 
+                backgroundPosition: 'center', 
+                backgroundRepeat: 'no-repeat', 
+                backgroundColor: 'rgba(0, 0, 0, 0.9)', // Fallback and slight darkening 
+            }} 
+        > 
+            <div className="text-white text-2xl animate-pulse"> 
+                Loading...
+            </div> 
+        </div>
+      )} 
       
       {showAdminPinModal && (
         <AdminPinModal 

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSignOutAlt } from 'react-icons/fa';
-import { getAdminStats } from '../api/mathApi.js';
+import { getAdminStats, userGetProgress } from '../api/mathApi.js';
 
 const MS_PER_SEC = 1000;
 const MS_PER_MIN = 60000;
@@ -24,6 +24,48 @@ const formatTime = (ms) => {
   return `${seconds}s`;
 }; 
 
+// Get the current level and belt from the progress object
+const getCurrentProgress = (progress) => { 
+  if (!progress) return { level: 'N/A', belt: 'N/A' };
+  
+  const levels = Object.keys(progress)
+    .filter(k => k.startsWith('L'))
+    .map(k => ({ key: k, level: parseInt(k.substring(1), 10), data: progress[k] }))
+    .sort((a, b) => b.level - a.level); // Sort descending to find highest level first
+
+  if (levels.length === 0) return { level: 'N/A', belt: 'N/A' };
+
+  // Find the highest level that is not yet fully completed (or the highest completed level if all are)
+  const currentLevelInfo = levels.find(l => l.data.unlocked) || levels[0];
+  const levelData = currentLevelInfo.data;
+  const levelNumber = currentLevelInfo.level;
+  
+  const beltsOrder = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
+  let currentBelt = 'White'; 
+  
+  // 1. Check Black Belt Degrees (highest priority for in-progress work)
+  if (levelData.black?.unlocked) {
+    const completedDegrees = levelData.black.completedDegrees || [];
+    const currentDegree = completedDegrees.length + 1;
+    currentBelt = `Black Degree ${currentDegree}`;
+  } 
+  // 2. Check Colored Belts
+  else {
+    // Find the highest completed or currently unlocked belt
+    for (const belt of beltsOrder) {
+      if (levelData[belt] && (levelData[belt].unlocked || levelData[belt].completed)) {
+        currentBelt = belt.charAt(0).toUpperCase() + belt.slice(1);
+      }
+    }
+  }
+  
+  if (levelData.completed && !levelData.black?.unlocked) {
+      currentBelt = "Level Mastered";
+  }
+
+  return { level: `L${levelNumber}`, belt: currentBelt };
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState([]);
@@ -39,11 +81,37 @@ const AdminDashboard = () => {
 
     try {
       setLoading(true);
-      const data = await getAdminStats(adminPin);
-      setStats(data);
+      const initialData = await getAdminStats(adminPin); 
+      
+      const statsWithProgressPromises = initialData.map(async (student) => {
+        // Fetch progress for each student using their pin
+        let currentLevel = 'N/A';
+        let currentBelt = 'N/A';
+        
+        try {
+            const progressResponse = await userGetProgress(student.pin);
+            const progress = progressResponse.progress;
+            const progressInfo = getCurrentProgress(progress);
+            currentLevel = progressInfo.level;
+            currentBelt = progressInfo.belt;
+        } catch (e) {
+            console.warn(`Failed to fetch progress for ${student.name} (${student.pin}):`, e);
+            currentLevel = 'Error';
+            currentBelt = 'Error';
+        }
+        
+        return {
+            ...student,
+            currentLevel: currentLevel,
+            currentBelt: currentBelt,
+        };
+      });
+      
+      const finalStats = await Promise.all(statsWithProgressPromises);
+      setStats(finalStats);
       setError(null);
     } catch (e) {
-      console.error('Failed to fetch admin stats:', e);
+      console.error('Failed to fetch admin stats or progress:', e);
       setError(e.message || 'Failed to fetch dashboard data.');
     } finally {
       setLoading(false);
@@ -137,6 +205,12 @@ const AdminDashboard = () => {
                   Logged In Today
                 </th>
                 <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Level 
+                </th> 
+                <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider"> 
+                  Belt 
+                </th> 
+                <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Today Time
                 </th>
                 <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
@@ -162,6 +236,12 @@ const AdminDashboard = () => {
                   <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm">
                     {student.loggedInToday ? '✅ Yes' : '❌ No'}
                   </td>
+                  <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm"> 
+                    {student.currentLevel} 
+                  </td> 
+                  <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-medium"> 
+                    {student.currentBelt} 
+                  </td> 
                   <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm tabular-nums">
                     {formatTime(student.todayActiveMs)}
                   </td>
