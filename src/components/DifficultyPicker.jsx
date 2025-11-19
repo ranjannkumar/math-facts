@@ -153,7 +153,7 @@ const DifficultyPicker = () => {
       <button
         key="black"
         onClick={() => handlePick('black', locked)}
-        className="text-center md:col-start-2 lg:col-start-2 justify-self-center"
+        className="text-center  justify-self-center"
       >
         <CardShell locked={locked} stripColor={BELT_STRIP.black}>
           <h3 className="text-[20px] leading-6 font-extrabold text-slate-800 mt-1 mb-2">Black Belt</h3>
