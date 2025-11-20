@@ -513,7 +513,7 @@ const useMathGame = () => {
         setCurrentQuizStreak(newQuizStreak);
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
         // setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
-        setQuizProgress(newProgress); 
+        // setQuizProgress(newProgress); 
         setSessionCorrectCount(s => s + 1); // Optimistically update session score
       } else {
         // Wrong answer: Reset streak
@@ -525,6 +525,8 @@ const useMathGame = () => {
         setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
         setTransientStreakMessage(null);
       }
+
+      setQuizProgress(newProgress);
       
       // ---   UI ADVANCE FOR INSTANT TRANSITION ---
       // const nextIndex = currentQuestionIndex + 1;
@@ -723,6 +725,11 @@ const useMathGame = () => {
             clearTimeout(inactivityTimeoutId.current);
             inactivityTimeoutId.current = null;
         }
+
+        //  Advance progress bar for inactivity failure ---
+        // const nextIndex = currentQuestionIndex + 1;
+        // const newProgress = Math.min(nextIndex * (100 / maxQuestions), 100);
+        // setQuizProgress(newProgress);
         // Set block flag immediately before API call 
         setIsAwaitingInactivityResponse(true);
         try {
