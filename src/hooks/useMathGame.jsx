@@ -542,14 +542,14 @@ const useMathGame = () => {
           setTransientStreakMessage(triggerStreakMessage); 
           
           // Unlock the UI immediately (before the slow API call returns)
-          setIsAnimating(false); 
+          // setIsAnimating(false); 
           uiAdvancedOptimistically = true;
           
           // Optimistically update session score for accurate UI display 
           setSessionCorrectCount(s => s + 1);
       } else {
           // Last question answered (correctly or incorrectly)
-          setIsAnimating(false);
+          // setIsAnimating(false);
           setTransientStreakMessage(triggerStreakMessage); 
           if (triggerStreakMessage) {
                // If it's the last question, clear the message quickly so it doesn't linger 
@@ -629,6 +629,7 @@ const useMathGame = () => {
                   }
                   setQuizStartTime(Date.now()); // Ensure timer base is correct
               }
+              setIsAnimating(false);
           } else {
               // Fallback for non-optimistic, non-terminal cases (should not occur if logic is right)
                console.warn("Quiz is in an unexpected non-terminal, non-advancing state.");
