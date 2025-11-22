@@ -209,6 +209,7 @@ export function mapQuestionToFrontend(backendQuestion) {
   };
 }
 
-export const getAdminStats = async (adminPin) => { // [!code ++]
-  return callApi('/admin/today-stats', 'GET', null, adminPin); // [!code ++]
-}
+export const getAdminStats = async (adminPin, limit = 10, offset = 0) => {
+  return callApi(`/admin/today-stats?limit=${limit}&offset=${offset}`, 'GET', null, adminPin);
+};
+
