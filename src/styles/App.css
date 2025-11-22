@@ -914,3 +914,64 @@ html {
   }
 }
 
+
+/* Mobile-first: treat stats as a footer row (no overlap) */
+.stats-floating {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.85rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+/* Make each card share the space evenly on small screens */
+.stats-floating > div {
+  flex: 1 1 0;
+}
+
+/* Extra bottom breathing room when using footer layout */
+.layout-has-stats {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
+/* Medium and up: restore floating cards in bottom-right corner */
+@media (min-width: 768px) {
+  .stats-floating {
+    position: fixed;
+    right: max(env(safe-area-inset-right), 1rem);
+    bottom: max(env(safe-area-inset-bottom), 1rem);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    width: auto;
+    padding: 0;
+  }
+
+  .stats-floating > div {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 220px;
+  }
+}
+
+/* Short viewports (e.g. phone in landscape):
+   force footer layout again to avoid overlap with quiz/belts */
+@media (min-width: 768px) and (max-height: 500px) {
+  .stats-floating {
+    position: static;
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.85rem;
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  .stats-floating > div {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}

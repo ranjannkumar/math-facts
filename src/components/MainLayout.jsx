@@ -15,21 +15,27 @@ const MainLayout = ({ hideStats }) => {
     isTimerPaused,
     quizStartTime,
     pausedTime,
-    totalTimeToday, 
+    totalTimeToday,
     elapsedTime,
     handleQuit,
     handleResetProgress,
   } = useContext(MathGameContext);
 
   const location = useLocation();
+
   const showStats = !(location.pathname === '/' || location.pathname === '/name');
   const shouldRenderStats = showStats && !hideStats;
 
+  // Fallback so we always pass a number down to SessionTimer
+  const effectiveAccumulatedTime =
+    typeof totalTimeToday === 'number' ? totalTimeToday : elapsedTime || 0;
+
   return (
     <div
-      className="App min-h-screen w-full relative"
+      className="App min-h-screen w-full relative layout-has-stats"
       style={{
-        background: 'linear-gradient(135deg, #23272f 0%, #18181b 60%, #111113 100%)',
+        background:
+          'linear-gradient(135deg, #23272f 0%, #18181b 60%, #111113 100%)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -48,31 +54,35 @@ const MainLayout = ({ hideStats }) => {
       <UserInfoBadge />
       <DailyStreakCounter />
 
-      <Outlet />
-
-       {shouldRenderStats && (
-        <div
-          style={{
-            position: 'fixed',
-            right: 'max(env(safe-area-inset-right), 1rem)',
-            bottom: 'max(env(safe-area-inset-bottom), 1rem)',
-            zIndex: 99999,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: 'clamp(0.5rem, 2vw, 1rem)',
-          }}
-        >
-          <DailyStatsCounter />
-          <SessionTimer
-            isActive={!!quizStartTime}
-            startTime={quizStartTime}
-            isPaused={isTimerPaused}
-            pauseStartTime={pausedTime}
-            accumulatedTime={totalTimeToday}
-          />
+      {/* Routed pages */}
+      <div className="w-full min-h-screen flex flex-col">
+        <div className="flex-1 w-full">
+          <Outlet />
         </div>
-      )}
+
+        {/* Responsive stats bar (score + time) */}
+        {shouldRenderStats && (
+          <div className="stats-floating">
+            <DailyStatsCounter
+              style={{
+                width: '100%',
+                maxWidth: '280px',
+              }}
+            />
+            <SessionTimer
+              isActive={!!quizStartTime}
+              startTime={quizStartTime}
+              isPaused={isTimerPaused}
+              pauseStartTime={pausedTime}
+              accumulatedTime={effectiveAccumulatedTime}
+              style={{
+                width: '100%',
+                maxWidth: '280px',
+              }}
+            />
+          </div>
+        )}
+      </div>
 
       {showSettings && (
         <SettingsModal
