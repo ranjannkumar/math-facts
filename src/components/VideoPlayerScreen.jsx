@@ -109,14 +109,28 @@ const VideoPlayerScreen = () => {
   }, [selectedDifficulty, setTempNextRoute]);
 
   const handleNavigation = useCallback(() => {
-    // Determine the final destination
-    const finalDestination = tempNextRoute || '/levels';
+        let finalDestination = tempNextRoute;
 
-    setQuizRunId(null);
-    setTempNextRoute(null);
-    navigate(finalDestination, { replace: true });
+        if (!finalDestination) {
+            const isBlack = String(selectedDifficulty || '').startsWith('black');
+            const degree = isBlack ? parseInt(String(selectedDifficulty).split('-')[1] || '0', 10) : 0;
 
-  }, [tempNextRoute, setQuizRunId, setTempNextRoute, navigate]);
+            if (selectedDifficulty === 'brown' || (isBlack && degree >= 1 && degree <= 6)) {
+                finalDestination = '/black';
+            } else if (isBlack && degree === 7) {
+                finalDestination = '/levels';
+            } else {
+                finalDestination = '/belts'; 
+            }
+        }
+        
+        finalDestination = finalDestination || '/levels'; 
+
+        setQuizRunId(null);
+        setTempNextRoute(null);
+        navigate(finalDestination, { replace: true });
+
+    }, [tempNextRoute, selectedDifficulty, setQuizRunId, setTempNextRoute, navigate]);
 
   const handleRateSubmit = async (rating) => {
     setIsSubmitting(true);

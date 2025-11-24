@@ -8,18 +8,19 @@ import { quizComplete } from '../api/mathApi.js';
 
 // Helper function to determine the correct destination after video/rating
 const calculateFinalRoute = (selectedDifficulty, isBlack, degree) => {
-    // 1. Black Belt Degree 7 completion -> /levels
-    if (isBlack && degree === 7) {
-        return '/levels';
-    } 
-    // 2. Black Belts (Degrees 1-6) or Brown Belt completion -> /black (degrees)
+    
+    if (selectedDifficulty === 'brown') {
+        return '/black';
+    }
+
     if (isBlack) {
-        return '/black'; 
+        if (degree === 7) {
+            return '/levels';
+        } 
+        return '/black';
     }
-    // 3. Colored Belts (White to Red) completion -> /belts
-    else {
-        return '/belts';
-    }
+    
+    return '/belts';
 };
 
 const ResultsScreen = () => {
