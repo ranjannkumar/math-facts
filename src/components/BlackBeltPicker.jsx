@@ -87,7 +87,7 @@ const BlackBeltPicker = () => {
         backgroundRepeat: 'no-repeat',
       }}
     >
-      <div className="w-full max-w-5xl">
+      <div className="w-full max-w-5xl mx-auto flex flex-col items-center">
         <div className="flex items-center justify-between mb-4">
           <button
             className="fixed z-50 bg-white/80 hover:bg-gray-200 text-gray-700 rounded-full p-2 shadow-lg border-2 border-gray-400 transition-all duration-300 transform hover:scale-110 active:scale-95"
@@ -110,6 +110,7 @@ const BlackBeltPicker = () => {
           Black Belt Degrees
         </h1>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-0 w-full max-w-2xl  place-items-center justify-items-center">
         {degrees.map((deg) => {
           if (isCompleted(deg)) return null;
 
@@ -149,6 +150,7 @@ const BlackBeltPicker = () => {
           );
         })}
 
+        </div>
       </div>
     </div>
   );
