@@ -17,13 +17,13 @@ const GetReadyScreen = () => {
       <div className="text-center">
         {/* Simple CSS animation for "GET READY!" */}
         <h1 
-          className="text-8xl font-black text-green-600 animate-pulse transition-none"
+          className="text-6xl font-black text-green-600 animate-pulse transition-none"
           style={{ 
             animationDuration: '1.5s', 
             animationIterationCount: 'infinite' 
           }}
         >
-          GET READY!
+          GET READY !
         </h1>
         <p className="mt-4 text-2xl text-yellow-700 dark:text-yellow-300">
           Starting your quiz...
