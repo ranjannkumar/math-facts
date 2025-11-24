@@ -305,7 +305,7 @@ useEffect(() => {
             if (isLastFact) {
               // This was the final practice. Now we show the Start Quiz button.
               // setShowAdvanceButton(true);
-             if (!isQuizStarting) { // <--- USE GLOBAL STATE
+             if (!isClosing && !isQuizStarting) { 
                   setIsQuizStarting(true);
                   setIsClosing(true); 
                   setShowLearningModule(false);

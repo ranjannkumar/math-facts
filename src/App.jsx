@@ -30,12 +30,30 @@ const AdminDashboard = lazy(() => import('./components/AdminDashboard.jsx'));
 
 export const MathGameContext = createContext({});
 
+const InitialLoadingScreen = () => (
+    <div 
+            className="fixed inset-0 z-[99] bg-black/90 flex flex-col items-center justify-center "
+            style={{ 
+                backgroundImage: "url('/night_sky_landscape.jpg')", 
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+            }}
+    >
+        <svg className="animate-spin h-12 w-12 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-300">Loading...</p>
+    </div>
+);
+
 const App = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const ctx = useMathGame();
 
-  const { showSiblingCheck } = ctx; 
+    const { showSiblingCheck } = ctx;
 
   useEffect(() => () => clearShootingStars(), []);
 
@@ -51,6 +69,7 @@ const App = () => {
     border: '4px solid white',
     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(255, 255, 255, 0.2) inset'
   };
+
 
   return (
     <MathGameContext.Provider value={{ ...ctx, navigate }}>
@@ -81,7 +100,10 @@ const App = () => {
       </Routes>
       </Suspense>
 
-      {ctx.isQuizStarting && <GetReadyScreen />}
+     {ctx.isInitialPrepLoading && <InitialLoadingScreen />}
+
+      {/* 2. Show "GET READY" only right before the quiz starts (post-practice or black belt) */}
+      {ctx.isQuizStarting && <GetReadyScreen />}
 
      {/* --- DAILY STREAK ANIMATION OVERLAY (NEW COMPONENT) --- */}
       {ctx.showDailyStreakAnimation && ctx.streakCountToDisplay > 0 && (

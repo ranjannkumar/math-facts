@@ -93,6 +93,8 @@ const useMathGame = () => {
    const [isQuizStarting, setIsQuizStarting] = useState(false);
    const [isAwaitingInactivityResponse, setIsAwaitingInactivityResponse] = useState(false);
 
+   const [isInitialPrepLoading, setIsInitialPrepLoading] = useState(false);
+
    //   DEMO STATE
   //  const [isDemoMode, setIsDemoMode] = useState(false);
 
@@ -403,7 +405,10 @@ const useMathGame = () => {
       setPendingDifficulty(difficulty);
       setMaxQuestions(determineMaxQuestions(difficulty));
 
-       setIsQuizStarting(true);
+      setIsInitialPrepLoading(true);
+      if( String(difficulty).startsWith('black')) {
+        setIsInitialPrepLoading(false);
+      }
 
       try {
         const { quizRunId: newRunId, practice: practiceItems } = await quizPrepare(
@@ -418,6 +423,8 @@ const useMathGame = () => {
         // Use a generic placeholder content since the actual facts are in practiceItems
         const content = `${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} Belt Quiz at Level ${table}.`;
         setLearningModuleContent(content);
+
+        setIsInitialPrepLoading(false);
         
         //  Implement Black Belt skip logic
         const isBlackBelt = String(difficulty).startsWith('black');
@@ -428,6 +435,7 @@ const useMathGame = () => {
           navigate('/learning');
         } else {
           // Black Belt or no practice items, go straight to quiz start
+          setIsQuizStarting(true);
           startActualQuiz(newRunId);
         }
         
@@ -880,6 +888,7 @@ const useMathGame = () => {
     totalTimeToday, //  Export total time today for MainLayout/SessionTimer
     getQuizTimeLimit: () => quizTimeLimit,
     // Learning/Practice
+    isInitialPrepLoading,
     isQuizStarting,
     setIsQuizStarting,
     isAwaitingInactivityResponse,
