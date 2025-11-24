@@ -1,6 +1,7 @@
 import React, { useEffect, createContext, lazy, Suspense } from 'react'; 
 import useMathGame from './hooks/useMathGame.jsx';
 import DailyStreakAnimation from './components/DailyStreakAnimation.jsx';
+import GetReadyScreen from './components/GetReadyScreen.jsx';
 
 // NEW: Lazy loading imports for Code Splitting
 import SiblingCheckModal from './components/SiblingCheckModal.jsx';
@@ -79,6 +80,8 @@ const App = () => {
         </Route>
       </Routes>
       </Suspense>
+
+      {ctx.isQuizStarting && <GetReadyScreen />}
 
      {/* --- DAILY STREAK ANIMATION OVERLAY (NEW COMPONENT) --- */}
       {ctx.showDailyStreakAnimation && ctx.streakCountToDisplay > 0 && (

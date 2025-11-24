@@ -151,6 +151,8 @@ const LearningModule = () => {
     preQuizPracticeItems, 
     quizRunId,
     handlePracticeAnswer, 
+    isQuizStarting,     // <--- ADD THIS LINE
+    setIsQuizStarting,
   } = useContext(MathGameContext);
 
   const diff = useMemo(() => normalizeDifficulty(pendingDifficulty), [pendingDifficulty]);
@@ -161,7 +163,7 @@ const LearningModule = () => {
   const [practiceMsg, setPracticeMsg] = useState('');
   const [showAdvanceButton, setShowAdvanceButton] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState(null); // Tracks the button click answer
-  const [isStartingQuiz, setIsStartingQuiz] = useState(false); // Prevent double starts 
+  // const [isStartingQuiz, setIsStartingQuiz] = useState(false); // Prevent double starts 
 
   const isIntervention = !!interventionQuestion;
   const isPreQuizFlow = !isIntervention && preQuizPracticeItems?.length > 0;
@@ -303,8 +305,8 @@ useEffect(() => {
             if (isLastFact) {
               // This was the final practice. Now we show the Start Quiz button.
               // setShowAdvanceButton(true);
-              if (!isStartingQuiz) {
-                  setIsStartingQuiz(true);
+             if (!isQuizStarting) { // <--- USE GLOBAL STATE
+                  setIsQuizStarting(true);
                   setIsClosing(true); 
                   setShowLearningModule(false);
                   startActualQuiz(quizRunId);

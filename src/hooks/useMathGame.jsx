@@ -881,6 +881,7 @@ const useMathGame = () => {
     getQuizTimeLimit: () => quizTimeLimit,
     // Learning/Practice
     isQuizStarting,
+    setIsQuizStarting,
     isAwaitingInactivityResponse,
     showLearningModule, setShowLearningModule,
     learningModuleContent, setLearningModuleContent,
