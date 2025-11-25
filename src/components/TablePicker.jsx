@@ -127,11 +127,18 @@ const TablePicker = () => {
   const bgMatch = colorForLevel.match(/\bbg-[\w-]+\b/);
   const cardBgCls = bgMatch ? bgMatch[0] : 'bg-white';
   const ringCls = 'ring-yellow-300';
+  const lvlKey = `L${levelNumber}`;
+  const levelProgress = tableProgress?.[lvlKey];
+  const isBlackBeltUnlocked = !!levelProgress?.black?.unlocked;
 
   const handleSelect = () => {
     if (!unlocked) return; // Safeguard
     setSelectedTable(levelNumber);
-    navigate('/belts');
+    if (isBlackBeltUnlocked) {
+      navigate('/black');
+    } else {
+      navigate('/belts');
+    }
   };
 
    return (

@@ -95,7 +95,7 @@ const BlackBeltPicker = () => {
               top: 'max(env(safe-area-inset-top), 0.5rem)',
               left: 'max(env(safe-area-inset-left), 0.5rem)',
             }}
-            onClick={() => navigate('/belts')}
+            onClick={() => navigate('/levels')}
             aria-label="Back"
           >
             <FaArrowLeft size={24} />
