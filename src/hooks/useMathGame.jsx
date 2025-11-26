@@ -126,6 +126,7 @@ const useMathGame = () => {
   // Internal state for timer/network
   const questionStartTimestamp = useRef(null);
   const inactivityTimeoutId = useRef(null);
+  const isQuittingRef = useRef(false);
   
   // --- CLIENT-SIDE HELPERS ---
 
@@ -169,6 +170,7 @@ const useMathGame = () => {
     setShowSiblingCheck(false); 
     setLoginPendingName(null);
     setLoginPendingResponse(null);
+    // setTransientStreakMessage(null);
     // setIsDemoMode(false);
   }, []);
 
@@ -714,6 +716,14 @@ const useMathGame = () => {
 
   // 5. Inactivity Timer Effect
   useEffect(() => {
+    if (isQuittingRef.current) {
+      if (inactivityTimeoutId.current) {
+        clearTimeout(inactivityTimeoutId.current);
+        inactivityTimeoutId.current = null;
+      }
+      return;     
+    }
+
     if (!currentQuestion || isTimerPaused || showResult || !quizRunId) {
       if (inactivityTimeoutId.current) {
         clearTimeout(inactivityTimeoutId.current);
@@ -725,6 +735,7 @@ const useMathGame = () => {
     if (inactivityTimeoutId.current) clearTimeout(inactivityTimeoutId.current);
 
     inactivityTimeoutId.current = setTimeout(async () => {
+      if (isQuittingRef.current) return;
       audioManager.playSoftClick();
       setAnswerSymbols((prev) => [
             ...prev, 
@@ -743,6 +754,11 @@ const useMathGame = () => {
         setIsAwaitingInactivityResponse(true);
         try {
             const out = await quizHandleInactivity(quizRunId, currentQuestion.id, childPin);
+            if (isQuittingRef.current) {
+                console.log('Inactivity API response returned, but quit confirmed. Aborting navigation.');
+                setIsAwaitingInactivityResponse(false);
+                return; 
+            }
             setCurrentQuizStreak(0);
             setTransientStreakMessage(null);
 
@@ -757,6 +773,11 @@ const useMathGame = () => {
             }
             
             if (out.practice) {
+              if (isQuittingRef.current) {
+              console.log("Quit in progress, ignoring practice navigation.");
+              setIsAwaitingInactivityResponse(false);
+              return;
+             }
                 setIsTimerPaused(true);
                 setPausedTime(Date.now());
                 setInterventionQuestion(mapQuestionToFrontend(out.practice));
@@ -803,7 +824,12 @@ const useMathGame = () => {
   const handleConfirmQuit = useCallback(() =>{ 
     setShowQuitModal(false);
     hardResetQuizState();
-    navigate('/');
+    isQuittingRef.current = true;
+    navigate('/', { replace: true }); 
+    
+    setTimeout(() => {
+        isQuittingRef.current = false; 
+    }, 3000);
   }, [navigate, hardResetQuizState]);
   const handleCancelQuit = useCallback(() => setShowQuitModal(false), []);
 
