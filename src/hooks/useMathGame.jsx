@@ -170,7 +170,7 @@ const useMathGame = () => {
     setShowSiblingCheck(false); 
     setLoginPendingName(null);
     setLoginPendingResponse(null);
-    // setTransientStreakMessage(null);
+    setTransientStreakMessage(null);
     // setIsDemoMode(false);
   }, []);
 
@@ -790,7 +790,7 @@ const useMathGame = () => {
             setIsTimerPaused(true);
             setPausedTime(Date.now());
             setIsAwaitingInactivityResponse(false);
-            navigate('/belts');
+            navigate('/');
         }
     }, INACTIVITY_TIMEOUT_MS); 
 
