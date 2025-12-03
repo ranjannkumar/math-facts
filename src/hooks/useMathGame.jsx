@@ -616,6 +616,7 @@ const useMathGame = () => {
               clearTimeout(inactivityTimeoutId.current);
               inactivityTimeoutId.current = null;
           }
+          audioManager.stopAll();
 
           // Navigate to practice/learning module
           navigate('/learning');
@@ -907,6 +908,7 @@ const useMathGame = () => {
             
         } else {
             // Incorrect: Keep the practice flow going (LearningModule handles re-showing fact)
+            audioManager.stopAll();
             return { stillPracticing: true, completed: false };
         }
     }
