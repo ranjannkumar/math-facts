@@ -5,7 +5,7 @@ import { MathGameContext } from '../App.jsx';
 const GameModeExitScreen = () => {
   const navigate = useNavigate();
   // Context only used to make sure we are NOT auto-starting a quiz
-  const { setIsQuizStarting } = useContext(MathGameContext) || {};
+  const { setIsQuizStarting, hardResetQuizState } = useContext(MathGameContext) || {};
 
   useEffect(() => {
     const belt = localStorage.getItem('game-mode-belt');
@@ -21,6 +21,10 @@ const GameModeExitScreen = () => {
       localStorage.removeItem('game-mode-belt');
       localStorage.removeItem('game-mode-table');
 
+      if (hardResetQuizState) {
+        hardResetQuizState(); 
+      }
+
       if (setIsQuizStarting) {
         setIsQuizStarting(false);
       }
@@ -29,7 +33,7 @@ const GameModeExitScreen = () => {
     }, 2000); // 2 seconds to show the "MODE COMPLETE" screen
 
     return () => clearTimeout(timer);
-  }, [navigate, setIsQuizStarting]);
+  }, [navigate, setIsQuizStarting,hardResetQuizState]);
 
   return (
     <div className="fixed inset-0 z-[100] bg-green-900 flex flex-col items-center justify-center animate-fade-in-up">

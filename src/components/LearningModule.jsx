@@ -153,6 +153,8 @@ const LearningModule = () => {
     handlePracticeAnswer, 
     isQuizStarting,     // <--- ADD THIS LINE
     setIsQuizStarting,
+    isGameMode,
+    isGameModePractice,
   } = useContext(MathGameContext);
 
   const diff = useMemo(() => normalizeDifficulty(pendingDifficulty), [pendingDifficulty]);
@@ -294,6 +296,21 @@ useEffect(() => {
     if (isCorrect) {
         audioManager.playCorrectSound?.();
         setPracticeMsg('Correct!');
+        if (isGameMode && isGameModePractice) {
+             const out = await handlePracticeAnswer(practiceQ.id, answer);
+
+             if (out.resume) {
+                 // Success: hook handles navigation back to /game-mode and state reset
+                 setIsClosing(true);
+                 setInterventionQuestion(null);
+                 setShowLearningModule(false);
+                 navigate('/game-mode', { replace: true });
+             } else {
+                 console.error("Game Mode Practice failed to resume.");
+             }
+             
+             return; 
+        }
 
         try {
           const out = await handlePracticeAnswer(practiceQ.id, answer);
@@ -491,6 +508,17 @@ const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div 
+        className="fixed inset-0" 
+        style={{
+          backgroundImage: `url('/night_sky_landscape.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          zIndex: -1, 
+        }}
+      />
+      {/* Modal/Popup Container */}
       <div className="bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm sm:max-w-md w-full mx-2 sm:mx-4 border border-blue-200/30 popup-zoom-in">
         {renderBody()}
       </div>

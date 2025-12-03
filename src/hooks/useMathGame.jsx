@@ -57,6 +57,9 @@ const useMathGame = () => {
   // { symbol: '⚡' | '✓' | '✗', isCorrect: boolean }
   const [currentAnswerSymbol, setCurrentAnswerSymbol] = useState(null);
 
+  const [isGameModePractice, setIsGameModePractice] = useState(false); // Flag for client-side practice flow
+  const [gameModeInterventionIndex, setGameModeInterventionIndex] = useState(null); // Index of the question that caused intervention
+
 
    // --- ADD STREAK STATE ---
    const [currentQuizStreak, setCurrentQuizStreak] = useState(0); // Current streak in the running quiz
@@ -185,6 +188,8 @@ const useMathGame = () => {
     setIsGameMode(false);
     setLightningCount(0);
     setCurrentAnswerSymbol(null);
+    setIsGameModePractice(false);
+    setGameModeInterventionIndex(null);
   }, []);
 
   // --- API / LIFECYCLE ---
@@ -597,6 +602,24 @@ const useMathGame = () => {
           newQuizStreak = 0;
           symbol = '✗';
           audioManager.playWrongSound();
+          // NEW: Trigger Game Mode Intervention on wrong answer
+          setGameModeInterventionIndex(currentQuestionIndex);
+          setInterventionQuestion(currentQuestion); // Set the question object for LearningModule
+          setIsGameModePractice(true); 
+          
+          setIsAnimating(false);
+          setIsTimerPaused(true); // Pause the client timer during practice
+          setPausedTime(Date.now()); // Record pause time
+
+          // Clear any current inactivity timer
+          if (inactivityTimeoutId.current) {
+              clearTimeout(inactivityTimeoutId.current);
+              inactivityTimeoutId.current = null;
+          }
+
+          // Navigate to practice/learning module
+          navigate('/learning');
+          return;
         }
 
         setCurrentQuizStreak(newQuizStreak);
@@ -830,12 +853,64 @@ const useMathGame = () => {
       isGameMode,
       lightningCount,
       enterGameModeAfterFailure,
+      setInterventionQuestion,
     ]
   );
 
   
   // 4. Handle Practice Answer Submission (for LearningModule intervention)
   const handlePracticeAnswer = useCallback(async (questionId, answer) => {
+
+    //  Handle Game Mode Practice Client-Side
+    if (isGameMode && isGameModePractice) {
+        // We rely on the context's `interventionQuestion` which holds the question to be practiced.
+        const practiceQuestion = interventionQuestion;
+
+        if (!practiceQuestion) {
+            console.error('No intervention question found for game mode practice resume.');
+             // Fallback: End practice, resume game mode on current question
+             if (pausedTime) setQuizStartTime((prev) => (prev ? prev + (Date.now() - pausedTime) : prev));
+             setIsTimerPaused(false);
+             setInterventionQuestion(null);
+             setShowLearningModule(false);
+             setIsGameModePractice(false);
+             setGameModeInterventionIndex(null);
+             navigate('/game-mode', { replace: true });
+            return { stillPracticing: false, completed: false, resume: true };
+        }
+        
+        const isCorrect = answer === practiceQuestion.correctAnswer;
+        
+        if (isCorrect) {
+            // Success: Resume Game Mode on the next question
+            const questionsArray = quizQuestions; 
+            // The intervention index is the index of the question that *caused* the practice
+            const nextIndex = (gameModeInterventionIndex + 1) % questionsArray.length;
+            const nextQuestion = questionsArray[nextIndex];
+            
+            // 1. Update state to resume
+            setCurrentQuestion(nextQuestion);
+            setCurrentQuestionIndex(nextIndex);
+            setInterventionQuestion(null);
+            setShowLearningModule(false);
+            setIsGameModePractice(false);
+            setGameModeInterventionIndex(null);
+
+            // 2. Resume timer by correcting quizStartTime
+            questionStartTimestamp.current = Date.now();
+            if (pausedTime) setQuizStartTime((prev) => (prev ? prev + (Date.now() - pausedTime) : prev));
+            setIsTimerPaused(false);
+            
+            // 3. Navigate back to Game Mode
+            // navigate('/game-mode', { replace: true });
+            return { resume: true, next: nextQuestion }; // Mock resume response
+            
+        } else {
+            // Incorrect: Keep the practice flow going (LearningModule handles re-showing fact)
+            return { stillPracticing: true, completed: false };
+        }
+    }
+
     if (!quizRunId || !childPin) {
       console.error('Quiz not active for practice answer.');
       return { stillPracticing: true, completed: false };
@@ -881,7 +956,22 @@ const useMathGame = () => {
       setPausedTime(Date.now());
       return { stillPracticing: true, error: e.message };
     }
-  }, [quizRunId, childPin, pausedTime]);
+  }, [quizRunId, 
+    childPin, 
+    pausedTime, 
+    isGameMode, 
+    isGameModePractice, 
+    interventionQuestion, 
+    quizQuestions, 
+    gameModeInterventionIndex, 
+    setCurrentQuestion, 
+    setCurrentQuestionIndex, 
+    setInterventionQuestion, 
+    setShowLearningModule, 
+    setIsGameModePractice, 
+    setGameModeInterventionIndex, 
+    navigate, 
+    setQuizStartTime]);
 
 
   // 5. Inactivity Timer Effect
@@ -894,7 +984,18 @@ const useMathGame = () => {
       return;     
     }
 
-    if (!currentQuestion || isTimerPaused || showResult || !quizRunId) {
+    // if (!currentQuestion || isTimerPaused || showResult || !quizRunId) {
+    //   if (inactivityTimeoutId.current) {
+    //     clearTimeout(inactivityTimeoutId.current);
+    //     inactivityTimeoutId.current = null;
+    //   }
+    //   return;
+    // }
+
+    // Check if we are in normal quiz (quizRunId) or Game Mode
+    const isActiveScreen = (!!quizRunId || isGameMode) && !!currentQuestion && !isTimerPaused && !showResult;
+    
+    if (!isActiveScreen) {
       if (inactivityTimeoutId.current) {
         clearTimeout(inactivityTimeoutId.current);
         inactivityTimeoutId.current = null;
@@ -907,14 +1008,39 @@ const useMathGame = () => {
     inactivityTimeoutId.current = setTimeout(async () => {
       if (isQuittingRef.current) return;
       audioManager.playSoftClick();
-      setAnswerSymbols((prev) => [
-            ...prev, 
-            { symbol: '', isCorrect: false, timeTaken: INACTIVITY_TIMEOUT_MS / 1000, reason: 'inactivity' }
-        ]);
+      
         if (inactivityTimeoutId.current) {
             clearTimeout(inactivityTimeoutId.current);
             inactivityTimeoutId.current = null;
         }
+
+        // ---------------- NEW: GAME MODE INACTIVITY INTERVENTION ----------------
+      if (isGameMode) {
+          console.log('Game Mode Inactivity Triggered.');
+          setAnswerSymbols((prev) => [
+              ...prev, 
+              { symbol: '!', isCorrect: false, timeTaken: INACTIVITY_TIMEOUT_MS / 1000, reason: 'inactivity-gm' }
+          ]);
+          setCurrentQuizStreak(0);
+          setTransientStreakMessage(null);
+          
+          setGameModeInterventionIndex(currentQuestionIndex);
+          setInterventionQuestion(currentQuestion); // Set the question object for LearningModule
+          setIsGameModePractice(true); 
+          
+          setIsTimerPaused(true); // Pause the client timer during practice
+          setPausedTime(Date.now()); // Record pause time
+
+          navigate('/learning');
+          return;
+      }
+      // ---------------- END NEW: GAME MODE INACTIVITY INTERVENTION
+
+
+        setAnswerSymbols((prev) => [
+            ...prev, 
+            { symbol: '', isCorrect: false, timeTaken: INACTIVITY_TIMEOUT_MS / 1000, reason: 'inactivity' }
+        ]);
 
         //  Advance progress bar for inactivity failure ---
         // const nextIndex = currentQuestionIndex + 1;
@@ -970,7 +1096,7 @@ const useMathGame = () => {
           inactivityTimeoutId.current = null;
       }
     };
-  }, [currentQuestion, isTimerPaused, showResult, quizRunId, childPin, navigate, enterGameModeAfterFailure]);
+  }, [currentQuestion, isTimerPaused, showResult, quizRunId, childPin, navigate, enterGameModeAfterFailure, isGameMode, currentQuestionIndex, setInterventionQuestion, setIsGameModePractice, setGameModeInterventionIndex]);
 
 
   // Timer Effect (client-side time tracking)
@@ -1074,6 +1200,8 @@ const useMathGame = () => {
     currentAnswerSymbol,
     setCurrentAnswerSymbol,
     LIGHTNING_GOAL,
+    isGameModePractice,
+    gameModeInterventionIndex,
 
     // UI & Progress
     isAnimating, setIsAnimating,
@@ -1148,6 +1276,7 @@ const useMathGame = () => {
     speedTestComplete, speedTestStarted, speedTestCorrectCount,
     speedTestShowTick, studentReactionSpeed, 
     currentStreak, 
+    hardResetQuizState
 
   };
 };

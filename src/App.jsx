@@ -91,13 +91,14 @@ const App = () => {
         <Route path="/game-mode-intro" element={<GameModeIntroScreen />} />
         <Route path="/game-mode-exit" element={<GameModeExitScreen />} />
          <Route path="/game-mode" element={<GameModeScreen />} />
+        <Route path="/learning" element={<LearningModule />} />
+
 
 
         <Route element={<MainLayout hideStats={showSiblingCheck} />}> 
           <Route path="/levels" element={<TablePicker />} />
           <Route path="/belts" element={<DifficultyPicker />} />
           <Route path="/black" element={<BlackBeltPicker />} /> {/* ✅ BLACK ROUTE */}
-          <Route path="/learning" element={<LearningModule />} />
           <Route path="/quiz" element={<QuizScreen />} />
           {/* <Route path="/way-to-go" element={<WayToGoScreen />} /> */}
           <Route path="/results" element={<ResultsScreen />} />
