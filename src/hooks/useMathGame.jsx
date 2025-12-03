@@ -18,7 +18,7 @@ import {
 
 // Constant for inactivity timeout (same as backend, 5000ms)
 const INACTIVITY_TIMEOUT_MS = 5000;
-const LIGHTNING_GOAL = 50; 
+const LIGHTNING_GOAL = 20; 
 
 const useMathGame = () => {
   const navigate = useNavigate();
