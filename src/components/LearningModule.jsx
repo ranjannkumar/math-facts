@@ -333,7 +333,7 @@ useEffect(() => {
                 setIsClosing(true);
                 setInterventionQuestion(null);
                 setShowLearningModule(false);
-                navigate('/way-to-go', { replace: true });
+                navigate('/game-mode-intro', { replace: true });
                 return;
             }
             if (out.resume) {

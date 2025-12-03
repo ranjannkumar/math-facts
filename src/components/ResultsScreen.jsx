@@ -50,7 +50,7 @@ const ResultsScreen = () => {
     // 1. Redirect if not perfect score
     useEffect(() => {
         if (!allCorrect) {
-            navigate('/way-to-go', { replace: true });
+            navigate('/game-mode-intro', { replace: true });
         }
     }, [allCorrect, navigate]);
     

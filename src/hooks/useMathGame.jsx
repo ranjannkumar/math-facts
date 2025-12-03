@@ -18,6 +18,7 @@ import {
 
 // Constant for inactivity timeout (same as backend, 5000ms)
 const INACTIVITY_TIMEOUT_MS = 5000;
+const LIGHTNING_GOAL = 50; 
 
 const useMathGame = () => {
   const navigate = useNavigate();
@@ -49,6 +50,13 @@ const useMathGame = () => {
   const [maxQuestions, setMaxQuestions] = useState(10);
 
    const [quizQuestions, setQuizQuestions] = useState([]);
+
+     // --- GAME MODE STATE ---
+  const [isGameMode, setIsGameMode] = useState(false);
+  const [lightningCount, setLightningCount] = useState(0);
+  // { symbol: '⚡' | '✓' | '✗', isCorrect: boolean }
+  const [currentAnswerSymbol, setCurrentAnswerSymbol] = useState(null);
+
 
    // --- ADD STREAK STATE ---
    const [currentQuizStreak, setCurrentQuizStreak] = useState(0); // Current streak in the running quiz
@@ -172,6 +180,11 @@ const useMathGame = () => {
     setLoginPendingResponse(null);
     setTransientStreakMessage(null);
     // setIsDemoMode(false);
+
+    // Reset Game Mode state
+    setIsGameMode(false);
+    setLightningCount(0);
+    setCurrentAnswerSymbol(null);
   }, []);
 
   // --- API / LIFECYCLE ---
@@ -451,218 +464,375 @@ const useMathGame = () => {
     [navigate, childPin, hardResetQuizState, determineMaxQuestions, startActualQuiz]
   );
 
+    // --- Helper: enter GAME MODE after a failed belt ---
+  const enterGameModeAfterFailure = useCallback((backendOut) => {
+    // Persist belt & table so GameModeExit can restart the same quiz
+    if (selectedDifficulty && selectedTable != null) {
+      localStorage.setItem('game-mode-belt', selectedDifficulty);
+      localStorage.setItem('game-mode-table', String(selectedTable));
+    }
+
+    // Update daily stats/progress from backend response so UI stays consistent
+    if (backendOut?.dailyStats) {
+      const stats = backendOut.dailyStats;
+      if (typeof stats.correctCount === 'number') setCorrectCount(stats.correctCount);
+      if (typeof stats.totalActiveMs === 'number') setDailyTotalMs(stats.totalActiveMs);
+      if (typeof stats.grandTotal === 'number') setGrandTotalCorrect(stats.grandTotal);
+      if (typeof stats.currentStreak === 'number') setCurrentStreak(stats.currentStreak);
+    }
+    if (backendOut?.updatedProgress) {
+      setTableProgress(backendOut.updatedProgress);
+    }
+
+    // Switch to GAME MODE using the same cached questions
+    setIsGameMode(true);
+    setLightningCount(0);
+    setCurrentQuizStreak(0);
+    setTransientStreakMessage(null);
+    setCurrentAnswerSymbol(null);
+    setShowResult(false);
+    setQuizProgress(0);
+
+    // Stop quiz/inactivity logic
+    setQuizRunId(null);
+
+    if (quizQuestions && quizQuestions.length > 0) {
+      setCurrentQuestionIndex(0);
+      setCurrentQuestion(quizQuestions[0]);
+      questionStartTimestamp.current = Date.now();
+    }
+
+    // Stop the official quiz timer – Game Mode has no score screen
+    setQuizStartTime(null);
+    setElapsedTime(0);
+    setPausedTime(0);
+    setIsTimerPaused(false);
+
+    // Show GAME MODE animation first
+    navigate('/game-mode-intro', { replace: true });
+  }, [
+    selectedDifficulty,
+    selectedTable,
+    quizQuestions,
+    navigate,
+    setTableProgress,
+    setCorrectCount,
+    setDailyTotalMs,
+    setGrandTotalCorrect,
+    setCurrentStreak,
+  ]);
+
+
   // 3. Answer
   const handleAnswer = useCallback(
     async (selectedAnswer) => {
-      if (isAnimating || showResult || isTimerPaused || !currentQuestion || !quizRunId) return;
+      if (
+        isAnimating ||
+        showResult ||
+        isTimerPaused ||
+        !currentQuestion ||
+        (!quizRunId && !isGameMode)
+      ) {
+        return;
+      }
+
       setIsAnimating(true);
       setTransientStreakMessage(null);
-      
-      const responseMs = Date.now() - questionStartTimestamp.current;
+
+      const now = Date.now();
+      const responseMs =
+        questionStartTimestamp.current != null
+          ? now - questionStartTimestamp.current
+          : 0;
       const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
-      const questionId = currentQuestion.id;
-      
+      const timeTaken = responseMs / 1000;
+
       if (inactivityTimeoutId.current) {
         clearTimeout(inactivityTimeoutId.current);
         inactivityTimeoutId.current = null;
       }
 
-     // --- STREAK TRACKING ---
+      // Shared streak helpers
       let newQuizStreak = currentQuizStreak;
       let symbol;
-      let triggerStreakMessage = null; 
-      const timeTaken = responseMs / 1000;
-      const streakMilestone = [3,5,10,15,20]; // Milestones to check
-       // Calculate next progress step for streak positioning
-      const nextIndex = currentQuestionIndex + 1;
-      const newProgress = Math.min(nextIndex * (100 / maxQuestions), 100);
-      // const isStreakMilestoneHit = streakMilestone.includes(newQuizStreak);
-      // --- END STREAK TRACKING ---
-      
-      // Update client-side UI first (optimistic symbol)
-       if (isCorrect) {
-        newQuizStreak += 1; // Increment streak
-        const isStreakMilestoneHit = streakMilestone.includes(newQuizStreak);
-        
-        // Determine symbol and color
-        if (timeTaken <= 1.5) {
+      let triggerStreakMessage = null;
+      const streakMilestones = [3, 5, 10, 15, 20];
+
+      // ------------ GAME MODE BRANCH ------------
+      if (isGameMode) {
+        let newLightningCount = lightningCount;
+
+        if (isCorrect) {
+          newQuizStreak += 1;
+
+          const isMilestone = streakMilestones.includes(newQuizStreak);
+
+          if (timeTaken <= 1.5) {
             symbol = '⚡';
-            // Only play 'lightning' sound if it's NOT a streak milestone.
-            if (!isStreakMilestoneHit) { 
-                 audioManager.playLightningSound();
-            } 
-        } 
-        else {
+            newLightningCount += 1;
+            if (!isMilestone) {
+              audioManager.playLightningSound();
+            }
+          } else {
             symbol = '✓';
-            // Only play 'complete' sound if it's NOT a streak milestone.
-            if (!isStreakMilestoneHit) {
-                audioManager.playCompleteSound();
-            } 
+            if (!isMilestone) {
+              audioManager.playCompleteSound();
+            }
+          }
+
+          if (isMilestone) {
+            triggerStreakMessage = {
+              text: `${newQuizStreak} IN A ROW`,
+              symbolType: symbol === '⚡' ? 'lightning' : 'check',
+              count: newQuizStreak,
+            };
+            if (symbol === '⚡') {
+              audioManager.playLightningStreakSound?.(newQuizStreak);
+            } else {
+              audioManager.playStreakSound?.(newQuizStreak);
+            }
+          }
+        } else {
+          // Wrong in Game Mode → reset streak, play wrong sound
+          newQuizStreak = 0;
+          symbol = '✗';
+          audioManager.playWrongSound();
         }
 
-       // Check for streak milestone (3, 5, 10)
-        if (isStreakMilestoneHit) {
-            // Check previous symbols to see if the streak is "perfect" (all lightning)
-            // Use the last (N-1) symbols from answerSymbols + the current one
-            const streakSlice = answerSymbols.slice(-newQuizStreak + 1);
-            const isLightningStreak = streakSlice.every(a => a.symbol === '⚡') && symbol === '⚡';
-            
-            triggerStreakMessage = {
-                text: `${newQuizStreak} IN A ROW`,
-                symbolType: isLightningStreak ? 'lightning' : 'check', // 'lightning' or 'check'
-                count: newQuizStreak,
-            };
-               // Play streak sound ---
-            if (isLightningStreak) {
-                audioManager.playLightningStreakSound(newQuizStreak);
-            } else {
-                audioManager.playStreakSound(newQuizStreak);
-            }
-        }
-        // Update streak states
         setCurrentQuizStreak(newQuizStreak);
-        setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
-        // setQuizProgress((prev) => Math.min(prev + 100 / maxQuestions, 100));
-        // setQuizProgress(newProgress); 
-        setSessionCorrectCount(s => s + 1); // Optimistically update session score
+        setLightningCount(newLightningCount);
+        setCurrentAnswerSymbol(
+          symbol ? { symbol, isCorrect } : null
+        );
+        setTransientStreakMessage(triggerStreakMessage);
+
+        // If we’ve hit the goal, exit GAME MODE → auto retry belt
+        if (newLightningCount >= LIGHTNING_GOAL) {
+          setIsAnimating(false);
+          setIsGameMode(false);
+          navigate('/game-mode-exit', { replace: true });
+          return;
+        }
+
+        // Rotate through the SAME quiz questions endlessly
+        if (quizQuestions && quizQuestions.length > 0) {
+          const nextIndex =
+            (currentQuestionIndex + 1) % quizQuestions.length;
+          const nextQuestion = quizQuestions[nextIndex];
+
+          // Wait a bit so tick/⚡ is visible, then move to next question and clear symbol
+          setTimeout(() => {
+            setCurrentQuestionIndex(nextIndex);
+            setCurrentQuestion(nextQuestion);
+            questionStartTimestamp.current = Date.now();
+            setCurrentAnswerSymbol(null);
+            if (triggerStreakMessage) {
+              setTransientStreakMessage(null);
+            }
+            setIsAnimating(false);
+          }, 400);
+        } else {
+          // Defensive: no cached questions, just unlock UI
+          setIsAnimating(false);
+        }
+
+        return; 
+      }
+
+      // NORMAL QUIZ BRANCH 
+
+      const questionId = currentQuestion.id;
+
+      // For normal quiz, still track answer history and progress bar
+      const nextIndex = currentQuestionIndex + 1;
+      const newProgress = Math.min(nextIndex * (100 / maxQuestions), 100);
+
+      if (isCorrect) {
+        newQuizStreak += 1;
+        const isStreakMilestoneHit = streakMilestones.includes(newQuizStreak);
+
+        if (timeTaken <= 1.5) {
+          symbol = '⚡';
+          if (!isStreakMilestoneHit) {
+            audioManager.playLightningSound();
+          }
+        } else {
+          symbol = '✓';
+          if (!isStreakMilestoneHit) {
+            audioManager.playCompleteSound();
+          }
+        }
+
+        if (isStreakMilestoneHit) {
+          const streakSlice = answerSymbols.slice(-newQuizStreak + 1);
+          const isLightningStreak =
+            streakSlice.every((a) => a.symbol === '⚡') && symbol === '⚡';
+
+          triggerStreakMessage = {
+            text: `${newQuizStreak} IN A ROW`,
+            symbolType: isLightningStreak ? 'lightning' : 'check',
+            count: newQuizStreak,
+          };
+
+          if (isLightningStreak) {
+            audioManager.playLightningStreakSound(newQuizStreak);
+          } else {
+            audioManager.playStreakSound(newQuizStreak);
+          }
+        }
+
+        setCurrentQuizStreak(newQuizStreak);
+        setAnswerSymbols((prev) => [
+          ...prev,
+          { symbol, isCorrect: true, timeTaken },
+        ]);
+        setSessionCorrectCount((s) => s + 1);
       } else {
-        // Wrong answer: Reset streak
         newQuizStreak = 0;
         setCurrentQuizStreak(0);
         symbol = '';
         audioManager.playWrongSound();
         setWrongCount((w) => w + 1);
-        setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
+        setAnswerSymbols((prev) => [
+          ...prev,
+          { symbol, isCorrect: false, timeTaken },
+        ]);
         setTransientStreakMessage(null);
       }
 
       setQuizProgress(newProgress);
-      
-      // ---   UI ADVANCE FOR INSTANT TRANSITION ---
-      // const nextIndex = currentQuestionIndex + 1;
+
       let uiAdvancedOptimistically = false;
-      
+
       if (isCorrect && nextIndex < quizQuestions.length) {
-          // Immediately update UI to the next question
-          setCurrentQuestion(quizQuestions[nextIndex]); 
-          setCurrentQuestionIndex(nextIndex);
-          questionStartTimestamp.current = Date.now();
-
-          // Set the transient streak message if triggered, and clear it on the new question.
-          setTransientStreakMessage(triggerStreakMessage); 
-          
-          // Unlock the UI immediately (before the slow API call returns)
-          // setIsAnimating(false); 
-          uiAdvancedOptimistically = true;
-          
-          // Optimistically update session score for accurate UI display 
-          setSessionCorrectCount(s => s + 1);
+        setCurrentQuestion(quizQuestions[nextIndex]);
+        setCurrentQuestionIndex(nextIndex);
+        questionStartTimestamp.current = Date.now();
+        setTransientStreakMessage(triggerStreakMessage);
+        uiAdvancedOptimistically = true;
       } else {
-          // Last question answered (correctly or incorrectly)
-          // setIsAnimating(false);
-          setTransientStreakMessage(triggerStreakMessage); 
-          if (triggerStreakMessage) {
-               // If it's the last question, clear the message quickly so it doesn't linger 
-              setTimeout(() => setTransientStreakMessage(null), 500); 
-          }
+        setTransientStreakMessage(triggerStreakMessage);
+        if (triggerStreakMessage) {
+          setTimeout(() => setTransientStreakMessage(null), 500);
+        }
       }
-      // ---  UI ADVANCE ---
-      
-      // Send answer to backend to get next state (Awaited for terminal/stat updates)
+
       try {
-          const out = await quizSubmitAnswer(
-              quizRunId,
-              questionId,
-              selectedAnswer,
-              responseMs,
-              selectedTable,
-              selectedDifficulty,
-              childPin
-          );
+        const out = await quizSubmitAnswer(
+          quizRunId,
+          questionId,
+          selectedAnswer,
+          responseMs,
+          selectedTable,
+          selectedDifficulty,
+          childPin
+        );
 
-          // --- HANDLE SERVER RESPONSE (For terminal states and authoritative stats) ---
-          
-          if (out.completed) {
-              // Server signals completion (either perfect score or black belt failure/intervention failure)
-              const totalTimeMs = out.summary?.totalActiveMs || (elapsedTime * 1000);
-              const sessionTimeSeconds = Math.round(totalTimeMs / 1000); 
-              
-              // Ensure UI is unlocked
-              setIsAnimating(false);
+        if (out.completed) {
+          // Server signals quiz completion (pass or fail)
+          const totalTimeMs =
+            out.summary?.totalActiveMs || elapsedTime * 1000;
+          const sessionTimeSeconds = Math.round(totalTimeMs / 1000);
 
-              localStorage.setItem('math-last-quiz-duration', sessionTimeSeconds);
-              setShowResult(true);
-              setQuizStartTime(null);  
-              
-              // Set final authoritative scores
-              setSessionCorrectCount(out.sessionCorrectCount || 0); 
-              if (out.dailyStats) {
-                  setCorrectCount(out.dailyStats.correctCount); 
-                  setDailyTotalMs(out.dailyStats.totalActiveMs); 
-                  if (out.dailyStats.grandTotal !== undefined) {
-                      setGrandTotalCorrect(out.dailyStats.grandTotal); 
-                  }
-                   if (out.dailyStats.currentStreak !== undefined) {
-                      setCurrentStreak(out.dailyStats.currentStreak); 
-                  }
-              }  
-              if (out.updatedProgress) {
-                  setTableProgress(out.updatedProgress);
-              }
-              navigate(out.passed ? '/results' : '/way-to-go', { replace: true,state: { sessionTimeSeconds } });
-              
-          } else if (out.practice) {
-              // Incorrect answer (or inactivity fail on non-black belt), triggers intervention
-              // This is necessary because optimistic advance should not happen on incorrect/intervention.
-              
-              // Set state for intervention
-              setIsTimerPaused(true);
-              setPausedTime(Date.now());
-              setInterventionQuestion(mapQuestionToFrontend(out.practice));
-              setShowLearningModule(true);
-              
-              // Navigate and ensure UI is unlocked
-              navigate('/learning');
-              setIsAnimating(false); 
-
-          } else if (uiAdvancedOptimistically) {
-              // UI already advanced. Server confirmed 'continue' and sent stats.
-              // Only update authoritative stats.
-              if (out.dailyStats) {
-                  setCorrectCount(out.dailyStats.correctCount);
-                  setDailyTotalMs(out.dailyStats.totalActiveMs);
-                  if (out.dailyStats.grandTotal !== undefined) {
-                      setGrandTotalCorrect(out.dailyStats.grandTotal); 
-                  }
-                  if (out.dailyStats.currentStreak !== undefined) {
-                      setCurrentStreak(out.dailyStats.currentStreak); 
-                  }
-                  setQuizStartTime(Date.now()); // Ensure timer base is correct
-              }
-              setIsAnimating(false);
-          } else {
-              // Fallback for non-optimistic, non-terminal cases (should not occur if logic is right)
-               console.warn("Quiz is in an unexpected non-terminal, non-advancing state.");
-               setIsAnimating(false);
-          }
-      } catch (e) {
-         console.error('Quiz Answer/State update failed:', e.message);
-
-          // Benign race: ignore quietly and just unlock UI
-          if (String(e.message || '').toLowerCase().includes('not the current question')) {
-            setIsAnimating(false);
-            return;
-          }
-
-          // Real errors: show a message and navigate away if that’s your current flow
           setIsAnimating(false);
-          alert('Error during quiz: ' + (e.message || 'Unknown error'));
-          navigate('/belts');
-      }
+          localStorage.setItem(
+            'math-last-quiz-duration',
+            sessionTimeSeconds
+          );
+          setQuizStartTime(null);
+          setSessionCorrectCount(out.sessionCorrectCount || 0);
 
+          if (out.dailyStats) {
+            setCorrectCount(out.dailyStats.correctCount);
+            setDailyTotalMs(out.dailyStats.totalActiveMs);
+            if (out.dailyStats.grandTotal !== undefined) {
+              setGrandTotalCorrect(out.dailyStats.grandTotal);
+            }
+            if (out.dailyStats.currentStreak !== undefined) {
+              setCurrentStreak(out.dailyStats.currentStreak);
+            }
+          }
+          if (out.updatedProgress) {
+            setTableProgress(out.updatedProgress);
+          }
+
+          if (out.passed) {
+            // ✅ Passed belt → normal Results flow
+            setShowResult(true);
+            navigate('/results', {
+              replace: true,
+              state: { sessionTimeSeconds },
+            });
+          } else {
+            //  Failed belt → ENTER GAME MODE instead of /way-to-go
+            enterGameModeAfterFailure(out);
+          }
+        } else if (out.practice) {
+          // Incorrect answer triggers intervention learning
+          setIsTimerPaused(true);
+          setPausedTime(Date.now());
+          setInterventionQuestion(mapQuestionToFrontend(out.practice));
+          setShowLearningModule(true);
+          navigate('/learning');
+          setIsAnimating(false);
+        } else if (uiAdvancedOptimistically) {
+          if (out.dailyStats) {
+            setCorrectCount(out.dailyStats.correctCount);
+            setDailyTotalMs(out.dailyStats.totalActiveMs);
+            if (out.dailyStats.grandTotal !== undefined) {
+              setGrandTotalCorrect(out.dailyStats.grandTotal);
+            }
+            if (out.dailyStats.currentStreak !== undefined) {
+              setCurrentStreak(out.dailyStats.currentStreak);
+            }
+            setQuizStartTime(Date.now());
+          }
+          setIsAnimating(false);
+        } else {
+          console.warn(
+            'Quiz is in an unexpected non-terminal, non-advancing state.'
+          );
+          setIsAnimating(false);
+        }
+      } catch (e) {
+        console.error('Quiz Answer/State update failed:', e.message);
+
+        if (
+          String(e.message || '')
+            .toLowerCase()
+            .includes('not the current question')
+        ) {
+          setIsAnimating(false);
+          return;
+        }
+
+        setIsAnimating(false);
+        alert('Error during quiz: ' + (e.message || 'Unknown error'));
+        navigate('/belts');
+      }
     },
-    [currentQuestion, isAnimating, showResult, isTimerPaused, quizRunId, childPin, selectedTable, selectedDifficulty, navigate, maxQuestions, quizQuestions, currentQuestionIndex,currentQuizStreak]
+    [
+      currentQuestion,
+      isAnimating,
+      showResult,
+      isTimerPaused,
+      quizRunId,
+      childPin,
+      selectedTable,
+      selectedDifficulty,
+      navigate,
+      maxQuestions,
+      quizQuestions,
+      currentQuestionIndex,
+      currentQuizStreak,
+      answerSymbols,
+      elapsedTime,
+      isGameMode,
+      lightningCount,
+      enterGameModeAfterFailure,
+    ]
   );
+
   
   // 4. Handle Practice Answer Submission (for LearningModule intervention)
   const handlePracticeAnswer = useCallback(async (questionId, answer) => {
@@ -762,15 +932,15 @@ const useMathGame = () => {
             setCurrentQuizStreak(0);
             setTransientStreakMessage(null);
 
-             if (out.completed) { // Check for immediate completion flag
-                 // Black belt immediate failure due to inactivity/time up (handled by backend logic)
+            if (out.completed) {
+                // Treat as failed belt → enter GAME MODE
                 setQuizStartTime(null); // Stop timer
                 setSessionCorrectCount(out.sessionCorrectCount || 0);
                 setIsAwaitingInactivityResponse(false);
-                // navigate to way-to-go on inactivity fail for black belt
-                navigate('/way-to-go', { replace: true });
+                enterGameModeAfterFailure(out);
                 return;
             }
+
             
             if (out.practice) {
               if (isQuittingRef.current) {
@@ -800,7 +970,8 @@ const useMathGame = () => {
           inactivityTimeoutId.current = null;
       }
     };
-  }, [currentQuestion, isTimerPaused, showResult, quizRunId, childPin, navigate]);
+  }, [currentQuestion, isTimerPaused, showResult, quizRunId, childPin, navigate, enterGameModeAfterFailure]);
+
 
   // Timer Effect (client-side time tracking)
   useEffect(() => {
@@ -894,6 +1065,16 @@ const useMathGame = () => {
     streakPosition, 
     tempNextRoute,
     setTempNextRoute,
+
+        // GAME MODE
+    isGameMode,
+    setIsGameMode,
+    lightningCount,
+    setLightningCount,
+    currentAnswerSymbol,
+    setCurrentAnswerSymbol,
+    LIGHTNING_GOAL,
+
     // UI & Progress
     isAnimating, setIsAnimating,
     showResult, setShowResult,

@@ -17,7 +17,11 @@ const WayToGoScreen = lazy(() => import('./components/WayToGoScreen.jsx'));
 const LearningModule = lazy(() => import('./components/LearningModule.jsx'));
 const MainLayout = lazy(() => import('./components/MainLayout.jsx'));
 const VideoPlayerScreen = lazy(() => import('./components/VideoPlayerScreen.jsx'));
+const GameModeIntroScreen = lazy(() => import('./components/GameModeIntroScreen.jsx'));
+const GameModeScreen = lazy(() => import('./components/GameModeScreen.jsx'));
+const GameModeExitScreen = lazy(() => import('./components/GameModeExitScreen.jsx'));
 const SpeedTestScreen = lazy(() => import('./components/ui/SpeedTestScreen.jsx'));
+
 import PreTestPopup from './components/PreTestPopup.jsx';
 import PreTestScreen from './components/PreTestScreen.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
@@ -84,17 +88,20 @@ const App = () => {
 
         <Route path="/video" element={<VideoPlayerScreen />} />
 
+        <Route path="/game-mode-intro" element={<GameModeIntroScreen />} />
+        <Route path="/game-mode-exit" element={<GameModeExitScreen />} />
+         <Route path="/game-mode" element={<GameModeScreen />} />
+
+
         <Route element={<MainLayout hideStats={showSiblingCheck} />}> 
           <Route path="/levels" element={<TablePicker />} />
           <Route path="/belts" element={<DifficultyPicker />} />
           <Route path="/black" element={<BlackBeltPicker />} /> {/* ✅ BLACK ROUTE */}
           <Route path="/learning" element={<LearningModule />} />
           <Route path="/quiz" element={<QuizScreen />} />
-          <Route path="/way-to-go" element={<WayToGoScreen />} />
+          {/* <Route path="/way-to-go" element={<WayToGoScreen />} /> */}
           <Route path="/results" element={<ResultsScreen />} />
           <Route path="/theme" element={<ThemePicker />} />
-
-
 
         </Route>
       </Routes>
