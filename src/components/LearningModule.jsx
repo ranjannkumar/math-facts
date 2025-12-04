@@ -230,16 +230,22 @@ useEffect(() => {
       }
   }, [selectedTable, diff, isPreQuizFlow, isIntervention, setShowLearningModule, navigate]);
 
-  // Speak the math fact during Pre-Quiz Fact screen
-  useEffect(() => {
-    if (isPreQuizFlow && isShowingFact && practiceQ) {
-      const line = buildSpokenFact(practiceQ);
-      if (line) speak(line);
-    } else {
-      stopSpeaking();
-    }
-    return () => stopSpeaking(); 
-  }, [isPreQuizFlow, isShowingFact, practiceQ]);
+// Speak the math fact during Pre-Quiz Fact screen
+//  Disabled during Game Mode learning/practice
+useEffect(() => {
+  const isGameModeLearning = isGameMode && isGameModePractice;
+
+  if (!isGameModeLearning && isPreQuizFlow && isShowingFact && practiceQ) {
+    const line = buildSpokenFact(practiceQ);
+    if (line) speak(line);
+  } else {
+    // Either not pre-quiz flow, or we are in Game Mode → no speech
+    stopSpeaking();
+  }
+
+  return () => stopSpeaking();
+}, [isPreQuizFlow, isShowingFact, practiceQ, isGameMode, isGameModePractice]);
+
 
   
   
