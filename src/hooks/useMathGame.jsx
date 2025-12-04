@@ -54,6 +54,8 @@ const useMathGame = () => {
      // --- GAME MODE STATE ---
   const [isGameMode, setIsGameMode] = useState(false);
   const [lightningCount, setLightningCount] = useState(0);
+  const [showWayToGoAfterFailure, setShowWayToGoAfterFailure] = useState(false);
+
   // { symbol: '⚡' | '✓' | '✗', isCorrect: boolean }
   const [currentAnswerSymbol, setCurrentAnswerSymbol] = useState(null);
 
@@ -781,15 +783,34 @@ const useMathGame = () => {
           }
 
           if (out.passed) {
-            // ✅ Passed belt → normal Results flow
+            //  Passed belt → normal Results flow
             setShowResult(true);
             navigate('/results', {
               replace: true,
               state: { sessionTimeSeconds },
             });
           } else {
-            //  Failed belt → ENTER GAME MODE instead of /way-to-go
-            enterGameModeAfterFailure(out);
+                if (selectedDifficulty && selectedTable != null) {
+                    localStorage.setItem('game-mode-belt', selectedDifficulty);
+                    localStorage.setItem('game-mode-table', String(selectedTable));
+              } else {
+                  console.log("FAIL DEBUG — no selectedDifficulty/table at fail moment:", {
+                      selectedDifficulty, selectedTable
+                });
+                }
+           // 1️ Stop quiz timer
+            setIsAnimating(false);
+            setQuizStartTime(null);
+
+            // 2️ Save session for WayToGo page
+            setSessionCorrectCount(out.sessionCorrectCount || 0);
+            localStorage.setItem('math-last-quiz-duration', Math.round((out.summary?.totalActiveMs || 0) / 1000));
+
+            // 3️ Set flag so WayToGo knows this is a failed quiz
+            setShowWayToGoAfterFailure(true);
+
+            // 4️ Navigate to Way-To-Go screen
+            navigate('/way-to-go');
           }
         } else if (out.practice) {
           // Incorrect answer triggers intervention learning
@@ -864,6 +885,7 @@ const useMathGame = () => {
 
     //  Handle Game Mode Practice Client-Side
     if (isGameMode && isGameModePractice) {
+      audioManager.stopAll();
         // We rely on the context's `interventionQuestion` which holds the question to be practiced.
         const practiceQuestion = interventionQuestion;
 
@@ -908,7 +930,7 @@ const useMathGame = () => {
             
         } else {
             // Incorrect: Keep the practice flow going (LearningModule handles re-showing fact)
-            audioManager.stopAll();
+            // audioManager.stopAll();
             return { stillPracticing: true, completed: false };
         }
     }
@@ -1062,11 +1084,37 @@ const useMathGame = () => {
 
             if (out.completed) {
                 // Treat as failed belt → enter GAME MODE
-                setQuizStartTime(null); // Stop timer
-                setSessionCorrectCount(out.sessionCorrectCount || 0);
-                setIsAwaitingInactivityResponse(false);
-                enterGameModeAfterFailure(out);
-                return;
+                // setQuizStartTime(null); // Stop timer
+                // setSessionCorrectCount(out.sessionCorrectCount || 0);
+                // setIsAwaitingInactivityResponse(false);
+                // enterGameModeAfterFailure(out);
+                // return;
+
+                 if (selectedDifficulty && selectedTable != null) {
+                    localStorage.setItem('game-mode-belt', selectedDifficulty);
+                    localStorage.setItem('game-mode-table', String(selectedTable));
+              } else {
+                  console.log("FAIL DEBUG — no selectedDifficulty/table at fail moment:", {
+                      selectedDifficulty, selectedTable
+                });
+                }
+                setQuizStartTime(null);
+
+                  // 2️ Save session score and time for WayToGo
+                  setSessionCorrectCount(out.sessionCorrectCount || 0);
+                  localStorage.setItem(
+                      'math-last-quiz-duration',
+                      Math.round((out.summary?.totalActiveMs || 0) / 1000)
+                  );
+
+                  // 3️ Show Way-To-Go (same as wrong-answer fail)
+                  // setShowWayToGoAfterFailure(true);
+
+                  setIsAwaitingInactivityResponse(false);
+
+                  // 4️ Navigate to Way-To-Go screen
+                  // navigate('/way-to-go');
+                  // return;
             }
 
             
@@ -1204,6 +1252,8 @@ const useMathGame = () => {
     LIGHTNING_GOAL,
     isGameModePractice,
     gameModeInterventionIndex,
+    showWayToGoAfterFailure,
+    setShowWayToGoAfterFailure,
 
     // UI & Progress
     isAnimating, setIsAnimating,
@@ -1278,7 +1328,12 @@ const useMathGame = () => {
     speedTestComplete, speedTestStarted, speedTestCorrectCount,
     speedTestShowTick, studentReactionSpeed, 
     currentStreak, 
-    hardResetQuizState
+    hardResetQuizState,
+    selectedDifficulty,
+    selectedTable,
+    sessionCorrectCount,
+    setSessionCorrectCount,
+
 
   };
 };

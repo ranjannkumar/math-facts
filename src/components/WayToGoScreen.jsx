@@ -16,6 +16,7 @@ const WayToGoScreen = () => {
         setSelectedDifficulty,
         setSelectedTable,
         isQuizStarting,
+        showWayToGoAfterFailure,
 
     } = useContext(MathGameContext);
 
@@ -44,16 +45,25 @@ const WayToGoScreen = () => {
                 setCountdown((prev) => prev - 1);
             }, 1000);
         } else if (countdown === 0) {
-            // Countdown finished, execute navigation/restart
-            if (hasRestarted.current) return; 
-            hasRestarted.current = true;
-            localStorage.removeItem('math-last-quiz-duration'); 
-            if (selectedTable && selectedDifficulty) {
-                // Call the API-backed quiz start flow. 
-                startQuizWithDifficulty(selectedDifficulty, selectedTable); 
-            } else {
-                navigate('/belts');
-            }
+            
+             if (hasRestarted.current) return;
+                hasRestarted.current = true;
+
+                // If this was a failed quiz → go to GAME MODE intro
+                if (showWayToGoAfterFailure) {
+                    localStorage.setItem('game-mode-belt', selectedDifficulty);
+                    localStorage.setItem('game-mode-table', String(selectedTable));
+                    navigate('/game-mode-intro', { replace: true });
+                    return;
+                }
+
+                // Otherwise → normal belt retry flow
+                localStorage.removeItem('math-last-quiz-duration');
+                if (selectedTable && selectedDifficulty) {
+                    startQuizWithDifficulty(selectedDifficulty, selectedTable);
+                } else {
+                    navigate('/belts');
+                }
         }
         // Cleanup function
         return () => {
@@ -156,7 +166,7 @@ const WayToGoScreen = () => {
                 </div>
                 
                  <p className="text-gray-600 mb-4 sm:mb-6 text-xl sm:text-2xl font-bold">
-                    Restarting in <span className="font-extrabold text-red-600">{countdown}</span> seconds...
+                    Game Mode On <span className="font-extrabold text-red-600">{countdown}</span> seconds...
                 </p>
 
                 <div className="flex justify-center">

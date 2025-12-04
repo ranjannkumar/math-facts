@@ -100,7 +100,7 @@ const App = () => {
           <Route path="/belts" element={<DifficultyPicker />} />
           <Route path="/black" element={<BlackBeltPicker />} /> {/* ✅ BLACK ROUTE */}
           <Route path="/quiz" element={<QuizScreen />} />
-          {/* <Route path="/way-to-go" element={<WayToGoScreen />} /> */}
+          <Route path="/way-to-go" element={<WayToGoScreen />} />
           <Route path="/results" element={<ResultsScreen />} />
           <Route path="/theme" element={<ThemePicker />} />
 

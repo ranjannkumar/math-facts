@@ -155,6 +155,11 @@ const LearningModule = () => {
     setIsQuizStarting,
     isGameMode,
     isGameModePractice,
+    setIsAnimating,
+    setQuizStartTime,
+    setSessionCorrectCount,
+    setShowWayToGoAfterFailure,
+    selectedDifficulty,
   } = useContext(MathGameContext);
 
   const diff = useMemo(() => normalizeDifficulty(pendingDifficulty), [pendingDifficulty]);
@@ -347,10 +352,25 @@ useEffect(() => {
 
           if (isIntervention) {
             if (out.completed) {
-                setIsClosing(true);
-                setInterventionQuestion(null);
-                setShowLearningModule(false);
-                navigate('/game-mode-intro', { replace: true });
+                 if (selectedDifficulty && selectedTable != null) {
+                    localStorage.setItem('game-mode-belt', selectedDifficulty);
+                    localStorage.setItem('game-mode-table', String(selectedTable));
+              } else {
+                  console.log("FAIL DEBUG — no selectedDifficulty/table at fail moment:", {
+                      selectedDifficulty, selectedTable
+                });
+                }
+           // 1️ Stop quiz timer
+            setIsAnimating(false);
+            setQuizStartTime(null);
+
+            // 2️ Save session for WayToGo page
+            setSessionCorrectCount(out.sessionCorrectCount || 0);
+            localStorage.setItem('math-last-quiz-duration', Math.round((out.summary?.totalActiveMs || 0) / 1000));
+
+            // 3️ Set flag so WayToGo knows this is a failed quiz
+            setShowWayToGoAfterFailure(true);;
+                navigate('/way-to-go', { replace: true });
                 return;
             }
             if (out.resume) {

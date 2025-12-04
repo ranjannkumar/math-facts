@@ -9,12 +9,11 @@ const GameModeExitScreen = () => {
 
   useEffect(() => {
     const belt = localStorage.getItem('game-mode-belt');
+    console.log("DEBUG belt from game mode:", belt);
     const table = localStorage.getItem('game-mode-table');
 
-    let targetRoute = '/belts';
-    if (belt && String(belt).startsWith('black')) {
-      targetRoute = '/black';
-    }
+   const isBlack = belt && belt.toLowerCase().includes('black');
+   const targetRoute = isBlack ? '/black' : '/belts';
 
     const timer = setTimeout(() => {
       // Clean up stored game-mode info
@@ -39,7 +38,7 @@ const GameModeExitScreen = () => {
     <div className="fixed inset-0 z-[100] bg-green-900 flex flex-col items-center justify-center animate-fade-in-up">
       <div className="text-center p-8 bg-white/90 rounded-3xl shadow-2xl border-4 border-green-500 transform scale-110">
         <h1 className="text-6xl sm:text-7xl font-black text-green-700 mb-4 animate-bounce">
-          💯 MODE COMPLETE!
+          💯 GAME MODE COMPLETE
         </h1>
         <p className="text-3xl text-gray-800 font-semibold">
           Congratulations on finishing Game Mode
