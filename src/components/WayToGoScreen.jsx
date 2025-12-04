@@ -166,7 +166,7 @@ const WayToGoScreen = () => {
                 </div>
                 
                  <p className="text-gray-600 mb-4 sm:mb-6 text-xl sm:text-2xl font-bold">
-                    Game Mode On <span className="font-extrabold text-red-600">{countdown}</span> seconds...
+                    Game Mode In <span className="font-extrabold text-red-600">{countdown}</span> seconds...
                 </p>
 
                 <div className="flex justify-center">
