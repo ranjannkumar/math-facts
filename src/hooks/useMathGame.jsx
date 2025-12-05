@@ -14,7 +14,6 @@ import {
   quizSubmitAnswer,
   userResetProgress,
   userUpdateTheme, 
-  quizForcePass,
 } from '../api/mathApi.js';
 
 // Constant for inactivity timeout (same as backend, 5000ms)
