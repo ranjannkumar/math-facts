@@ -53,14 +53,21 @@ export const quizStart = async (quizRunId, pin) => {
   return callApi('/quiz/start', 'POST', { quizRunId }, pin);
 };
 
-export const quizSubmitAnswer = async (quizRunId, questionId, answer, responseMs, level, beltOrDegree, pin) => {
-  // Pass level/beltOrDegree for progression tracking on success in backend
-  return callApi(
-    '/quiz/answer',
-    'POST',
-    { quizRunId, questionId, answer, responseMs, level, beltOrDegree },
-    pin
-  );
+export const quizSubmitAnswer = async (quizRunId, questionId, answer, responseMs, level, beltOrDegree, pin,forcePass = false) => {
+  const body = {
+    quizRunId,
+    questionId,
+    answer,
+    responseMs,
+    level,
+    beltOrDegree,
+  };
+
+  // For Game Mode completion: tell backend to end quiz successfully
+  if (forcePass) {
+    body.forcePass = 'true'; 
+  }
+   return callApi('/quiz/answer', 'POST', body, pin);
 };
 
 export const quizHandleInactivity = async (quizRunId, questionId, pin) => {
@@ -213,15 +220,3 @@ export const getAdminStats = async (adminPin, limit = 10, offset = 0) => {
   return callApi(`/admin/today-stats?limit=${limit}&offset=${offset}`, 'GET', null, adminPin);
 };
 
-export const quizForcePass = async (level, beltOrDegree, pin) => {
-  return callApi(
-    '/quiz/force-pass', 
-    'POST',
-    { 
-      level, 
-      beltOrDegree, 
-      forcePass: true 
-    },
-    pin
-  );
-};

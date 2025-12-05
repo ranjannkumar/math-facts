@@ -634,25 +634,25 @@ const useMathGame = () => {
         setTransientStreakMessage(triggerStreakMessage);
 
         if (newLightningCount >= LIGHTNING_GOAL) {
-          
-          setIsAnimating(false);
-          setIsGameMode(false);
-          const beltToPass = localStorage.getItem('game-mode-belt') || selectedDifficulty;
-          const tableToPass = parseInt(localStorage.getItem('game-mode-table')) || selectedTable;
-          if (beltToPass && tableToPass && childPin) {
-              try {
-                  //  Call the new API function to force pass
-                  await quizForcePass(tableToPass, beltToPass, childPin);
-                  navigate('/game-mode-exit', { replace: true });
-                  return; 
-              } catch (e) {
-                  console.error('Failed to force pass quiz after Game Mode:', e.message);
-                  // Continue to navigate to the exit screen regardless of API failure
-              }
-          } else {
-              console.error('Cannot force pass: Missing belt, table, or pin.');
+         try {
+            // Send the last answer with forcePass = true
+            if (childPin) {
+              await quizSubmitAnswer(
+                quizRunId,                  
+                selectedAnswer,             
+                responseMs,                 
+                selectedTable,              // level
+                selectedDifficulty,         // belt or degree
+                childPin,
+                true                        // forcePass for this answer
+              );
+            }
+          } catch (e) {
+            console.error('Failed to send forcePass answer in Game Mode:', e);
           }
 
+          setIsAnimating(false);
+          setIsGameMode(false);
           navigate('/game-mode-exit', { replace: true });
           return;
         }
