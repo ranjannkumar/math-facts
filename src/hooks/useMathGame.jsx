@@ -637,7 +637,8 @@ const useMathGame = () => {
             // Send the last answer with forcePass = true
             if (childPin) {
               await quizSubmitAnswer(
-                quizRunId,                  
+                quizRunId, 
+                currentQuestion.id,                 
                 selectedAnswer,             
                 responseMs,                 
                 selectedTable,              // level
