@@ -383,31 +383,78 @@ const useMathGame = () => {
    const startActualQuiz = useCallback(
     async (runId) => {
       const idToUse = runId || quizRunId;
-        if (!idToUse) {
-          console.error("Cannot start quiz: quizRunId is missing.");
-           setIsQuizStarting(false);
-          navigate('/belts');
-          return;
+      if (!idToUse) {
+        console.error('Cannot start quiz: quizRunId is missing.');
+        setIsQuizStarting(false);
+        navigate('/belts');
+        return;
       }
-      try {
-       const { questions: backendQuestions } = await quizStart(idToUse, childPin);
 
-        if (!backendQuestions || backendQuestions.length === 0) throw new Error("No questions returned from quiz start.");
+      try {
+        const {
+          questions: backendQuestions,
+          resumed = false,
+          currentIndex,
+          mainFlowCorrect,
+          wrong,
+        } = await quizStart(idToUse, childPin);
+
+        if (!backendQuestions || backendQuestions.length === 0) {
+          throw new Error('No questions returned from quiz start.');
+        }
+
         const mappedQuestions = backendQuestions.map(mapQuestionToFrontend);
         setQuizQuestions(mappedQuestions); // Cache all questions
-        setCurrentQuestionIndex(0);
-        setCurrentQuestion(mappedQuestions[0]); // Set first question
 
-        setQuizStartTime(Date.now());
-        questionStartTimestamp.current = Date.now();
+        // --- Resume support ---
+        let startIndex = 0;
+
+        if (resumed && typeof currentIndex === 'number') {
+          // Clamp currentIndex into a safe range
+          startIndex = Math.min(
+            Math.max(currentIndex, 0),
+            mappedQuestions.length - 1
+          );
+
+          const safeCorrect =
+            typeof mainFlowCorrect === 'number' ? mainFlowCorrect : 0;
+          const safeWrong = typeof wrong === 'number' ? wrong : 0;
+
+          // Restore score counters
+          setSessionCorrectCount(safeCorrect);
+          setWrongCount(safeWrong);
+
+          const answeredSoFar = safeCorrect + safeWrong;
+
+          // Restore progress bar based on how many questions were answered
+          const totalForProgress =
+            maxQuestions ||
+            mappedQuestions.length ||
+            determineMaxQuestions(selectedDifficulty);
+
+          if (totalForProgress > 0) {
+            const restoredProgress = Math.min(
+              (answeredSoFar / totalForProgress) * 100,
+              100
+            );
+            setQuizProgress(restoredProgress);
+          }
+        }
+
+        // Start quiz from the right question
+        setCurrentQuestionIndex(startIndex);
+        setCurrentQuestion(mappedQuestions[startIndex]);
+
+        // Timer setup
+        const now = Date.now();
+        setQuizStartTime(now);
+        questionStartTimestamp.current = now;
         setIsTimerPaused(false);
         setElapsedTime(0);
         setPausedTime(0);
 
         setIsQuizStarting(false);
-
         navigate('/quiz');
-
       } catch (e) {
         console.error('Quiz Start failed:', e.message);
         alert('Failed to start quiz: ' + e.message);
@@ -415,11 +462,20 @@ const useMathGame = () => {
         navigate('/belts');
       }
     },
-    [navigate, childPin, quizRunId, mapQuestionToFrontend]
+    [
+      navigate,
+      childPin,
+      quizRunId,
+      mapQuestionToFrontend,
+      maxQuestions,
+      selectedDifficulty,
+      determineMaxQuestions,
+    ]
   );
 
+
   // 1. Prepare (called from DifficultyPicker/BlackBeltPicker -> startQuizWithDifficulty)
-  const startQuizWithDifficulty = useCallback(
+   const startQuizWithDifficulty = useCallback(
     async (difficulty, table) => {
       hardResetQuizState();
       setSelectedDifficulty(difficulty);
@@ -428,39 +484,40 @@ const useMathGame = () => {
       setMaxQuestions(determineMaxQuestions(difficulty));
 
       setIsInitialPrepLoading(true);
-      if( String(difficulty).startsWith('black')) {
+      if (String(difficulty).startsWith('black')) {
         setIsInitialPrepLoading(false);
       }
 
       try {
-        const { quizRunId: newRunId, practice: practiceItems } = await quizPrepare(
-          table,
-          difficulty,
-          childPin
-        );
-        
+        const {
+          quizRunId: newRunId,
+          practice: practiceItems,
+          resumed = false,
+        } = await quizPrepare(table, difficulty, childPin);
+
         setQuizRunId(newRunId);
         setPreQuizPracticeItems(practiceItems || []);
 
-        // Use a generic placeholder content since the actual facts are in practiceItems
-        const content = `${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} Belt Quiz at Level ${table}.`;
+        // Generic learning text; actual questions come from practiceItems
+        const content = `${
+          difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
+        } Belt Quiz at Level ${table}.`;
         setLearningModuleContent(content);
 
         setIsInitialPrepLoading(false);
-        
-        //  Implement Black Belt skip logic
+
         const isBlackBelt = String(difficulty).startsWith('black');
 
-        if (!isBlackBelt && practiceItems && practiceItems.length > 0) {
+        // If resuming OR no practice items → skip practice and go straight to quiz
+        if (!isBlackBelt && !resumed && practiceItems && practiceItems.length > 0) {
           setShowLearningModule(true);
           setIsQuizStarting(false);
           navigate('/learning');
         } else {
-          // Black Belt or no practice items, go straight to quiz start
+          // Black belt, no practice, or resumed quiz
           setIsQuizStarting(true);
           startActualQuiz(newRunId);
         }
-        
       } catch (e) {
         console.error('Quiz Prepare failed:', e.message);
         alert('Failed to prepare quiz: ' + e.message);
@@ -470,6 +527,7 @@ const useMathGame = () => {
     },
     [navigate, childPin, hardResetQuizState, determineMaxQuestions, startActualQuiz]
   );
+
 
     // --- Helper: enter GAME MODE after a failed belt ---
   const enterGameModeAfterFailure = useCallback((backendOut) => {
