@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState,useRef } from 'react';
 import { MathGameContext } from '../App.jsx';
 import { useNavigate } from 'react-router-dom';
 import { submitVideoRating } from '../api/mathApi.js';
@@ -22,7 +22,11 @@ const getVideoPath = (difficulty) => {
     const degree = parseInt(difficulty.split('-')[1], 10);
     if (degree === 1) return '/degree1_video.mp4';
     if (degree === 2) return '/degree2_video.mp4';
-    if (degree >= 3 && degree <= 7) return '/degree3_video.mp4'; 
+    if (degree === 3 ) return '/degree3_video.mp4'; 
+    if (degree === 4 ) return '/degree4_video.mp4';
+    if (degree === 5 ) return '/degree5_video.mp4';
+    if (degree === 6 ) return '/degree6_video.mp4';
+    if (degree === 7 ) return '/degree7_video.mp4';
   }
   
   return null;
@@ -93,6 +97,7 @@ const VideoPlayerScreen = () => {
   const [videoKey, setVideoKey] = useState(0); // Key to force remount of <video> element
   const [videoEnded, setVideoEnded] = useState(false); // New state to track video end
   const [isSubmitting, setIsSubmitting] = useState(false); // New state for rating submission
+  const videoRef = useRef(null); //  ref for preventing pause
 
   useEffect(() => {
     // 1. Determine video path based on the completed level
@@ -107,6 +112,27 @@ const VideoPlayerScreen = () => {
 
     return () => setTempNextRoute(null); // Clear the temp route on unmount
   }, [selectedDifficulty, setTempNextRoute]);
+
+    useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    const handlePause = () => {
+      // If video isn't finished, force it to keep playing
+      if (el.currentTime < el.duration) {
+        el.play().catch(() => {
+          // Ignore play errors (e.g. Safari autoplay policies)
+        });
+      }
+    };
+
+    el.addEventListener('pause', handlePause);
+
+    return () => {
+      el.removeEventListener('pause', handlePause);
+    };
+  }, [videoSrc]);
+
 
   const handleNavigation = useCallback(() => {
         let finalDestination = tempNextRoute;
@@ -171,12 +197,13 @@ if (!videoSrc) {
     <div className="min-h-screen w-full flex items-center justify-center bg-black">
       {!videoEnded && (
         <video 
+          ref={videoRef} 
           key={videoKey} 
           src={videoSrc}
           onEnded={() => setVideoEnded(true)} // Set state to show rating panel
           autoPlay
           controls={false} 
-          className="max-w-full max-h-screen"
+          className="max-w-full max-h-screen pointer-events-none"
           style={{ width: '100vw', height: '100vh', objectFit: 'contain' }}
         >
           Your browser does not support the video tag.

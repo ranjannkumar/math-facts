@@ -53,7 +53,7 @@ const WayToGoScreen = () => {
                 if (showWayToGoAfterFailure) {
                     localStorage.setItem('game-mode-belt', selectedDifficulty);
                     localStorage.setItem('game-mode-table', String(selectedTable));
-                    navigate('/game-mode-intro', { replace: true });
+                     navigate('/game-mode-video', { replace: true }); 
                     return;
                 }
 
