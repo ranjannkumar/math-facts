@@ -14,11 +14,12 @@ import {
   quizSubmitAnswer,
   userResetProgress,
   userUpdateTheme, 
+  quizForcePass,
 } from '../api/mathApi.js';
 
 // Constant for inactivity timeout (same as backend, 5000ms)
 const INACTIVITY_TIMEOUT_MS = 5000;
-const LIGHTNING_GOAL = 100; 
+const LIGHTNING_GOAL = 20; 
 
 const useMathGame = () => {
   const navigate = useNavigate();
@@ -632,10 +633,26 @@ const useMathGame = () => {
         );
         setTransientStreakMessage(triggerStreakMessage);
 
-        // If we’ve hit the goal, exit GAME MODE → auto retry belt
         if (newLightningCount >= LIGHTNING_GOAL) {
+          
           setIsAnimating(false);
           setIsGameMode(false);
+          const beltToPass = localStorage.getItem('game-mode-belt') || selectedDifficulty;
+          const tableToPass = parseInt(localStorage.getItem('game-mode-table')) || selectedTable;
+          if (beltToPass && tableToPass && childPin) {
+              try {
+                  //  Call the new API function to force pass
+                  await quizForcePass(tableToPass, beltToPass, childPin);
+                  navigate('/game-mode-exit', { replace: true });
+                  return; 
+              } catch (e) {
+                  console.error('Failed to force pass quiz after Game Mode:', e.message);
+                  // Continue to navigate to the exit screen regardless of API failure
+              }
+          } else {
+              console.error('Cannot force pass: Missing belt, table, or pin.');
+          }
+
           navigate('/game-mode-exit', { replace: true });
           return;
         }

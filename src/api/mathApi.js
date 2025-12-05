@@ -213,3 +213,15 @@ export const getAdminStats = async (adminPin, limit = 10, offset = 0) => {
   return callApi(`/admin/today-stats?limit=${limit}&offset=${offset}`, 'GET', null, adminPin);
 };
 
+export const quizForcePass = async (level, beltOrDegree, pin) => {
+  return callApi(
+    '/quiz/force-pass', 
+    'POST',
+    { 
+      level, 
+      beltOrDegree, 
+      forcePass: true 
+    },
+    pin
+  );
+};
