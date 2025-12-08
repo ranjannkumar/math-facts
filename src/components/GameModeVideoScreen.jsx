@@ -10,25 +10,31 @@ const GameModeVideoScreen = () => {
     if (!videoEl) return;
 
     const handleEnded = () => {
-      // After video finishes, go to Game Mode intro
       navigate('/game-mode-intro', { replace: true });
     };
 
-    // If user / device pauses the video, immediately resume
+    // Prevent pausing
     const handlePause = () => {
       if (videoEl.currentTime < videoEl.duration) {
-        videoEl.play().catch(() => {
-          // Ignore play errors (e.g. autoplay restrictions)
-        });
+        videoEl.play().catch(() => {});
       }
+    };
+
+    // After video begins, unmute (important for iOS)
+    const handlePlaying = () => {
+      setTimeout(() => {
+        videoEl.muted = false; // allow audio
+      }, 100); // small delay works best for all devices
     };
 
     videoEl.addEventListener('ended', handleEnded);
     videoEl.addEventListener('pause', handlePause);
+    videoEl.addEventListener('playing', handlePlaying);
 
     return () => {
       videoEl.removeEventListener('ended', handleEnded);
       videoEl.removeEventListener('pause', handlePause);
+      videoEl.removeEventListener('playing', handlePlaying);
       if (videoEl && !videoEl.paused) {
         videoEl.pause();
       }
@@ -40,11 +46,26 @@ const GameModeVideoScreen = () => {
       <div className="w-full max-w-3xl px-4">
         <video
           ref={videoRef}
-          className="w-full rounded-2xl shadow-2xl pointer-events-none"  // no touch/click on video
-          src="/GameMode.mp4"   // make sure this matches the actual filename in /public
+          src="/GameMode.mp4"
+          preload="auto"              // best for autoplay + no freeze
+          muted                       // required for autoplay on iOS initially
           autoPlay
-          playsInline
-          controls={false}      //  no visible controls
+          playsInline                 // required for iOS
+          controls={false}            // no UI controls
+          className="w-full rounded-2xl shadow-2xl pointer-events-none"
+          onCanPlayThrough={() => {
+            if (videoRef.current && videoRef.current.paused) {
+              videoRef.current.play().catch(() => {});
+            }
+          }}
+          onPause={() => {
+            if (
+              videoRef.current &&
+              videoRef.current.currentTime < videoRef.current.duration
+            ) {
+              videoRef.current.play().catch(() => {});
+            }
+          }}
         >
           Your browser does not support the video tag.
         </video>
