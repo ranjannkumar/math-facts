@@ -68,10 +68,10 @@ const GameModeScreen = () => {
           <div className="relative h-5 mb-2 flex flex-col justify-end">
              
             {/* TOP: Lightning Bolt Counter */}
-            <div className="w-full flex justify-between items-center bg-yellow-900/50 rounded-lg p-2 mb-20 shadow-inner">
+            {/* <div className="w-full flex justify-between items-center bg-yellow-900/50 rounded-lg p-2 mb-20 shadow-inner">
                 <span className="text-xl font-bold text-yellow-400">⚡ Bolts:</span>
                 <span className="text-3xl font-black text-white">{lightningCount}/{LIGHTNING_GOAL}</span>
-            </div>
+            </div> */}
 
             {/* Middle: Transient Symbol Display */}
             <div className="flex justify-center items-center absolute w-full top-15">

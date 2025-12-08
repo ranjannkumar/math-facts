@@ -25,9 +25,9 @@ const GameModeIntroScreen = () => {
         <h1 className="text-6xl sm:text-7xl font-black text-yellow-400 mb-4 animate-pulse">
           ⚡ GAME MODE ⚡
         </h1>
-        <p className="text-3xl text-white font-semibold">
+        {/* <p className="text-3xl text-white font-semibold">
           Get **100 Lightning Bolts** to complete this game!
-        </p>
+        </p> */}
         {/*  */}
       </div>
     </div>
