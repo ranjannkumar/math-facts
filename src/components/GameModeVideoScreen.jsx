@@ -1,34 +1,47 @@
-import React, { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 const GameModeVideoScreen = () => {
-  const navigate = useNavigate();
+  const nav = useNavigate();
   const videoRef = useRef(null);
 
   useEffect(() => {
-    const videoEl = videoRef.current;
-    if (!videoEl) return;
+    const v = videoRef.current;
+    if (!v) return;
 
-    const handleEnded = () => {
-      navigate('/game-mode-intro', { replace: true });
+    const handleEnded = () => nav("/game-mode-intro", { replace: true });
+    v.addEventListener("ended", handleEnded);
+
+    // iOS requires explicit "muted" setup
+    v.muted = true;
+    v.setAttribute("muted", "true");
+    v.setAttribute("playsinline", "true");
+
+    // Manual force-play for iOS
+    const playVideo = () => {
+      v.play().catch((err) => console.log("iOS autoplay issue", err));
     };
+    playVideo();
 
-    videoEl.addEventListener('ended', handleEnded);
-    
-    return () => videoEl.removeEventListener('ended', handleEnded);
-  }, [navigate]);
+    return () => {
+      v.removeEventListener("ended", handleEnded);
+    };
+  }, [nav]);
 
   return (
-    <div className="fixed inset-0 z-[90] bg-black flex items-center justify-center">
+    <div className="fixed inset-0 z-[90] bg-black flex items-center justify-center touch-none">
       <video
         ref={videoRef}
         src="/GameMode.mp4"
+        preload="auto"
         autoPlay
-        controls={false}
-        // These attributes are enough for iOS when user interaction precedes
-        playsInline 
-        className="w-full max-w-3xl rounded-2xl shadow-2xl pointer-events-none"
-        style={{ width: '100vw', height: '100vh', objectFit: 'contain' }}
+        muted
+        playsInline
+        disablePictureInPicture
+        webkit-playsinline="true"
+        x-webkit-airplay="deny"
+        disableRemotePlayback
+        className="w-full h-full object-contain"
       />
     </div>
   );
