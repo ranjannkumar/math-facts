@@ -27,7 +27,6 @@ const GameModeVideoScreen = () => {
         controls={false}
         // These attributes are enough for iOS when user interaction precedes
         playsInline 
-        preload="auto"
         className="w-full max-w-3xl rounded-2xl shadow-2xl pointer-events-none"
         style={{ width: '100vw', height: '100vh', objectFit: 'contain' }}
       />
