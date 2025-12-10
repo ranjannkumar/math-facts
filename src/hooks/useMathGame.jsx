@@ -55,6 +55,9 @@ const useMathGame = () => {
   const [isGameMode, setIsGameMode] = useState(false);
   const [lightningCount, setLightningCount] = useState(0);
   const [showWayToGoAfterFailure, setShowWayToGoAfterFailure] = useState(false);
+  const [gameModeLevel, setGameModeLevel] = useState(1);
+  const [shouldExitAfterVideo, setShouldExitAfterVideo] = useState(false);
+
 
   // { symbol: '⚡' | '✓' | '✗', isCorrect: boolean }
   const [currentAnswerSymbol, setCurrentAnswerSymbol] = useState(null);
@@ -690,6 +693,27 @@ const useMathGame = () => {
         );
         setTransientStreakMessage(triggerStreakMessage);
 
+        if ((newLightningCount % 10) === 0 && newLightningCount !== 0) {
+
+            setIsTimerPaused(true);
+
+            if (newLightningCount >= LIGHTNING_GOAL) {
+                setShouldExitAfterVideo(true);
+            }
+
+            const targetLevel = gameModeLevel;
+            setGameModeLevel(prev => prev + 1);
+
+            navigate(`/game-mode-video/${targetLevel}`, { replace: true });
+
+            setCurrentAnswerSymbol(null);
+            if (triggerStreakMessage) setTransientStreakMessage(null);
+
+            setIsAnimating(false);
+            return;
+        }
+
+
         if (newLightningCount >= LIGHTNING_GOAL) {
          try {
             // Send the last answer with forcePass = true
@@ -711,6 +735,16 @@ const useMathGame = () => {
 
           setIsAnimating(false);
           setIsGameMode(false);
+
+          if (newLightningCount % 10 === 0) {
+              setShouldExitAfterVideo(true);
+
+              setIsTimerPaused(true);
+              return;
+          }
+
+          // CASE B: Not aligned → exit immediately
+          setShouldExitAfterVideo(false);
           navigate('/game-mode-exit', { replace: true });
           return;
         }
@@ -1329,6 +1363,10 @@ const useMathGame = () => {
     gameModeInterventionIndex,
     showWayToGoAfterFailure,
     setShowWayToGoAfterFailure,
+    questionStartTimestamp, 
+    shouldExitAfterVideo,
+    setShouldExitAfterVideo,
+
 
     // UI & Progress
     isAnimating, setIsAnimating,
