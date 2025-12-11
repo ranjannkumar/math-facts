@@ -23,6 +23,7 @@ const GameModeExitScreen = lazy(() => import('./components/GameModeExitScreen.js
 const GameModeVideoScreen = lazy(() => import('./components/GameModeVideoScreen.jsx'));
 const GameModeVideoPlayer = lazy(() => import('./components/GameModeVideoPlayer.jsx'));
 const GameModeVideoSelectScreen = lazy(() => import('./components/GameModeVideoSelectScreen.jsx'));
+const UserQuestionStats = lazy(() => import('./components/UserQuestionStats.jsx'));
 const SpeedTestScreen = lazy(() => import('./components/ui/SpeedTestScreen.jsx'));
 
 import PreTestPopup from './components/PreTestPopup.jsx';
@@ -86,6 +87,7 @@ const App = () => {
         <Route path="/" element={<StartScreen />} />
         <Route path="/name" element={<NameForm />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/user-stats/:pin/:name" element={<UserQuestionStats />} />
         {/* <Route path="/pre-test-popup" element={<PreTestPopup />} /> */}
         {/* <Route path="/pre-test" element={<PreTestScreen />} /> */}
 

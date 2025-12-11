@@ -216,6 +216,33 @@ export function mapQuestionToFrontend(backendQuestion) {
   };
 }
 
+/**
+ * MOCK FUNCTION: Simulates fetching detailed question stats (encounters, correct, wrong) for a specific user.
+ * REPLACE THIS MOCK with the actual callApi when the backend is ready.
+ * @param {string} adminPin The admin's PIN for authorization.
+ * @param {string} userPin The PIN of the student whose stats are requested.
+ */
+export const getUserQuestionStats = async (adminPin, userPin) => {
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 500)); 
+  
+  // MOCK DATA STRUCTURE
+  const mockStats = [
+    { question: '2 + 3', encountered: 50, correct: 45, wrong: 5 },
+    { question: '7 + 8', encountered: 35, correct: 20, wrong: 15 },
+    { question: '10 + 1', encountered: 25, correct: 25, wrong: 0 },
+    { question: '4 + 6', encountered: 20, correct: 18, wrong: 2 },
+    { question: '12 + 5', encountered: 15, correct: 10, wrong: 5 },
+    { question: '6 + 6', encountered: 10, correct: 5, wrong: 5 },
+  ];
+  
+  // In a real scenario, you'd have:
+  // return callApi(`/admin/user-question-stats/${userPin}`, 'GET', null, adminPin);
+
+  // For now, return the mock data.
+  return mockStats;
+};
+
 export const getAdminStats = async (adminPin, limit = 10, offset = 0) => {
   return callApi(`/admin/today-stats?limit=${limit}&offset=${offset}`, 'GET', null, adminPin);
 };

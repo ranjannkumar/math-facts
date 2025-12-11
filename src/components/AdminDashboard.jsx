@@ -143,6 +143,12 @@ const AdminDashboard = () => {
     setOffset(prev => prev + limit);
   };
 
+  // NEW: Handler for viewing a specific user's detailed stats
+  const handleViewStats = (pin, name) => { // [!code ++]
+    // Encode the name for the URL as it might contain spaces or special chars // [!code ++]
+    navigate(`/admin/user-stats/${pin}/${encodeURIComponent(name)}`); // [!code ++]
+  }; // [!code ++]
+
   const sortedStats = [...stats].sort((a, b) => {
     return b.grandTotalCorrect - a.grandTotalCorrect;
   });
@@ -241,7 +247,14 @@ const AdminDashboard = () => {
                 {sortedStats.map((student) => (
                   <tr key={student._id} className="hover:bg-gray-700/50 transition-colors">
                     <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-semibold">
-                      {student.name} (<span className="tabular-nums">#{student.pin}</span>)
+                      {/* WRAP NAME AND PIN IN A BUTTON FOR CLICKABILITY */}
+                      <button 
+                        onClick={() => handleViewStats(student.pin, student.name)} // [!code ++]
+                        className="text-blue-300 hover:text-blue-500 transition duration-150 ease-in-out underline text-left" // [!code ++]
+                        title={`View question stats for ${student.name}`} 
+                      >
+                        {student.name} (<span className="tabular-nums">#{student.pin}</span>)
+                      </button>
                     </td>
                     <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm">
                       {student.loggedInToday ? '✅ Yes' : '❌ No'}
