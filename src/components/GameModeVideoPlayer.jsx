@@ -1,71 +1,91 @@
-import React, { useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useContext } from "react";
-import { MathGameContext } from '../App.jsx';
-
+import React, { useEffect, useRef, useContext } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { MathGameContext } from "../App.jsx";
 
 const GameModeVideoPlayer = () => {
   const navigate = useNavigate();
-  const gameContext = useContext(MathGameContext);
-  const { level } = useParams();      
+  const {
+    setIsTimerPaused,
+    questionStartTimestamp,
+    setPausedTime,
+    shouldExitAfterVideo,
+    setShouldExitAfterVideo,
+  } = useContext(MathGameContext);
+
+  const { videoName } = useParams();
+  const location = useLocation();
+  const videoUrl = location.state?.videoUrl; // came from selection screen
   const videoRef = useRef(null);
-
-const TOTAL_VIDEOS_AVAILABLE = 2;
-
-const actualVideoIndex = ((parseInt(level) - 1) % TOTAL_VIDEOS_AVAILABLE) + 1;
-
-const videoSrc = `/GameMode${actualVideoIndex}.mp4`;
-
 
   useEffect(() => {
     const videoEl = videoRef.current;
-    if (!videoEl) return;
+    if (!videoEl || !videoUrl) return;
 
-    // When video finishes → go back to game mode
-    const handleEnded = () => {
-
-      gameContext.setIsTimerPaused(false);
-
-      gameContext.questionStartTimestamp.current = Date.now();
-
-      if (gameContext.shouldExitAfterVideo) {
-        gameContext.setShouldExitAfterVideo(false); // reset flag
-        return navigate('/game-mode-exit', { replace: true });
+    const cleanupAndNavigate = () => {
+      // Resume timers & inactivity tracking
+      setIsTimerPaused(false);
+      if (questionStartTimestamp?.current != null) {
+        questionStartTimestamp.current = Date.now();
       }
+      setPausedTime?.(0);
 
-      // Otherwise → NORMAL return to /game-mode
-      navigate('/game-mode', { replace: true });
+      if (shouldExitAfterVideo) {
+        setShouldExitAfterVideo(false);
+        navigate("/game-mode-exit", { replace: true });
+      } else {
+        navigate("/game-mode", { replace: true });
+      }
     };
 
-
-    // Prevent user pause (even touch)
-    const preventPause = () => {
-      if (videoEl.paused) videoEl.play().catch(() => {});
+    const handleEnded = () => cleanupAndNavigate();
+    const handleError = () => {
+      console.warn("[GameMode] Failed to load bonus video:", videoUrl);
+      cleanupAndNavigate();
     };
 
     videoEl.addEventListener("ended", handleEnded);
-    videoEl.addEventListener("pause", preventPause);
+    videoEl.addEventListener("error", handleError);
 
-    videoEl.play().catch(() => {});
+    const playPromise = videoEl.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch((err) => {
+        console.warn("[GameMode] Autoplay failed:", err);
+      });
+    }
 
     return () => {
       videoEl.removeEventListener("ended", handleEnded);
-      videoEl.removeEventListener("pause", preventPause);
+      videoEl.removeEventListener("error", handleError);
     };
-  }, [navigate]);
+  }, [
+    navigate,
+    videoUrl,
+    setIsTimerPaused,
+    questionStartTimestamp,
+    setPausedTime,
+    shouldExitAfterVideo,
+    setShouldExitAfterVideo,
+  ]);
+
+  if (!videoUrl) {
+    // Defensive: if user somehow lands here without state, just go back to game mode
+    navigate("/game-mode", { replace: true });
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center">
       <video
         ref={videoRef}
-        src={videoSrc}
+        src={videoUrl}
         autoPlay
         playsInline
         preload="auto"
         controls={false}
         muted={false}
         disableRemotePlayback
-        className="w-screen h-screen object-contain"
+        className="w-screen h-screen object-contain pointer-events-none"
+        key={videoName || videoUrl}
       />
     </div>
   );

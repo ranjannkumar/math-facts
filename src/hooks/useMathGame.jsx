@@ -16,9 +16,17 @@ import {
   userUpdateTheme, 
 } from '../api/mathApi.js';
 
+
+// Auto-import all game mode videos and thumbnails from public/game-videos
+const videoModules = import.meta.glob('/public/game-videos/*.mp4', { as: 'url' });
+const thumbJpgModules = import.meta.glob('/public/game-videos/*.jpg', { as: 'url' });
+const thumbPngModules = import.meta.glob('/public/game-videos/*.png', { as: 'url' });
+
+
 // Constant for inactivity timeout (same as backend, 5000ms)
 const INACTIVITY_TIMEOUT_MS = 5000;
 const LIGHTNING_GOAL = 100; 
+// const MAX_GAME_MODE_VIDEOS = 5; //  UPDATE THIS NUMBER WHEN YOU ADD MORE VIDEOS!
 
 const useMathGame = () => {
   const navigate = useNavigate();
@@ -57,6 +65,9 @@ const useMathGame = () => {
   const [showWayToGoAfterFailure, setShowWayToGoAfterFailure] = useState(false);
   const [gameModeLevel, setGameModeLevel] = useState(1);
   const [shouldExitAfterVideo, setShouldExitAfterVideo] = useState(false);
+  const [videoOptions, setVideoOptions] = useState(null); // { option1: number, option2: number }
+  const [videoList, setVideoList] = useState([]);
+
 
 
   // { symbol: '⚡' | '✓' | '✗', isCorrect: boolean }
@@ -281,6 +292,93 @@ const useMathGame = () => {
   }, [navigate, processLoginFinal, setChildPin, setChildName, loginPendingResponse]);
   // --- END  Sibling Check Modal Handler ---
 
+
+ useEffect(() => {
+  const loadVideosAndThumbs = async () => {
+    const videoEntries = Object.entries(videoModules);
+    if (videoEntries.length === 0) {
+      setVideoList([]);
+      return;
+    }
+
+    // Load all video URLs
+    const videoUrls = await Promise.all(
+      videoEntries.map(([_, loader]) => loader())
+    );
+
+    // Load all JPG thumbnails
+    const jpgEntries = Object.entries(thumbJpgModules);
+    const jpgUrls = await Promise.all(
+      jpgEntries.map(([_, loader]) => loader())
+    );
+    const jpgMap = new Map();
+    jpgEntries.forEach(([path], idx) => {
+      const base = path.split('/').pop().replace('.jpg', '');
+      jpgMap.set(base, jpgUrls[idx]);
+    });
+
+    // Load all PNG thumbnails
+    const pngEntries = Object.entries(thumbPngModules);
+    const pngUrls = await Promise.all(
+      pngEntries.map(([_, loader]) => loader())
+    );
+    const pngMap = new Map();
+    pngEntries.forEach(([path], idx) => {
+      const base = path.split('/').pop().replace('.png', '');
+      pngMap.set(base, pngUrls[idx]);
+    });
+
+    const videos = videoEntries.map(([path], idx) => {
+      const name = path.split('/').pop().replace('.mp4', '');
+      const url = videoUrls[idx];
+
+      // Prefer JPG, then PNG, else no thumbnail
+      const thumbUrl = jpgMap.get(name) || pngMap.get(name) || null;
+
+      return { name, url, thumbnailUrl: thumbUrl };
+    });
+
+    setVideoList(videos);
+    console.log('[GameMode] Detected videos:', videos);
+  };
+
+  loadVideosAndThumbs();
+}, []);
+
+
+const generateRandomVideoOptions = () => {
+  if (videoList.length === 0) return null;
+
+  if (videoList.length === 1) {
+    return {
+      option1: videoList[0],
+      option2: videoList[0],
+    };
+  }
+
+  const shuffled = [...videoList].sort(() => Math.random() - 0.5);
+
+  return {
+    option1: shuffled[0],
+    option2: shuffled[1],
+  };
+};
+
+
+
+const handleVideoSelection = useCallback((videoObject) => {
+  // videoObject = { name, url }
+
+  navigate(`/game-mode-video-play/${videoObject.name}`, {
+    replace: true,
+    state: { videoUrl: videoObject.url },
+  });
+
+}, [navigate]);
+
+
+
+// ...
   
   const handlePinSubmit = useCallback(
     async (pinValue,nameValue) => {
@@ -661,118 +759,123 @@ const useMathGame = () => {
             }
           }
         } else {
-          // Wrong in Game Mode → reset streak, play wrong sound
+          // Wrong in Game Mode → reset streak, go to practice
           newQuizStreak = 0;
           symbol = '✗';
           audioManager.playWrongSound();
-          // NEW: Trigger Game Mode Intervention on wrong answer
-          setGameModeInterventionIndex(currentQuestionIndex);
-          setInterventionQuestion(currentQuestion); // Set the question object for LearningModule
-          setIsGameModePractice(true); 
-          
-          setIsAnimating(false);
-          setIsTimerPaused(true); // Pause the client timer during practice
-          setPausedTime(Date.now()); // Record pause time
 
-          // Clear any current inactivity timer
+          setGameModeInterventionIndex(currentQuestionIndex);
+          setInterventionQuestion(currentQuestion);
+          setIsGameModePractice(true);
+
+          setIsAnimating(false);
+          setIsTimerPaused(true);
+          setPausedTime(Date.now());
+
           if (inactivityTimeoutId.current) {
-              clearTimeout(inactivityTimeoutId.current);
-              inactivityTimeoutId.current = null;
+            clearTimeout(inactivityTimeoutId.current);
+            inactivityTimeoutId.current = null;
           }
           audioManager.stopAll();
-
-          // Navigate to practice/learning module
           navigate('/learning');
           return;
         }
 
         setCurrentQuizStreak(newQuizStreak);
         setLightningCount(newLightningCount);
-        setCurrentAnswerSymbol(
-          symbol ? { symbol, isCorrect } : null
-        );
+        setCurrentAnswerSymbol(symbol ? { symbol, isCorrect } : null);
         setTransientStreakMessage(triggerStreakMessage);
 
-        if ((newLightningCount % 10) === 0 && newLightningCount !== 0) {
+        const reachedGoal = newLightningCount >= LIGHTNING_GOAL;
+        const isTenStreak = newLightningCount > 0 && newLightningCount % 10 === 0;
 
-            setIsTimerPaused(true);
-
-            if (newLightningCount >= LIGHTNING_GOAL) {
-                setShouldExitAfterVideo(true);
-            }
-
-            const targetLevel = gameModeLevel;
-            setGameModeLevel(prev => prev + 1);
-
-            navigate(`/game-mode-video/${targetLevel}`, { replace: true });
-
-            setCurrentAnswerSymbol(null);
-            if (triggerStreakMessage) setTransientStreakMessage(null);
-
-            setIsAnimating(false);
-            return;
-        }
-
-
-        if (newLightningCount >= LIGHTNING_GOAL) {
-         try {
-            // Send the last answer with forcePass = true
-            if (childPin) {
+        // ----- FINAL GOAL REACHED -----
+        if (reachedGoal) {
+          // Send the final answer with forcePass = true
+          try {
+            if (quizRunId && childPin) {
               await quizSubmitAnswer(
-                quizRunId, 
-                currentQuestion.id,                 
-                selectedAnswer,             
-                responseMs,                 
-                selectedTable,              // level
-                selectedDifficulty,         // belt or degree
+                quizRunId,
+                currentQuestion.id,
+                selectedAnswer,
+                responseMs,
+                selectedTable,
+                selectedDifficulty,
                 childPin,
-                true                        // forcePass for this answer
+                true // forcePass
               );
             }
           } catch (e) {
             console.error('Failed to send forcePass answer in Game Mode:', e);
           }
 
-          setIsAnimating(false);
-          setIsGameMode(false);
+          // CASE A: goal reached exactly on a 10-bolt streak → show final video then exit
+          if (isTenStreak) {
+            setShouldExitAfterVideo(true);
+            setIsTimerPaused(true);
+            setPausedTime(Date.now());
 
-          if (newLightningCount % 10 === 0) {
-              setShouldExitAfterVideo(true);
+            const options = generateRandomVideoOptions();
+            if (options) {
+              setVideoOptions(options);
+            }
 
-              setIsTimerPaused(true);
-              return;
+            setCurrentAnswerSymbol(null);
+            if (triggerStreakMessage) setTransientStreakMessage(null);
+            setGameModeLevel((prev) => prev + 1);
+
+            setIsAnimating(false);
+            navigate('/game-mode-video-select', { replace: true });
+            return;
           }
 
-          // CASE B: Not aligned → exit immediately
-          setShouldExitAfterVideo(false);
+          // CASE B: goal reached but not on a 10-streak → exit immediately, no video
+          setIsAnimating(false);
+          setIsGameMode(false);
           navigate('/game-mode-exit', { replace: true });
           return;
         }
 
-        // Rotate through the SAME quiz questions endlessly
+        // ----- NOT FINAL YET: normal 10-streak reward video -----
+        if (isTenStreak) {
+          setIsTimerPaused(true);
+          setPausedTime(Date.now());
+          setShouldExitAfterVideo(false);
+
+          const options = generateRandomVideoOptions();
+          if (options) {
+            setVideoOptions(options);
+          }
+
+          setCurrentAnswerSymbol(null);
+          if (triggerStreakMessage) setTransientStreakMessage(null);
+          setGameModeLevel((prev) => prev + 1);
+
+          setIsAnimating(false);
+          navigate('/game-mode-video-select', { replace: true });
+          return;
+        }
+
+        // ----- Continue Game Mode with next question -----
         if (quizQuestions && quizQuestions.length > 0) {
-          const nextIndex =
-            (currentQuestionIndex + 1) % quizQuestions.length;
+          const nextIndex = (currentQuestionIndex + 1) % quizQuestions.length;
           const nextQuestion = quizQuestions[nextIndex];
 
-          // Wait a bit so tick/⚡ is visible, then move to next question and clear symbol
           setTimeout(() => {
             setCurrentQuestionIndex(nextIndex);
             setCurrentQuestion(nextQuestion);
             questionStartTimestamp.current = Date.now();
             setCurrentAnswerSymbol(null);
-            if (triggerStreakMessage) {
-              setTransientStreakMessage(null);
-            }
+            if (triggerStreakMessage) setTransientStreakMessage(null);
             setIsAnimating(false);
           }, 400);
         } else {
-          // Defensive: no cached questions, just unlock UI
           setIsAnimating(false);
         }
 
-        return; 
+        return;
       }
+
 
       // NORMAL QUIZ BRANCH 
 
@@ -1366,7 +1469,9 @@ const useMathGame = () => {
     questionStartTimestamp, 
     shouldExitAfterVideo,
     setShouldExitAfterVideo,
-
+    videoOptions,
+    handleVideoSelection,
+    videoList,
 
     // UI & Progress
     isAnimating, setIsAnimating,

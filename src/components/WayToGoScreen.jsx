@@ -168,16 +168,6 @@ const WayToGoScreen = () => {
                  <p className="text-gray-600 mb-4 sm:mb-6 text-xl sm:text-2xl font-bold">
                     Game Mode In <span className="font-extrabold text-red-600">{countdown}</span> seconds...
                 </p>
-
-                <div className="flex justify-center">
-                    <button
-                        className="px-6 py-3 rounded-2xl bg-green-600 text-white font-semibold hover:opacity-90 transition text-base sm:text-lg"
-                        onClick={handleBackToBelts}
-                        disabled={isDisabled}
-                    >
-                        Back to Belts
-                    </button>
-                </div>
             </div>
         </div>
     );
