@@ -787,7 +787,13 @@ const handleVideoSelection = useCallback((videoObject) => {
         setTransientStreakMessage(triggerStreakMessage);
 
         const reachedGoal = newLightningCount >= LIGHTNING_GOAL;
-        const isTenStreak = newLightningCount > 0 && newLightningCount % 10 === 0;
+        const earnedLightningThisAnswer = isCorrect && timeTaken <= 1.5;
+        const isTenStreak =
+          earnedLightningThisAnswer &&
+          newLightningCount > 0 &&
+          newLightningCount % 10 === 0 &&
+          !isTimerPaused;
+
 
         // ----- FINAL GOAL REACHED -----
         if (reachedGoal) {
