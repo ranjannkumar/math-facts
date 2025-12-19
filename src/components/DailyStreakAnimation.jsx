@@ -12,18 +12,13 @@ const ANIMATION_TIMINGS = {
 export default function DailyStreakAnimation({ streakCount }) {
     if (streakCount <= 0) return null;
 
-    const { handleDailyStreakNext,setPlayFactVideoAfterStreak } = useContext(MathGameContext);
+    const { handleDailyStreakNext } = useContext(MathGameContext);
     const [isExiting, setIsExiting] = useState(false);
 
     const handleNextClick = () => { 
-    setIsExiting(true);
-
-    setTimeout(() => {
-        handleDailyStreakNext();           // hide streak
-        setPlayFactVideoAfterStreak(true); // ▶️ trigger video
-    }, ANIMATION_TIMINGS.fadeOut);
-    };
-
+      setIsExiting(true); 
+      setTimeout(handleDailyStreakNext, ANIMATION_TIMINGS.fadeOut); 
+    }; 
 
     return (
         <AnimatePresence>

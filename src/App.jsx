@@ -105,7 +105,7 @@ const App = () => {
 
 
 
-        <Route element={<MainLayout hideStats={showSiblingCheck || ctx.hideStatsUI} />}> 
+        <Route element={<MainLayout hideStats={showSiblingCheck} />}> 
           <Route path="/levels" element={<TablePicker />} />
           <Route path="/belts" element={<DifficultyPicker />} />
           <Route path="/black" element={<BlackBeltPicker />} /> {/* ✅ BLACK ROUTE */}

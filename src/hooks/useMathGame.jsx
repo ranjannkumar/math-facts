@@ -35,10 +35,6 @@ const useMathGame = () => {
   const [selectedTable, setSelectedTable] = useState(null); // level (1..6)
   const [selectedDifficulty, setSelectedDifficulty] = useState(null); // belt or black-x
   const [quizRunId, setQuizRunId] = useState(null); //  Backend quiz run ID
-  const [playFactVideoAfterStreak, setPlayFactVideoAfterStreak] = useState(false);
-  const [hideStatsUI, setHideStatsUI] = useState(false);
-
-
 
   // Learning module/Practice state
   const [showLearningModule, setShowLearningModule] = useState(false);
@@ -1561,12 +1557,6 @@ const handleVideoSelection = useCallback((videoObject) => {
     selectedTable,
     sessionCorrectCount,
     setSessionCorrectCount,
-    playFactVideoAfterStreak,
-    setPlayFactVideoAfterStreak,
-    hideStatsUI,
-    setHideStatsUI,
-
-
 
 
   };
