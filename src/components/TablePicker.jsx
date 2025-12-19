@@ -86,10 +86,21 @@ function resolveThemeKey(preferredFromContext) {
   return keys[0];
 }
 
+const getFactVideoPath = (level) => {
+  // REQUIREMENT: "As of now use same video ie fact1.mp4 for each level"
+  // FUTURE LOGIC: When you add fact2.mp4, fact3.mp4, etc., 
+  // you can simply uncomment the dynamic line below:
+  // return `/fact${level}.mp4`; 
+  
+  return '/fact1.mp4'; 
+};
+
 /* ----------------- Component ----------------- */
 const TablePicker = () => {
   const navigate = useNavigate();
-  const { setSelectedTable, tableProgress, childName, selectedTheme } = useContext(MathGameContext);
+  const { setSelectedTable, tableProgress, childName, selectedTheme,showDailyStreakAnimation,  playFactVideoAfterStreak,
+  setPlayFactVideoAfterStreak,setHideStatsUI
+} = useContext(MathGameContext);
 
   // Resolve theme
   const themeKey = resolveThemeKey(selectedTheme);
@@ -112,6 +123,16 @@ const TablePicker = () => {
   // The effective level is always the highest unlocked one.
   const levelNumber = unlockedLevelsList[maxUnlockedIndex] || 1; // Default to Level 1
   const unlocked = !!levelNumber; 
+
+  const [showFactVideo, setShowFactVideo] = useState(false);
+  useEffect(() => {
+  if (playFactVideoAfterStreak && !showDailyStreakAnimation) {
+    setShowFactVideo(true);
+    setHideStatsUI(true);
+    setPlayFactVideoAfterStreak(false); 
+  }
+}, [playFactVideoAfterStreak, showDailyStreakAnimation]);
+
   
   // The rest of the state and handlers for navigation (goPrev/goNext) are removed.
   
@@ -140,6 +161,34 @@ const TablePicker = () => {
       navigate('/belts');
     }
   };
+
+  const factVideoSrc = getFactVideoPath(levelNumber);
+
+  if (showFactVideo && factVideoSrc && !showDailyStreakAnimation) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+        <video
+          src={factVideoSrc}
+          autoPlay
+          className="w-full h-full object-contain"
+          // When video ends, hide overlay -> reveals Level Page
+         onEnded={() => {
+            setShowFactVideo(false);
+            setHideStatsUI(false);   
+          }}
+          playsInline
+        />
+        <button
+            onClick={() => {
+              setShowFactVideo(false);
+              setHideStatsUI(false);
+            }}
+          >
+            Skip
+          </button>
+      </div>
+    );
+  }
 
    return (
     <div
