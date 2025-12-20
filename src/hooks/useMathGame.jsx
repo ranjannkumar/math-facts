@@ -69,6 +69,8 @@ const useMathGame = () => {
   const [shouldExitAfterVideo, setShouldExitAfterVideo] = useState(false);
   const [videoOptions, setVideoOptions] = useState(null); // { option1: number, option2: number }
   const [videoList, setVideoList] = useState([]);
+  const [nextGameModeRun, setNextGameModeRun] = useState(null);
+  const [isPrefetching, setIsPrefetching] = useState(false);
 
 
 
@@ -632,6 +634,36 @@ const handleVideoSelection = useCallback((videoObject) => {
   );
 
 
+
+// Helper to fetch the NEXT quiz run in the background
+  const prefetchNextGameModeRun = useCallback(async () => {
+    // If we already have a next run or are currently fetching, do nothing
+    if (nextGameModeRun || isPrefetching) return;
+    
+    // Retrieve settings (same logic as startNewGameModeQuizRun)
+    const table = selectedTable != null ? selectedTable : Number(localStorage.getItem("game-mode-table"));
+    const difficulty = selectedDifficulty || localStorage.getItem("game-mode-belt");
+
+    if (!childPin || !table || !difficulty) return;
+
+    setIsPrefetching(true);
+    try {
+      console.log("[GameMode] Background fetching next run...");
+      const { quizRunId } = await quizPrepare(table, difficulty, childPin);
+      const { questions } = await quizStart(quizRunId, childPin);
+      
+      if (questions && questions.length > 0) {
+        const mapped = questions.map(mapQuestionToFrontend);
+        // Store in reserve
+        setNextGameModeRun({ quizRunId, questions: mapped });
+      }
+    } catch (e) {
+      console.error("[GameMode] Background fetch failed:", e);
+    } finally {
+      setIsPrefetching(false);
+    }
+  }, [nextGameModeRun, isPrefetching, childPin, selectedTable, selectedDifficulty]);  
+
 // --- Helper: start a NEW 10-question quiz run for GAME MODE ---
 // Expected flow: Game Mode should NOT reuse the already failed/completed quizRunId.
 // We always create a fresh quiz run (10 Qs). When we finish those 10 Qs (and still
@@ -904,6 +936,10 @@ const enterGameModeAfterFailure = useCallback(
           );
         };
 
+        if (quizQuestions && currentQuestionIndex >= 6 && !nextGameModeRun && !isPrefetching) {
+             prefetchNextGameModeRun();
+        }
+
         // ----- FINAL GOAL REACHED -----
         if (reachedGoal) {
           try {
@@ -981,22 +1017,34 @@ const enterGameModeAfterFailure = useCallback(
           return;
         }
 
-        // ----- Continue Game Mode with next question -----
+       // ----- Continue Game Mode with next question -----
         if (quizQuestions && quizQuestions.length > 0) {
           const atEnd = currentQuestionIndex + 1 >= quizQuestions.length;
 
           setTimeout(async () => {
             try {
               if (!atEnd) {
+                // Normal next question
                 const nextIndex = currentQuestionIndex + 1;
-                const nextQuestion = quizQuestions[nextIndex];
-
                 setCurrentQuestionIndex(nextIndex);
-                setCurrentQuestion(nextQuestion);
+                setCurrentQuestion(quizQuestions[nextIndex]);
                 questionStartTimestamp.current = Date.now();
               } else {
-                // Finished this 10-question run → start a brand-new run so questions don't repeat
-                await startNewGameModeQuizRun();
+                // UPDATED: End of current set - Seamless Swap
+                if (nextGameModeRun) {
+                    console.log("[GameMode] Seamlessly swapping to pre-fetched run");
+                    setQuizRunId(nextGameModeRun.quizRunId);
+                    setQuizQuestions(nextGameModeRun.questions);
+                    setCurrentQuestionIndex(0);
+                    setCurrentQuestion(nextGameModeRun.questions[0]);
+                    questionStartTimestamp.current = Date.now();
+                    
+                    // Clear the buffer so we can fetch the NEXT one later
+                    setNextGameModeRun(null); 
+                } else {
+                    // Fallback: If background fetch failed or was too slow, fetch normally
+                    await startNewGameModeQuizRun();
+                }
               }
 
               setCurrentAnswerSymbol(null);
@@ -1008,9 +1056,7 @@ const enterGameModeAfterFailure = useCallback(
         } else {
           setIsAnimating(false);
         }
-
-return;
-
+        return;
       }
 
 
