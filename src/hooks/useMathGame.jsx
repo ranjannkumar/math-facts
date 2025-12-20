@@ -637,62 +637,69 @@ const handleVideoSelection = useCallback((videoObject) => {
 // We always create a fresh quiz run (10 Qs). When we finish those 10 Qs (and still
 // haven't hit 100 ⚡), we create another new quiz run, and so on.
 const startNewGameModeQuizRun = useCallback(async () => {
-  const table =
-    selectedTable != null
-      ? selectedTable
-      : (() => {
-          const v = localStorage.getItem("game-mode-table");
-          return v != null ? Number(v) : null;
-        })();
+    const table =
+      selectedTable != null
+        ? selectedTable
+        : (() => {
+            const v = localStorage.getItem("game-mode-table");
+            return v != null ? Number(v) : null;
+          })();
 
-  const difficulty =
-    selectedDifficulty || localStorage.getItem("game-mode-belt") || null;
+    const difficulty =
+      selectedDifficulty || localStorage.getItem("game-mode-belt") || null;
 
-  if (!childPin || table == null || !difficulty) {
-    console.warn("[GameMode] Missing childPin/table/difficulty – cannot start new Game Mode quiz run.", {
-      childPin,
-      table,
-      difficulty,
-    });
-    return;
-  }
+    // 🔥 FIX: Immediately clear previous quiz state to prevent old questions from showing
+    setQuizQuestions([]);
+    setCurrentQuestion(null);
+    setCurrentQuestionIndex(0);
+    setQuizRunId(null);
+    setIsGameMode(true); // Ensure we are in game mode state
 
-  try {
-    const { quizRunId: newRunId } = await quizPrepare(table, difficulty, childPin);
-    const { questions: backendQuestions } = await quizStart(newRunId, childPin);
-
-    if (!backendQuestions || backendQuestions.length === 0) {
-      throw new Error("No questions returned from quizStart for Game Mode.");
+    if (!childPin || table == null || !difficulty) {
+      console.warn("[GameMode] Missing childPin/table/difficulty – cannot start new Game Mode quiz run.", {
+        childPin,
+        table,
+        difficulty,
+      });
+      return;
     }
 
-    const mapped = backendQuestions.map(mapQuestionToFrontend);
+    try {
+      const { quizRunId: newRunId } = await quizPrepare(table, difficulty, childPin);
+      const { questions: backendQuestions } = await quizStart(newRunId, childPin);
 
-    setQuizRunId(newRunId);
-    setQuizQuestions(mapped);
-    setCurrentQuestionIndex(0);
-    setCurrentQuestion(mapped[0]);
-    questionStartTimestamp.current = Date.now();
+      if (!backendQuestions || backendQuestions.length === 0) {
+        throw new Error("No questions returned from quizStart for Game Mode.");
+      }
 
-    // Ensure we are in main Game Mode (not practice) after a new run starts
-    setIsGameModePractice(false);
-    setInterventionQuestion(null);
-    setGameModeInterventionIndex(null);
-  } catch (e) {
-    console.error("[GameMode] Failed to start new Game Mode quiz run:", e);
-    // Defensive: keep existing question on screen so UI flow doesn't break
-  }
-}, [
-  childPin,
-  selectedTable,
-  selectedDifficulty,
-  setQuizRunId,
-  setQuizQuestions,
-  setCurrentQuestionIndex,
-  setCurrentQuestion,
-  setIsGameModePractice,
-  setInterventionQuestion,
-  setGameModeInterventionIndex,
-]);
+      const mapped = backendQuestions.map(mapQuestionToFrontend);
+
+      setQuizRunId(newRunId);
+      setQuizQuestions(mapped);
+      setCurrentQuestionIndex(0);
+      setCurrentQuestion(mapped[0]);
+      questionStartTimestamp.current = Date.now();
+
+      // Ensure we are in main Game Mode (not practice) after a new run starts
+      setIsGameModePractice(false);
+      setInterventionQuestion(null);
+      setGameModeInterventionIndex(null);
+    } catch (e) {
+      console.error("[GameMode] Failed to start new Game Mode quiz run:", e);
+    }
+  }, [
+    childPin,
+    selectedTable,
+    selectedDifficulty,
+    setQuizRunId,
+    setQuizQuestions,
+    setCurrentQuestionIndex,
+    setCurrentQuestion,
+    setIsGameModePractice,
+    setInterventionQuestion,
+    setGameModeInterventionIndex,
+    setIsGameMode
+  ]);
 
 // --- Helper: enter GAME MODE after a failed belt ---
 const enterGameModeAfterFailure = useCallback(

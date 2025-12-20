@@ -17,6 +17,7 @@ const WayToGoScreen = () => {
         setSelectedTable,
         isQuizStarting,
         showWayToGoAfterFailure,
+        startNewGameModeQuizRun,
 
     } = useContext(MathGameContext);
 
@@ -53,6 +54,7 @@ const WayToGoScreen = () => {
                 if (showWayToGoAfterFailure) {
                     localStorage.setItem('game-mode-belt', selectedDifficulty);
                     localStorage.setItem('game-mode-table', String(selectedTable));
+                     startNewGameModeQuizRun();
                      navigate('/game-mode-video', { replace: true }); 
                     return;
                 }
@@ -70,7 +72,7 @@ const WayToGoScreen = () => {
             if (intervalId) clearInterval(intervalId);
         };
     // Re-run the effect when countdown changes (to trigger the final action at 0)
-    }, [countdown, navigate, selectedDifficulty, selectedTable, startQuizWithDifficulty]);
+    }, [countdown, navigate, selectedDifficulty, selectedTable, startQuizWithDifficulty,startNewGameModeQuizRun,]);
     
     const handleBackToBelts = () => {
         hasRestarted.current = true;
