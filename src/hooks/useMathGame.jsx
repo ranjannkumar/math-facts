@@ -35,6 +35,8 @@ const useMathGame = () => {
   const [selectedTable, setSelectedTable] = useState(null); // level (1..6)
   const [selectedDifficulty, setSelectedDifficulty] = useState(null); // belt or black-x
   const [quizRunId, setQuizRunId] = useState(null); //  Backend quiz run ID
+  const [playFactVideoAfterStreak, setPlayFactVideoAfterStreak] = useState(false);
+  const [hideStatsUI, setHideStatsUI] = useState(false);
 
   // Learning module/Practice state
   const [showLearningModule, setShowLearningModule] = useState(false);
@@ -630,27 +632,97 @@ const handleVideoSelection = useCallback((videoObject) => {
   );
 
 
-    // --- Helper: enter GAME MODE after a failed belt ---
-  const enterGameModeAfterFailure = useCallback((backendOut) => {
+// --- Helper: start a NEW 10-question quiz run for GAME MODE ---
+// Expected flow: Game Mode should NOT reuse the already failed/completed quizRunId.
+// We always create a fresh quiz run (10 Qs). When we finish those 10 Qs (and still
+// haven't hit 100 ⚡), we create another new quiz run, and so on.
+const startNewGameModeQuizRun = useCallback(async () => {
+  const table =
+    selectedTable != null
+      ? selectedTable
+      : (() => {
+          const v = localStorage.getItem("game-mode-table");
+          return v != null ? Number(v) : null;
+        })();
+
+  const difficulty =
+    selectedDifficulty || localStorage.getItem("game-mode-belt") || null;
+
+  if (!childPin || table == null || !difficulty) {
+    console.warn("[GameMode] Missing childPin/table/difficulty – cannot start new Game Mode quiz run.", {
+      childPin,
+      table,
+      difficulty,
+    });
+    return;
+  }
+
+  try {
+    const { quizRunId: newRunId } = await quizPrepare(table, difficulty, childPin);
+    const { questions: backendQuestions } = await quizStart(newRunId, childPin);
+
+    if (!backendQuestions || backendQuestions.length === 0) {
+      throw new Error("No questions returned from quizStart for Game Mode.");
+    }
+
+    const mapped = backendQuestions.map(mapQuestionToFrontend);
+
+    setQuizRunId(newRunId);
+    setQuizQuestions(mapped);
+    setCurrentQuestionIndex(0);
+    setCurrentQuestion(mapped[0]);
+    questionStartTimestamp.current = Date.now();
+
+    // Ensure we are in main Game Mode (not practice) after a new run starts
+    setIsGameModePractice(false);
+    setInterventionQuestion(null);
+    setGameModeInterventionIndex(null);
+  } catch (e) {
+    console.error("[GameMode] Failed to start new Game Mode quiz run:", e);
+    // Defensive: keep existing question on screen so UI flow doesn't break
+  }
+}, [
+  childPin,
+  selectedTable,
+  selectedDifficulty,
+  setQuizRunId,
+  setQuizQuestions,
+  setCurrentQuestionIndex,
+  setCurrentQuestion,
+  setIsGameModePractice,
+  setInterventionQuestion,
+  setGameModeInterventionIndex,
+]);
+
+// --- Helper: enter GAME MODE after a failed belt ---
+const enterGameModeAfterFailure = useCallback(
+  (backendOut) => {
     // Persist belt & table so GameModeExit can restart the same quiz
     if (selectedDifficulty && selectedTable != null) {
-      localStorage.setItem('game-mode-belt', selectedDifficulty);
-      localStorage.setItem('game-mode-table', String(selectedTable));
+      localStorage.setItem("game-mode-belt", selectedDifficulty);
+      localStorage.setItem("game-mode-table", String(selectedTable));
     }
 
     // Update daily stats/progress from backend response so UI stays consistent
     if (backendOut?.dailyStats) {
       const stats = backendOut.dailyStats;
-      if (typeof stats.correctCount === 'number') setCorrectCount(stats.correctCount);
-      if (typeof stats.totalActiveMs === 'number') setDailyTotalMs(stats.totalActiveMs);
-      if (typeof stats.grandTotal === 'number') setGrandTotalCorrect(stats.grandTotal);
-      if (typeof stats.currentStreak === 'number') setCurrentStreak(stats.currentStreak);
+      if (typeof stats.correctCount === "number") setCorrectCount(stats.correctCount);
+      if (typeof stats.totalActiveMs === "number") setDailyTotalMs(stats.totalActiveMs);
+      if (typeof stats.grandTotal === "number") setGrandTotalCorrect(stats.grandTotal);
+      if (typeof stats.currentStreak === "number") setCurrentStreak(stats.currentStreak);
     }
     if (backendOut?.updatedProgress) {
       setTableProgress(backendOut.updatedProgress);
     }
 
-    // Switch to GAME MODE using the same cached questions
+    // Switch to GAME MODE
+    // 🔥 HARD RESET quiz state FIRST (before Game Mode becomes active)
+    setQuizQuestions([]);
+    setCurrentQuestion(null);
+    setCurrentQuestionIndex(0);
+    setQuizRunId(null);
+
+    // Switch to GAME MODE
     setIsGameMode(true);
     setLightningCount(0);
     setCurrentQuizStreak(0);
@@ -659,34 +731,32 @@ const handleVideoSelection = useCallback((videoObject) => {
     setShowResult(false);
     setQuizProgress(0);
 
-    // Stop quiz/inactivity logic
-    setQuizRunId(null);
-
-    if (quizQuestions && quizQuestions.length > 0) {
-      setCurrentQuestionIndex(0);
-      setCurrentQuestion(quizQuestions[0]);
-      questionStartTimestamp.current = Date.now();
-    }
-
-    // Stop the official quiz timer – Game Mode has no score screen
+    // Stop timers
     setQuizStartTime(null);
     setElapsedTime(0);
     setPausedTime(0);
     setIsTimerPaused(false);
 
-    // Show GAME MODE animation first
-    navigate('/game-mode-intro', { replace: true });
-  }, [
+    // Start NEW Game Mode quiz (async)
+    void startNewGameModeQuizRun();
+
+    // Navigate to intro
+    navigate("/game-mode-intro", { replace: true });
+
+  },
+  [
     selectedDifficulty,
     selectedTable,
-    quizQuestions,
     navigate,
     setTableProgress,
     setCorrectCount,
     setDailyTotalMs,
     setGrandTotalCorrect,
     setCurrentStreak,
-  ]);
+    startNewGameModeQuizRun,
+  ]
+);
+
 
 
   // 3. Answer
@@ -697,10 +767,13 @@ const handleVideoSelection = useCallback((videoObject) => {
         showResult ||
         isTimerPaused ||
         !currentQuestion ||
-        (!quizRunId && !isGameMode)
+        // 🔥 BLOCK Game Mode answers until a fresh quizRunId exists
+        (isGameMode && !quizRunId) ||
+        (!isGameMode && !quizRunId)
       ) {
         return;
       }
+
 
       setIsAnimating(true);
       setTransientStreakMessage(null);
@@ -793,27 +866,62 @@ const handleVideoSelection = useCallback((videoObject) => {
           newLightningCount > 0 &&
           newLightningCount % 10 === 0 &&
           !isTimerPaused;
+       
+        // Send this answer to the backend for the ACTIVE Game Mode quiz run.
+      // (Fixes bug where ForcePass was being sent with an already failed/completed quizRunId.)
+        const submitToBackend = async (forcePass) => {
+          if (!quizRunId || !childPin) return null;
 
+          // quizSubmitAnswer signature in this codebase supports an optional last param: forcePass:boolean
+          if (forcePass) {
+            return quizSubmitAnswer(
+              quizRunId,
+              currentQuestion.id,
+              selectedAnswer,
+              responseMs,
+              selectedTable,
+              selectedDifficulty,
+              childPin,
+              true
+            );
+          }
+
+          return quizSubmitAnswer(
+            quizRunId,
+            currentQuestion.id,
+            selectedAnswer,
+            responseMs,
+            selectedTable,
+            selectedDifficulty,
+            childPin
+          );
+        };
 
         // ----- FINAL GOAL REACHED -----
         if (reachedGoal) {
-          // Send the final answer with forcePass = true
           try {
-            if (quizRunId && childPin) {
-              await quizSubmitAnswer(
-                quizRunId,
-                currentQuestion.id,
-                selectedAnswer,
-                responseMs,
-                selectedTable,
-                selectedDifficulty,
-                childPin,
-                true // forcePass
-              );
+            const out = await submitToBackend(true);
+
+            // 🔥 CRITICAL FIX: apply backend progress immediately
+            if (out?.updatedProgress) {
+              setTableProgress(out.updatedProgress);
+            }
+
+            if (out?.dailyStats) {
+              setCorrectCount(out.dailyStats.correctCount);
+              setDailyTotalMs(out.dailyStats.totalActiveMs);
+              if (out.dailyStats.grandTotal !== undefined) {
+                setGrandTotalCorrect(out.dailyStats.grandTotal);
+              }
+              if (out.dailyStats.currentStreak !== undefined) {
+                setCurrentStreak(out.dailyStats.currentStreak);
+              }
             }
           } catch (e) {
-            console.error('Failed to send forcePass answer in Game Mode:', e);
+            console.error("Failed to send forcePass answer in Game Mode:", e);
           }
+
+
 
           // CASE A: goal reached exactly on a 10-bolt streak → show final video then exit
           if (isTenStreak) {
@@ -842,6 +950,10 @@ const handleVideoSelection = useCallback((videoObject) => {
           return;
         }
 
+        submitToBackend(false).catch((e) => {
+          console.error("[GameMode] Failed to submit answer:", e);
+        });
+
         // ----- NOT FINAL YET: normal 10-streak reward video -----
         if (isTenStreak) {
           setIsTimerPaused(true);
@@ -864,22 +976,34 @@ const handleVideoSelection = useCallback((videoObject) => {
 
         // ----- Continue Game Mode with next question -----
         if (quizQuestions && quizQuestions.length > 0) {
-          const nextIndex = (currentQuestionIndex + 1) % quizQuestions.length;
-          const nextQuestion = quizQuestions[nextIndex];
+          const atEnd = currentQuestionIndex + 1 >= quizQuestions.length;
 
-          setTimeout(() => {
-            setCurrentQuestionIndex(nextIndex);
-            setCurrentQuestion(nextQuestion);
-            questionStartTimestamp.current = Date.now();
-            setCurrentAnswerSymbol(null);
-            if (triggerStreakMessage) setTransientStreakMessage(null);
-            setIsAnimating(false);
+          setTimeout(async () => {
+            try {
+              if (!atEnd) {
+                const nextIndex = currentQuestionIndex + 1;
+                const nextQuestion = quizQuestions[nextIndex];
+
+                setCurrentQuestionIndex(nextIndex);
+                setCurrentQuestion(nextQuestion);
+                questionStartTimestamp.current = Date.now();
+              } else {
+                // Finished this 10-question run → start a brand-new run so questions don't repeat
+                await startNewGameModeQuizRun();
+              }
+
+              setCurrentAnswerSymbol(null);
+              if (triggerStreakMessage) setTransientStreakMessage(null);
+            } finally {
+              setIsAnimating(false);
+            }
           }, 400);
         } else {
           setIsAnimating(false);
         }
 
-        return;
+return;
+
       }
 
 
@@ -1235,7 +1359,12 @@ const handleVideoSelection = useCallback((videoObject) => {
     // }
 
     // Check if we are in normal quiz (quizRunId) or Game Mode
-    const isActiveScreen = (!!quizRunId || isGameMode) && !!currentQuestion && !isTimerPaused && !showResult;
+   const isActiveScreen =
+      !!quizRunId &&
+      !!currentQuestion &&
+      !isTimerPaused &&
+      !showResult;
+
     
     if (!isActiveScreen) {
       if (inactivityTimeoutId.current) {
@@ -1478,6 +1607,7 @@ const handleVideoSelection = useCallback((videoObject) => {
     videoOptions,
     handleVideoSelection,
     videoList,
+    startNewGameModeQuizRun,
 
     // UI & Progress
     isAnimating, setIsAnimating,
@@ -1557,6 +1687,12 @@ const handleVideoSelection = useCallback((videoObject) => {
     selectedTable,
     sessionCorrectCount,
     setSessionCorrectCount,
+    playFactVideoAfterStreak,
+    setPlayFactVideoAfterStreak,
+    hideStatsUI,
+    setHideStatsUI,
+
+
 
 
   };
