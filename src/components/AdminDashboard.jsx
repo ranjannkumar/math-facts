@@ -143,11 +143,10 @@ const AdminDashboard = () => {
     setOffset(prev => prev + limit);
   };
 
-  // NEW: Handler for viewing a specific user's detailed stats
-  const handleViewStats = (pin, name) => { // [!code ++]
-    // Encode the name for the URL as it might contain spaces or special chars // [!code ++]
-    navigate(`/admin/user-stats/${pin}/${encodeURIComponent(name)}`); // [!code ++]
-  }; // [!code ++]
+  const handleViewStats = (pin) => {
+  navigate(`/admin/students/${pin}/analytics`);
+};
+
 
   const sortedStats = [...stats].sort((a, b) => {
     return b.grandTotalCorrect - a.grandTotalCorrect;
@@ -193,12 +192,12 @@ const AdminDashboard = () => {
           Student Stats
         </h1>
         <div className="flex space-x-2">
-          <button
+          {/* <button
             onClick={handleRefresh}
             className="bg-green-600/90 hover:bg-green-700/90 text-white font-semibold py-2 px-4 rounded-xl shadow transition"
           >
             Refresh
-          </button>
+          </button> */}
           <button
             onClick={handleLogout}
             className="bg-red-600/90 hover:bg-red-700/90 text-white font-semibold py-2 px-4 rounded-xl shadow transition flex items-center"
@@ -249,7 +248,7 @@ const AdminDashboard = () => {
                     <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-semibold">
                       {/* WRAP NAME AND PIN IN A BUTTON FOR CLICKABILITY */}
                       <button 
-                        onClick={() => handleViewStats(student.pin, student.name)} // [!code ++]
+                        onClick={() => handleViewStats(student.pin)} // [!code ++]
                         className="text-blue-300 hover:text-blue-500 transition duration-150 ease-in-out underline text-left" // [!code ++]
                         title={`View question stats for ${student.name}`} 
                       >

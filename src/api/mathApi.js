@@ -29,7 +29,10 @@ async function callApi(endpoint, method = 'GET', body = null, pin = null) {
   const data = response.status !== 204 ? await response.json() : {};
 
   if (!response.ok) {
-    throw new Error(data.error?.message || `API call failed: ${response.statusText}`);
+    throw new Error(
+  data?.error?.message || data?.error || `API call failed: ${response.status} ${response.statusText}`
+);
+
   }
 
   return data;
@@ -246,4 +249,58 @@ export const getUserQuestionStats = async (adminPin, userPin) => {
 export const getAdminStats = async (adminPin, limit = 10, offset = 0) => {
   return callApi(`/admin/today-stats?limit=${limit}&offset=${offset}`, 'GET', null, adminPin);
 };
+
+
+// Analytics API (NEW)
+
+export const analyticsGetSummary = async (pin) => {
+  // GET /api/analytics/summary (x-pin required)
+  return callApi(`/analytics/summary`, "GET", null, pin);
+};
+
+export const analyticsGetFacts = async (
+  pin,
+  { level = "all", operation = "all", limit = 50, offset = 0 } = {}
+) => {
+  // GET /api/analytics/facts?level=1&operation=add&limit=50&offset=0
+  const params = new URLSearchParams();
+  if (level !== "all" && level !== "" && level != null) params.set("level", String(level));
+  if (operation !== "all" && operation !== "" && operation != null) params.set("operation", String(operation));
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+
+  return callApi(`/analytics/facts?${params.toString()}`, "GET", null, pin);
+};
+
+export const analyticsGetFactDetail = async (
+  pin,
+  { operation, a, b, limit = 20 } = {}
+) => {
+  // GET /api/analytics/facts/{operation}/{a}/{b}?limit=20
+  if (!operation || a == null || b == null) {
+    throw new Error("Missing fact identifiers (operation, a, b)");
+  }
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+
+  return callApi(
+    `/analytics/facts/${encodeURIComponent(operation)}/${encodeURIComponent(a)}/${encodeURIComponent(b)}?${params.toString()}`,
+    "GET",
+    null,
+    pin
+  );
+};
+
+export const analyticsGetStruggling = async (
+  pin,
+  { level = "all", limit = 10 } = {}
+) => {
+  // GET /api/analytics/struggling?level=1&limit=10
+  const params = new URLSearchParams();
+  if (level !== "all" && level !== "" && level != null) params.set("level", String(level));
+  params.set("limit", String(limit));
+
+  return callApi(`/analytics/struggling?${params.toString()}`, "GET", null, pin);
+};
+
 
