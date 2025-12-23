@@ -811,6 +811,17 @@ if (!isCorrect) {
 
     // If backend completed the run, exit after optional final milestone video
     if (out?.completed) {
+      if (out?.updatedProgress) {
+        setTableProgress(out.updatedProgress);
+      }
+
+      if (out?.dailyStats) {
+        setCorrectCount(out.dailyStats.correctCount);
+        setDailyTotalMs(out.dailyStats.totalActiveMs);
+        if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
+        if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
+      }
+      
       if (reachedNewMilestone) {
         setShouldExitAfterVideo(true);
         setIsTimerPaused(true);
