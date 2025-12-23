@@ -48,33 +48,47 @@ export const userUpdateTheme = async (themeKey, pin) => {
 
 // FIX: Ensure quizPrepare receives and passes the pin parameter.
 // The useMathGame hook already calls this correctly with the pin.
-export const quizPrepare = async (level, beltOrDegree, pin, operation = 'add') => { 
-  return callApi('/quiz/prepare', 'POST', { level, beltOrDegree, operation }, pin);
+export const quizPrepare = async (
+  level,
+  beltOrDegree,
+  pin,
+  operation = 'add',
+  gameMode = false,
+  targetCorrect = 100
+) => {
+  const body = { level, beltOrDegree, operation };
+
+  if (gameMode) {
+    body.gameMode = true;
+    body.targetCorrect = targetCorrect;
+  }
+
+  return callApi('/quiz/prepare', 'POST', body, pin);
 };
+
+export const quizHandleInactivity = async (quizRunId, pin) => {
+  return callApi('/quiz/inactivity', 'POST', { quizRunId }, pin);
+};
+
+export const quizSubmitAnswer = async (
+  quizRunId,
+  questionId,
+  answer,
+  responseMs,
+  pin,
+  { level, beltOrDegree, forcePass = false } = {}
+) => {
+  const body = { quizRunId, questionId, answer, responseMs };
+  if (level !== undefined) body.level = level;
+  if (beltOrDegree !== undefined) body.beltOrDegree = beltOrDegree;
+  if (forcePass) body.forcePass = true;
+
+  return callApi('/quiz/answer', 'POST', body, pin);
+};
+
 
 export const quizStart = async (quizRunId, pin) => {
   return callApi('/quiz/start', 'POST', { quizRunId }, pin);
-};
-
-export const quizSubmitAnswer = async (quizRunId, questionId, answer, responseMs, level, beltOrDegree, pin,forcePass = false) => {
-  const body = {
-    quizRunId,
-    questionId,
-    answer,
-    responseMs,
-    level,
-    beltOrDegree,
-  };
-
-  // For Game Mode completion: tell backend to end quiz successfully
-  if (forcePass) {
-    body.forcePass = 'true'; 
-  }
-   return callApi('/quiz/answer', 'POST', body, pin);
-};
-
-export const quizHandleInactivity = async (quizRunId, questionId, pin) => {
-  return callApi('/quiz/inactivity', 'POST', { quizRunId, questionId }, pin);
 };
 
 export const quizPracticeAnswer = async (quizRunId, questionId, answer, pin) => {

@@ -4,20 +4,18 @@ import { MathGameContext } from '../App.jsx';
 
 const GameModeIntroScreen = () => {
   const navigate = useNavigate();
-  const { setIsGameMode, setLightningCount } = useContext(MathGameContext);
+  const { setIsGameMode } = useContext(MathGameContext);
 
   useEffect(() => {
-    // Reset counter and set mode state
-    setLightningCount(0);
-    setIsGameMode(true); 
+  setIsGameMode(true); 
 
-    // Auto-navigate to the game screen after a short animation delay
-    const timer = setTimeout(() => {
-      navigate('/game-mode', { replace: true });
-    }, 2500); // 2.5 seconds for animation
+  const timer = setTimeout(() => {
+    navigate('/game-mode', { replace: true });
+  }, 2500);
 
-    return () => clearTimeout(timer);
-  }, [navigate, setIsGameMode, setLightningCount]);
+  return () => clearTimeout(timer);
+}, [navigate, setIsGameMode]);
+
 
   return (
     <div className="fixed inset-0 z-[100] bg-gray-900 flex flex-col items-center justify-center animate-fade-in-up">

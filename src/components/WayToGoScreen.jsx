@@ -17,9 +17,18 @@ const WayToGoScreen = () => {
         setSelectedTable,
         isQuizStarting,
         showWayToGoAfterFailure,
-        startNewGameModeQuizRun,
+        startOrResumeGameModeRun,
 
     } = useContext(MathGameContext);
+
+    const AUTO_NAV_KEY = 'math-waytogo-auto-nav-once';
+
+    useEffect(() => {
+  // clear stale guard when user arrives fresh to this screen
+  sessionStorage.removeItem(AUTO_NAV_KEY);
+}, []);
+
+
 
     const [displaySessionScore] = useState(sessionCorrectCount); 
 
@@ -46,24 +55,31 @@ const WayToGoScreen = () => {
                 setCountdown((prev) => prev - 1);
             }, 1000);
         } else if (countdown === 0) {
-            
-             if (hasRestarted.current) return;
-                hasRestarted.current = true;
+            if (hasRestarted.current) return;
+
+            // StrictMode-safe: prevent double auto-nav in dev
+            if (sessionStorage.getItem(AUTO_NAV_KEY) === '1') return;
+            sessionStorage.setItem(AUTO_NAV_KEY, '1');
+
+            hasRestarted.current = true;
 
                 // If this was a failed quiz → go to GAME MODE intro
                 if (showWayToGoAfterFailure) {
                     localStorage.setItem('game-mode-belt', selectedDifficulty);
                     localStorage.setItem('game-mode-table', String(selectedTable));
-                     startNewGameModeQuizRun();
+                     startOrResumeGameModeRun({ navigateToGameMode: false });
                      navigate('/game-mode-video', { replace: true }); 
                     return;
                 }
 
                 // Otherwise → normal belt retry flow
                 localStorage.removeItem('math-last-quiz-duration');
+                sessionStorage.removeItem(AUTO_NAV_KEY);
                 if (selectedTable && selectedDifficulty) {
                     startQuizWithDifficulty(selectedDifficulty, selectedTable);
                 } else {
+                    sessionStorage.removeItem(AUTO_NAV_KEY);
+
                     navigate('/belts');
                 }
         }
@@ -72,7 +88,7 @@ const WayToGoScreen = () => {
             if (intervalId) clearInterval(intervalId);
         };
     // Re-run the effect when countdown changes (to trigger the final action at 0)
-    }, [countdown, navigate, selectedDifficulty, selectedTable, startQuizWithDifficulty,startNewGameModeQuizRun,]);
+    }, [countdown, navigate, selectedDifficulty, selectedTable, startQuizWithDifficulty, startOrResumeGameModeRun]);
     
     const handleBackToBelts = () => {
         hasRestarted.current = true;

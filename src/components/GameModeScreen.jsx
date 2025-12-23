@@ -1,30 +1,51 @@
 import React, { useRef, useEffect, useContext, useState } from 'react';
 import { MathGameContext } from '../App.jsx';
 import { motion, AnimatePresence } from "framer-motion";
+import { FaCog } from "react-icons/fa";
+import SettingsModal from "./SettingsModal.jsx";
 
 const GameModeScreen = () => {
+
   const {
-    currentQuestion,
-    handleAnswer,
-    isAnimating,
-    isTimerPaused,
-    transientStreakMessage,
-    lightningCount,
-    currentAnswerSymbol,
-    LIGHTNING_GOAL,
-  } = useContext(MathGameContext);
+  currentQuestion,
+  handleAnswer,
+  isAnimating,
+  isTimerPaused,
+  transientStreakMessage,
+  lightningCount,
+  currentAnswerSymbol,
+  setCurrentAnswerSymbol,
+  questionStartTimestamp,
+  LIGHTNING_GOAL,
+  showSettings,
+  setShowSettings,
+  handleQuit,
+  handleResetProgress,
+} = useContext(MathGameContext);
+
 
   const answerRefs = useRef([]);
   const lastClickRef = useRef({ qid: null, t: 0 });
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
 
   useEffect(() => {
-    if (currentQuestion) {
-      answerRefs.current = currentQuestion.answers.map((_, i) => answerRefs.current[i] || React.createRef());
-      setIsAnswerSubmitted(false);
-      lastClickRef.current = { qid: currentQuestion.id, t: 0 };
+  if (currentQuestion) {
+    answerRefs.current = currentQuestion.answers.map(
+      (_, i) => answerRefs.current[i] || React.createRef()
+    );
+    setIsAnswerSubmitted(false);
+    lastClickRef.current = { qid: currentQuestion.id, t: 0 };
+
+    // DO NOT clear symbol here
+    // Symbol must persist until next answer
+
+    if (questionStartTimestamp?.current) {
+      questionStartTimestamp.current = Date.now();
     }
-  }, [currentQuestion]);
+  }
+}, [currentQuestion]);
+
+
 
   const handleAnswerClick = (answer) => {
     if (isAnswerSubmitted || isAnimating || isTimerPaused || !currentQuestion ) return;
@@ -61,6 +82,21 @@ const GameModeScreen = () => {
       }}
     >
       <div className="w-full min-h-screen flex flex-col items-center justify-center relative">
+
+        {/* --- TOP RIGHT SETTINGS / QUIT BUTTON --- */}
+        <div
+          className="absolute top-3 right-3 z-50"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <button
+            onClick={() => setShowSettings(true)}
+            aria-label="Game Mode Settings"
+            className="bg-black/30 hover:bg-black/40 text-white rounded-full p-2 backdrop-blur-sm shadow-md"
+          >
+            <FaCog size={22} />
+          </button>
+        </div>
+
         
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6">
           
@@ -162,6 +198,15 @@ const GameModeScreen = () => {
             </div>
           </div>
         </div>
+        {/* --- SETTINGS / QUIT MODAL --- */}
+          {showSettings && (
+            <SettingsModal
+              handleQuit={handleQuit}
+              handleResetProgress={handleResetProgress}
+              setShowSettings={setShowSettings}
+            />
+          )}
+
       </div>
     </div>
   );
