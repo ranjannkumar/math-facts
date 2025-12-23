@@ -4,17 +4,23 @@ import { MathGameContext } from '../App.jsx';
 
 const GameModeIntroScreen = () => {
   const navigate = useNavigate();
-  const { setIsGameMode } = useContext(MathGameContext);
-
+  const { setIsGameMode, startOrResumeGameModeRun } =
+  useContext(MathGameContext);
   useEffect(() => {
-  setIsGameMode(true); 
+    // 1️⃣ Mark UI as Game Mode
+    setIsGameMode(true);
 
-  const timer = setTimeout(() => {
-    navigate('/game-mode', { replace: true });
-  }, 2500);
+    // 2️⃣ START / RESUME GAME MODE RUN (ONLY PLACE THIS SHOULD HAPPEN)
+    startOrResumeGameModeRun({ navigateToGameMode: false });
 
-  return () => clearTimeout(timer);
-}, [navigate, setIsGameMode]);
+    // 3️⃣ Show intro animation, then go to quiz screen
+    const timer = setTimeout(() => {
+      navigate('/game-mode', { replace: true });
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [navigate, setIsGameMode, startOrResumeGameModeRun]);
+
 
 
   return (

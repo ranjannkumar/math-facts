@@ -21,7 +21,12 @@ const GameModeScreen = () => {
   setShowSettings,
   handleQuit,
   handleResetProgress,
+  setIsTimerPaused,
 } = useContext(MathGameContext);
+
+useEffect(() => {
+    setIsTimerPaused(false);
+  }, [setIsTimerPaused]);
 
 
   const answerRefs = useRef([]);

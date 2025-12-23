@@ -1001,6 +1001,7 @@ if (!isCorrect) {
               'math-last-quiz-duration',
               Math.round((out.summary?.totalActiveMs || 0) / 1000)
             );
+            setIsTimerPaused(true);
 
             setShowWayToGoAfterFailure(true);
             navigate('/way-to-go');
@@ -1180,6 +1181,7 @@ if (!isCorrect) {
             'math-last-quiz-duration',
             Math.round((out.summary?.totalActiveMs || 0) / 1000)
           );
+          setIsTimerPaused(true);
 
           setIsAwaitingInactivityResponse(false);
           navigate('/way-to-go');
