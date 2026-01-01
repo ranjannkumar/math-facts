@@ -24,11 +24,13 @@ const QuizScreen = () => {
   
   const lastClickRef = useRef({ qid: null, t: 0 });
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [typedInput, setTypedInput] = useState('');
 
   useEffect(() => {
     if (currentQuestion) {
       answerRefs.current = currentQuestion.answers.map((_, i) => answerRefs.current[i] || React.createRef());
       setIsAnswerSubmitted(false);
+      setTypedInput('');
       lastClickRef.current = { qid: currentQuestion.id, t: 0 };
     }
   }, [currentQuestion]);
@@ -64,6 +66,25 @@ const QuizScreen = () => {
       : selectedDifficulty && selectedDifficulty.startsWith('black')
       ? 20
       : 10;
+
+  const isBlackDegree7 = selectedDifficulty && selectedDifficulty.startsWith('black-7');
+
+  const handleDigitPress = (digit) => {
+    if (isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion || isAwaitingInactivityResponse) return;
+    setTypedInput((prev) => (prev.length < 3 ? prev + String(digit) : prev));
+  };
+
+  const handleClear = () => {
+    if (isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion || isAwaitingInactivityResponse) return;
+    setTypedInput('');
+  };
+
+  const handleSubmitTyped = () => {
+    if (!typedInput || isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion || isAwaitingInactivityResponse) return;
+    const numericAnswer = Number(typedInput);
+    if (!Number.isFinite(numericAnswer)) return;
+    handleAnswerClick(numericAnswer);
+  };
 
   return (
     <div
@@ -151,41 +172,91 @@ const QuizScreen = () => {
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 md:gap-3 w-full">
-              {(currentQuestion?.answers || [1, 2, 3, 4]).map((answer, index) => (
-                <button
-                  key={index}
-                  ref={answerRefs.current[index]}
-                  onClick={() => handleAnswerClick(answer)}
-                  disabled={isAnimating || !currentQuestion || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
-                  className={
-                    [
-                      // Base look
-                      'w-full bg-gray-200/80 border-gray-300/80 backdrop-blur-sm rounded-lg sm:rounded-xl',
-                      'p-3 sm:p-4 md:p-6 border-2',
-                      // Freeze visuals completely
-                      'transition-none select-none',
-                      // Keep identical look even when disabled
-                      'disabled:bg-gray-200/80 disabled:opacity-100 disabled:cursor-default disabled:shadow-none',
-                      // Remove focus/active visual artifacts
-                      'focus:outline-none focus:ring-0 active:outline-none active:ring-0'
-                    ].join(' ')
-                  }
-                  style={{
-                    WebkitTapHighlightColor: 'transparent' // prevent mobile tap highlight
-                  }}
-                  // Prevents some browsers from applying :active styles visually
-                  onMouseDown={(e) => e.preventDefault()}
-                >
-                  <div
-                    className="text-xl sm:text-2xl md:text-3xl font-baloo text-gray-800 drop-shadow-md"
-                    style={{ fontFamily: 'Baloo 2, Comic Neue, cursive', letterSpacing: 2 }}
+            {!isBlackDegree7 && (
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2 md:gap-3 w-full">
+                {(currentQuestion?.answers || [1, 2, 3, 4]).map((answer, index) => (
+                  <button
+                    key={index}
+                    ref={answerRefs.current[index]}
+                    onClick={() => handleAnswerClick(answer)}
+                    disabled={isAnimating || !currentQuestion || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
+                    className={
+                      [
+                        'w-full bg-gray-200/80 border-gray-300/80 backdrop-blur-sm rounded-lg sm:rounded-xl',
+                        'p-3 sm:p-4 md:p-6 border-2',
+                        'transition-none select-none',
+                        'disabled:bg-gray-200/80 disabled:opacity-100 disabled:cursor-default disabled:shadow-none',
+                        'focus:outline-none focus:ring-0 active:outline-none active:ring-0'
+                      ].join(' ')
+                    }
+                    style={{
+                      WebkitTapHighlightColor: 'transparent'
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
                   >
-                    {answer}
+                    <div
+                      className="text-xl sm:text-2xl md:text-3xl font-baloo text-gray-800 drop-shadow-md"
+                      style={{ fontFamily: 'Baloo 2, Comic Neue, cursive', letterSpacing: 2 }}
+                    >
+                      {answer}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {isBlackDegree7 && (
+              <div className="flex flex-col items-center gap-4 sm:gap-5">
+                <div className="w-full max-w-sm">
+                  <div
+                    className="w-full bg-white border-4 border-green-400 rounded-2xl h-20 sm:h-24 flex items-center justify-center text-3xl sm:text-4xl font-extrabold text-gray-900 shadow-md"
+                  >
+                    {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
                   </div>
-                </button>
-              ))}
-            </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full max-w-sm">
+                  {[1,2,3,4,5,6,7,8,9].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => handleDigitPress(n)}
+                      disabled={isAnimating || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
+                      className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
+                    >
+                      {n}
+                    </button>
+                  ))}
+                  <button
+                    onClick={handleClear}
+                    disabled={isAnimating || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
+                    className="bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl shadow-md hover:bg-gray-300 active:scale-95 transition col-span-1 border border-gray-300"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => handleDigitPress(0)}
+                    disabled={isAnimating || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
+                    className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
+                  >
+                    0
+                  </button>
+                  <button
+                    onClick={handleSubmitTyped}
+                    disabled={
+                      isAnimating ||
+                      showResult ||
+                      isTimerPaused ||
+                      isAnswerSubmitted ||
+                      isAwaitingInactivityResponse ||
+                      typedInput === ''
+                    }
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1 disabled:from-green-300 disabled:to-emerald-300 disabled:cursor-not-allowed"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
