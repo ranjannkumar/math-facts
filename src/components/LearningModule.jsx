@@ -340,8 +340,10 @@ useEffect(() => {
 
     if (!isCorrect) {
       audioManager.playWrongSound?.();
-      setPracticeMsg('Wrong! Try again.');
-      setPracticeStatus('error');
+      // Show the fact again (answer visible) without red error text
+      setIsShowingFact(true);
+      setPracticeMsg('');
+      setPracticeStatus(null);
       setTypedInput('');
       setIsSubmitting(false);
       return;
@@ -442,6 +444,56 @@ useEffect(() => {
       setPracticeStatus('error');
     }
   };
+
+  const handlePreQuizChoice = async (answer) => {
+    if (!practiceQ || isSubmitting) return;
+    setIsSubmitting(true);
+
+    const isCorrect = answer === practiceQ.correctAnswer;
+
+    if (!isCorrect) {
+      audioManager.playWrongSound?.();
+      // Show the fact again so they can see the answer
+      setIsShowingFact(true);
+      setPracticeMsg('');
+      setIsSubmitting(false);
+      return;
+    }
+
+    audioManager.playCorrectSound?.();
+
+    try {
+      const out = await handlePracticeAnswer(practiceQ.id, answer);
+      const nextIndex = currentPracticeIndex + 1;
+      const isLastFact = nextIndex >= preQuizPracticeItems.length;
+
+      if (isLastFact) {
+        if (!isClosing && !isQuizStarting) {
+          setIsQuizStarting(true);
+          setIsClosing(true);
+          setShowLearningModule(false);
+          startActualQuiz(quizRunId);
+        }
+      } else {
+        setShowAdvanceButton(false);
+        const mappedQ = mapQuestionToFrontend(preQuizPracticeItems[nextIndex]);
+        setCurrentPracticeIndex(nextIndex);
+        setPracticeQ(mappedQ);
+        setIsShowingFact(true); // back to fact view for the next item
+        setSelectedAnswer(null);
+        setPracticeMsg('');
+        setShowAdvanceButton(false);
+        setTypedInput('');
+        setPracticeStatus(null);
+      }
+    } catch (e) {
+      const msg = e.message || 'Error submitting practice.';
+      console.error('Practice submission failed:', msg);
+      setPracticeMsg('Error submitting practice: ' + msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   const renderBody = () => {
     if (!practiceQ) {
         return (
@@ -525,16 +577,7 @@ useEffect(() => {
               </button>
             </div>
 
-            {practiceMsg && (
-              <p
-                className={[
-                  'text-center mt-4 font-semibold',
-                  practiceStatus === 'success' ? 'text-green-600' : 'text-red-700'
-                ].join(' ')}
-              >
-                {practiceMsg}
-              </p>
-            )}
+            {/* no error text for intervention typed flow */}
           </>
         );
       }
@@ -559,69 +602,27 @@ useEffect(() => {
           </>
         );
       } else {
+        const answers = practiceQ.answers || [];
         return (
           <>
             <div className="text-6xl sm:text-7xl font-extrabold text-green-500 text-center mb-6 whitespace-pre-line drop-shadow">
               {extractQuestion(practiceQ)}
             </div>
 
-            <div className="w-full max-w-sm mx-auto mb-4">
-              <div
-                className={[
-                  'w-full bg-white rounded-2xl h-24 flex items-center justify-center text-4xl font-extrabold shadow-lg',
-                  practiceStatus === 'success' ? 'border-4 border-green-500 text-green-600' : '',
-                  practiceStatus === 'error' ? 'border-4 border-red-400 text-red-600' : '',
-                  !practiceStatus ? 'border-4 border-green-300 text-gray-800' : ''
-                ].join(' ')}
-              >
-                {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 w-full max-w-sm mx-auto">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full max-w-md mx-auto">
+              {answers.map((ans, idx) => (
                 <button
-                  key={n}
-                  onClick={() => handleDigitPress(n)}
+                  key={idx}
+                  onClick={() => handlePreQuizChoice(ans)}
                   disabled={isSubmitting}
-                  className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
+                  className="w-full bg-gray-100 text-gray-900 font-bold py-4 sm:py-5 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200 text-2xl"
                 >
-                  {n}
+                  {ans}
                 </button>
               ))}
-              <button
-                onClick={handleClear}
-                disabled={isSubmitting}
-                className="bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl shadow-md hover:bg-gray-300 active:scale-95 transition col-span-1 border border-gray-300"
-              >
-                Clear
-              </button>
-              <button
-                onClick={() => handleDigitPress(0)}
-                disabled={isSubmitting}
-                className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
-              >
-                0
-              </button>
-              <button
-                onClick={handleSubmitTypedAnswer}
-                disabled={isSubmitting || typedInput === ''}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1 disabled:from-green-300 disabled:to-emerald-300 disabled:cursor-not-allowed"
-              >
-                Submit
-              </button>
             </div>
 
-            {practiceMsg && (
-              <p
-                className={[
-                  'text-center mt-4 font-semibold',
-                  practiceStatus === 'success' ? 'text-green-600' : 'text-red-700'
-                ].join(' ')}
-              >
-                {practiceMsg}
-              </p>
-            )}
+            {/* no error text for pre-quiz; fallback fact view handles wrong answers */}
           </>
         );
       }
