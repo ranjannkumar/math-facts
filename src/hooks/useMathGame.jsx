@@ -918,7 +918,7 @@ if (!isCorrect) {
         newQuizStreak += 1;
         const isStreakMilestoneHit = streakMilestones.includes(newQuizStreak);
 
-        if (timeTaken <= 1.5) {
+        if (timeTaken <= 2.0) {
           symbol = '⚡';
           if (!isStreakMilestoneHit) audioManager.playLightningSound();
         } else {
