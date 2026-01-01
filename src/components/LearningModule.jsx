@@ -170,6 +170,9 @@ const LearningModule = () => {
   const [practiceMsg, setPracticeMsg] = useState('');
   const [showAdvanceButton, setShowAdvanceButton] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState(null); // Tracks the button click answer
+  const [typedInput, setTypedInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [practiceStatus, setPracticeStatus] = useState(null); // null | 'success' | 'error'
   // const [isStartingQuiz, setIsStartingQuiz] = useState(false); // Prevent double starts 
 
   const isIntervention = !!interventionQuestion;
@@ -200,6 +203,9 @@ useEffect(() => {
         setSelectedAnswer(null); 
         setShowAdvanceButton(false);
         setPracticeMsg('');
+        setTypedInput('');
+        setIsSubmitting(false);
+        setPracticeStatus(null);
     };
 
     if (isIntervention && interventionQuestion) {
@@ -279,6 +285,9 @@ useEffect(() => {
     // UPDATE: make sure the Start Quiz / advance button is never visible when entering practice
     setShowAdvanceButton(false);
      setSelectedAnswer(null);  
+     setTypedInput('');
+     setIsSubmitting(false);
+     setPracticeStatus(null);
   };
   
   // Handler for Pre-Quiz flow: moves to next fact or starts quiz
@@ -302,141 +311,137 @@ useEffect(() => {
     }
   };
 
-  const handlePracticeAnswerClick = async (answer) => {
-    if (selectedAnswer !== null || !practiceQ) return;
-    
-    setSelectedAnswer(answer);
+  const handleDigitPress = (digit) => {
+    if (isSubmitting) return;
+    setPracticeMsg('');
+    setPracticeStatus(null);
+    setTypedInput((prev) => (prev.length < 4 ? prev + String(digit) : prev));
+  };
 
-    const isCorrect = answer === practiceQ.correctAnswer;
-    
-    if (isCorrect) {
-        audioManager.playCorrectSound?.();
-        setPracticeMsg('Correct!');
-        if (isGameMode && isGameModePractice) {
-             const out = await handlePracticeAnswer(practiceQ.id, answer);
+  const handleClear = () => {
+    if (isSubmitting) return;
+    setPracticeMsg('');
+    setTypedInput('');
+    setPracticeStatus(null);
+  };
 
-             if (out.resume) {
-                 // Success: hook handles navigation back to /game-mode and state reset
-                 setIsClosing(true);
-                 setInterventionQuestion(null);
-                 setShowLearningModule(false);
-                 navigate('/game-mode', { replace: true });
-             } else {
-                 console.error("Game Mode Practice failed to resume.");
-             }
-             
-             return; 
-        }
+  const handleSubmitTypedAnswer = async () => {
+    if (!practiceQ || typedInput.trim() === '' || isSubmitting) return;
 
-        try {
-          const out = await handlePracticeAnswer(practiceQ.id, answer);
+    const answerNumber = Number(typedInput);
+    if (!Number.isFinite(answerNumber)) {
+      setPracticeMsg('Enter a number.');
+      return;
+    }
 
-          if (isPreQuizFlow) {
-            const nextIndex = currentPracticeIndex + 1;
-            const isLastFact = nextIndex >= preQuizPracticeItems.length;
+    setIsSubmitting(true);
 
-            if (isLastFact) {
-              // This was the final practice. Now we show the Start Quiz button.
-              // setShowAdvanceButton(true);
-             if (!isClosing && !isQuizStarting) { 
-                  setIsQuizStarting(true);
-                  setIsClosing(true); 
-                  setShowLearningModule(false);
-                  startActualQuiz(quizRunId);
-                }
-              return;
-            } else {
-              // Not the last one — do NOT flash the Start Quiz button.
-              setShowAdvanceButton(false);
+    const isCorrect = answerNumber === practiceQ.correctAnswer;
 
-              const mappedQ = mapQuestionToFrontend(preQuizPracticeItems[nextIndex]);
+    if (!isCorrect) {
+      audioManager.playWrongSound?.();
+      setPracticeMsg('Wrong! Try again.');
+      setPracticeStatus('error');
+      setTypedInput('');
+      setIsSubmitting(false);
+      return;
+    }
 
-                setCurrentPracticeIndex(nextIndex);
-                setPracticeQ(mappedQ);
-                setIsShowingFact(true);          // back to Fact for the next item
-                setSelectedAnswer(null);
-                setPracticeMsg('');
-                setShowAdvanceButton(false);
-            }
-            return;
-          }
+    audioManager.playCorrectSound?.();
+    setPracticeMsg('Correct!');
+    setPracticeStatus('success');
 
-          if (isIntervention) {
-            if (out.completed) {
-                 if (selectedDifficulty && selectedTable != null) {
-                    localStorage.setItem('game-mode-belt', selectedDifficulty);
-                    localStorage.setItem('game-mode-table', String(selectedTable));
-              } else {
-                  console.log("FAIL DEBUG — no selectedDifficulty/table at fail moment:", {
-                      selectedDifficulty, selectedTable
-                });
-                }
-           // 1️ Stop quiz timer
-            setIsAnimating(false);
-            setQuizStartTime(null);
+    if (isGameMode && isGameModePractice) {
+      const out = await handlePracticeAnswer(practiceQ.id, answerNumber);
 
-            // 2️ Save session for WayToGo page
-            setSessionCorrectCount(out.sessionCorrectCount || 0);
-            localStorage.setItem('math-last-quiz-duration', Math.round((out.summary?.totalActiveMs || 0) / 1000));
-
-            // 3️ Set flag so WayToGo knows this is a failed quiz
-            setShowWayToGoAfterFailure(true);;
-                navigate('/way-to-go', { replace: true });
-                return;
-            }
-            if (out.resume) {
-              setIsClosing(true);                 
-              setInterventionQuestion(null);      
-              setShowLearningModule(false);       
-              navigate('/quiz', { replace: true });
-              return;
-            }
-          }
-        } catch (e) {
-          const msg = e.message || 'Error submitting practice.';
-          console.error('Practice submission failed:', msg);
-          setPracticeMsg('Error submitting practice: ' + msg);
-        }
+      if (out.resume) {
+        setIsClosing(true);
+        setInterventionQuestion(null);
+        setShowLearningModule(false);
+        navigate('/game-mode', { replace: true });
       } else {
-        audioManager.playWrongSound?.();
-        setPracticeMsg('Wrong! Try again.');
-        setShowAdvanceButton(false);  
-        setTimeout(() => {
-          setSelectedAnswer(null);
-          setIsShowingFact(true); 
-          setPracticeMsg('');
-        }, 5);
+        console.error('Game Mode Practice failed to resume.');
       }
-    };
 
-const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
-  <>
-    <div className="grid grid-cols-2 gap-4 mt-4 w-full">
-      {answers.map((answer, index) => (
-        <button
-          key={index}
-          onClick={() => handlePracticeAnswerClick(answer)}
-          disabled={!!selectedAnswer}
-          className={[
-            'py-4 rounded-xl text-2xl font-bold shadow-md',
-            'bg-gray-200 text-gray-800 border-2 border-gray-300',
-            'transition-none select-none',
-            'disabled:bg-gray-200 disabled:text-gray-800 disabled:opacity-100 disabled:cursor-default',
-            'focus:outline-none focus:ring-0 active:outline-none active:ring-0'
-          ].join(' ')}
-          style={{
-            WebkitTapHighlightColor: 'transparent'
-          }}
-          onMouseDown={(e) => e.preventDefault()}
-        >
-          {answer}
-        </button>
-      ))}
-    </div>
-  </>
-);
+      setIsSubmitting(false);
+      return;
+    }
 
+    try {
+      const out = await handlePracticeAnswer(practiceQ.id, answerNumber);
 
+      if (isPreQuizFlow) {
+        const nextIndex = currentPracticeIndex + 1;
+        const isLastFact = nextIndex >= preQuizPracticeItems.length;
+
+        if (isLastFact) {
+          if (!isClosing && !isQuizStarting) {
+            setIsQuizStarting(true);
+            setIsClosing(true);
+            setShowLearningModule(false);
+            startActualQuiz(quizRunId);
+          }
+          setIsSubmitting(false);
+          return;
+        } else {
+          setShowAdvanceButton(false);
+
+          const mappedQ = mapQuestionToFrontend(preQuizPracticeItems[nextIndex]);
+
+          setCurrentPracticeIndex(nextIndex);
+          setPracticeQ(mappedQ);
+          setIsShowingFact(true);
+          setSelectedAnswer(null);
+          setPracticeMsg('');
+          setShowAdvanceButton(false);
+          setTypedInput('');
+          setIsSubmitting(false);
+          setPracticeStatus(null);
+        }
+        return;
+      }
+
+      if (isIntervention) {
+        if (out.completed) {
+          if (selectedDifficulty && selectedTable != null) {
+            localStorage.setItem('game-mode-belt', selectedDifficulty);
+            localStorage.setItem('game-mode-table', String(selectedTable));
+          } else {
+            console.log('FAIL DEBUG missing selectedDifficulty/table at fail moment:', {
+              selectedDifficulty,
+              selectedTable,
+            });
+          }
+          setIsAnimating(false);
+          setQuizStartTime(null);
+          setSessionCorrectCount(out.sessionCorrectCount || 0);
+          localStorage.setItem(
+            'math-last-quiz-duration',
+            Math.round((out.summary?.totalActiveMs || 0) / 1000)
+          );
+          setShowWayToGoAfterFailure(true);
+          navigate('/way-to-go', { replace: true });
+          setIsSubmitting(false);
+          return;
+        }
+        if (out.resume) {
+          setIsClosing(true);
+          setInterventionQuestion(null);
+          setShowLearningModule(false);
+          navigate('/quiz', { replace: true });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      setIsSubmitting(false);
+    } catch (e) {
+      const msg = e.message || 'Error submitting practice.';
+      console.error('Practice submission failed:', msg);
+      setPracticeMsg('Error submitting practice: ' + msg);
+      setIsSubmitting(false);
+      setPracticeStatus('error');
+    }
+  };
   const renderBody = () => {
     if (!practiceQ) {
         return (
@@ -447,14 +452,10 @@ const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
         );
     }
     
-    const currentCorrectAnswer = practiceQ.correctAnswer;
-    const practiceAnswers = practiceQ.answers || []; // Safely access answers
-
     // --- 1. Intervention Flow (Show Fact -> Practice -> Resume) ---
     if (isIntervention) {
       if (isShowingFact) {
          if (isClosing) return null;
-        // Fact screen
         return (
           <>
             <div className="text-8xl sm:text-10xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
@@ -473,23 +474,75 @@ const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
       } else {
         return (
           <>
-            <div className="text-7xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
+            <div className="text-6xl sm:text-7xl font-extrabold text-green-500 text-center mb-6 whitespace-pre-line drop-shadow">
               {extractQuestion(practiceQ)}
             </div>
-            
-            {renderPracticeInteractions(practiceAnswers, currentCorrectAnswer)}
 
+            <div className="w-full max-w-sm mx-auto mb-4">
+              <div
+                className={[
+                  'w-full bg-white rounded-2xl h-24 flex items-center justify-center text-4xl font-extrabold shadow-lg',
+                  practiceStatus === 'success' ? 'border-4 border-green-500 text-green-600' : '',
+                  practiceStatus === 'error' ? 'border-4 border-red-400 text-red-600' : '',
+                  !practiceStatus ? 'border-4 border-green-300 text-gray-800' : ''
+                ].join(' ')}
+              >
+                {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 w-full max-w-sm mx-auto">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => handleDigitPress(n)}
+                  disabled={isSubmitting}
+                  className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                onClick={handleClear}
+                disabled={isSubmitting}
+                className="bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl shadow-md hover:bg-gray-300 active:scale-95 transition col-span-1 border border-gray-300"
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => handleDigitPress(0)}
+                disabled={isSubmitting}
+                className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
+              >
+                0
+              </button>
+              <button
+                onClick={handleSubmitTypedAnswer}
+                disabled={isSubmitting || typedInput === ''}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1 disabled:from-green-300 disabled:to-emerald-300 disabled:cursor-not-allowed"
+              >
+                Submit
+              </button>
+            </div>
+
+            {practiceMsg && (
+              <p
+                className={[
+                  'text-center mt-4 font-semibold',
+                  practiceStatus === 'success' ? 'text-green-600' : 'text-red-700'
+                ].join(' ')}
+              >
+                {practiceMsg}
+              </p>
+            )}
           </>
         );
       }
     }
-    
+
     // --- 2. Pre-Quiz Flow (Show Fact -> Practice -> Next Fact/Quiz) ---
     if (isPreQuizFlow) {
-      const isLastFact = currentPracticeIndex === preQuizPracticeItems.length - 1;
-      
       if (isShowingFact) {
-        // Fact screen
         return (
           <>
             <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
@@ -506,35 +559,76 @@ const renderPracticeInteractions = (answers, currentCorrectAnswer) => (
           </>
         );
       } else {
-        // Practice screen (Pre-Quiz)
-        const buttonText = 'Start Game';
-
         return (
           <>
-            <div className="text-7xl font-extrabold text-green-600 text-center mb-4 whitespace-pre-line">
+            <div className="text-6xl sm:text-7xl font-extrabold text-green-500 text-center mb-6 whitespace-pre-line drop-shadow">
               {extractQuestion(practiceQ)}
             </div>
 
-            {renderPracticeInteractions(practiceAnswers, currentCorrectAnswer)}
-            
-            {/* {showAdvanceButton && (
-                <div className="flex justify-center mt-4">
-                    <button
-                        type="button"
-                        onClick={handleAdvancePreQuizFlow}
-                        disabled={isStartingQuiz}
-                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
-                    >
-                        {buttonText}
-                    </button>
-                </div>
-            )} */}
+            <div className="w-full max-w-sm mx-auto mb-4">
+              <div
+                className={[
+                  'w-full bg-white rounded-2xl h-24 flex items-center justify-center text-4xl font-extrabold shadow-lg',
+                  practiceStatus === 'success' ? 'border-4 border-green-500 text-green-600' : '',
+                  practiceStatus === 'error' ? 'border-4 border-red-400 text-red-600' : '',
+                  !practiceStatus ? 'border-4 border-green-300 text-gray-800' : ''
+                ].join(' ')}
+              >
+                {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 w-full max-w-sm mx-auto">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => handleDigitPress(n)}
+                  disabled={isSubmitting}
+                  className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                onClick={handleClear}
+                disabled={isSubmitting}
+                className="bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl shadow-md hover:bg-gray-300 active:scale-95 transition col-span-1 border border-gray-300"
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => handleDigitPress(0)}
+                disabled={isSubmitting}
+                className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
+              >
+                0
+              </button>
+              <button
+                onClick={handleSubmitTypedAnswer}
+                disabled={isSubmitting || typedInput === ''}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1 disabled:from-green-300 disabled:to-emerald-300 disabled:cursor-not-allowed"
+              >
+                Submit
+              </button>
+            </div>
+
+            {practiceMsg && (
+              <p
+                className={[
+                  'text-center mt-4 font-semibold',
+                  practiceStatus === 'success' ? 'text-green-600' : 'text-red-700'
+                ].join(' ')}
+              >
+                {practiceMsg}
+              </p>
+            )}
           </>
         );
       }
     }
-    
+
     return null;
+
   };
 
   return (
