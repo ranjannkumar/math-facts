@@ -726,8 +726,8 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       return;
     }
 
-    //  Determine fast/slow from actual response time
-    const isFastAnswer = responseMs <= 1500;
+      //  Determine fast/slow from actual response time (fast ≤ 2s)
+      const isFastAnswer = responseMs <= 2000;
 
     //  Symbol + sound logic (exactly like quiz behavior)
     // - wrong: ✗ + wrong sound
