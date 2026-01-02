@@ -21,6 +21,7 @@ const WayToGoScreen = () => {
     } = useContext(MathGameContext);
 
     const AUTO_NAV_KEY = 'math-waytogo-auto-nav-once';
+    const isBlackDegree7 = String(selectedDifficulty || '').startsWith('black-7');
 
 //     useEffect(() => {
 //   // clear stale guard when user arrives fresh to this screen
@@ -60,6 +61,10 @@ const WayToGoScreen = () => {
 
     // Failed quiz → Game Mode
     if (showWayToGoAfterFailure) {
+      if (isBlackDegree7) {
+        navigate('/black', { replace: true });
+        return;
+      }
       localStorage.setItem('game-mode-belt', selectedDifficulty);
       localStorage.setItem('game-mode-table', String(selectedTable));
 
@@ -185,7 +190,9 @@ const WayToGoScreen = () => {
                 </div>
                 
                  <p className="text-gray-600 mb-4 sm:mb-6 text-xl sm:text-2xl font-bold">
-                    Game Mode In <span className="font-extrabold text-red-600">{countdown}</span> seconds...
+                    {showWayToGoAfterFailure && isBlackDegree7
+                      ? <>Retry in <span className="font-extrabold text-red-600">{countdown}</span> seconds...</>
+                      : <>Game Mode In <span className="font-extrabold text-red-600">{countdown}</span> seconds...</>}
                 </p>
             </div>
         </div>

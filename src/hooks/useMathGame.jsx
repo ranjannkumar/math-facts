@@ -996,11 +996,13 @@ if (!isCorrect) {
           }
           if (out.updatedProgress) setTableProgress(out.updatedProgress);
 
+          const isBlackDegree7 = selectedDifficulty && String(selectedDifficulty).startsWith('black-7');
+
           if (out.passed) {
             setShowResult(true);
             navigate('/results', { replace: true, state: { sessionTimeSeconds } });
           } else {
-            if (selectedDifficulty && selectedTable != null) {
+            if (!isBlackDegree7 && selectedDifficulty && selectedTable != null) {
               localStorage.setItem('game-mode-belt', selectedDifficulty);
               localStorage.setItem('game-mode-table', String(selectedTable));
             }
