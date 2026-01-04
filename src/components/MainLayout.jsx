@@ -25,6 +25,7 @@ const MainLayout = ({ hideStats }) => {
 
   const showStats = !(location.pathname === '/' || location.pathname === '/name');
   const shouldRenderStats = showStats && !hideStats;
+  const hideSettingsButton = location.pathname === '/way-to-go';
 
   // Fallback so we always pass a number down to SessionTimer
   const effectiveAccumulatedTime =
@@ -42,14 +43,16 @@ const MainLayout = ({ hideStats }) => {
         transition: 'background 0.5s ease',
       }}
     >
-      <button
-        className="fixed top-4 right-4 z-50 bg-white/80 hover:bg-gray-200 text-gray-700 rounded-full p-3 shadow-lg border-4 border-gray-400 focus:outline-none transition-all duration-300 transform hover:scale-110 active:scale-95"
-        style={{ fontSize: '2rem', borderWidth: '4px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
-        onClick={() => setShowSettings(true)}
-        aria-label="Settings"
-      >
-        <FaCog />
-      </button>
+      {!hideSettingsButton && (
+        <button
+          className="fixed top-4 right-4 z-50 bg-white/80 hover:bg-gray-200 text-gray-700 rounded-full p-3 shadow-lg border-4 border-gray-400 focus:outline-none transition-all duration-300 transform hover:scale-110 active:scale-95"
+          style={{ fontSize: '2rem', borderWidth: '4px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
+          onClick={() => setShowSettings(true)}
+          aria-label="Settings"
+        >
+          <FaCog />
+        </button>
+      )}
 
       <UserInfoBadge />
       <DailyStreakCounter />

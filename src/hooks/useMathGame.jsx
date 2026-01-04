@@ -807,7 +807,7 @@ if (!isCorrect) {
       symbol === '⚡' &&
       nextTotal > prevTotal &&
       nextTotal > 0 &&
-      nextTotal % 10 === 0;
+      nextTotal % 5 === 0;
 
     // If backend completed the run, exit after optional final milestone video
     if (out?.completed) {

@@ -111,7 +111,7 @@ useEffect(() => {
             {/* TOP: Lightning Bolt Counter */}
             <div className="w-full flex justify-between items-center bg-yellow-900/50 rounded-lg p-2 mb-20 shadow-inner">
                 <span className="text-xl font-bold text-yellow-400">⚡ Bolts:</span>
-                <span className="text-3xl font-black text-white">{lightningCount % 10}</span>
+                <span className="text-3xl font-black text-white">{lightningCount % 5}</span>
             </div>
 
             {/* Middle: Transient Symbol Display */}
