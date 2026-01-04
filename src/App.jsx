@@ -1,4 +1,4 @@
-import React, { useEffect, createContext, lazy, Suspense } from 'react'; 
+import React, { useEffect, createContext, lazy, Suspense, useMemo } from 'react'; 
 import useMathGame from './hooks/useMathGame.jsx';
 import DailyStreakAnimation from './components/DailyStreakAnimation.jsx';
 import GetReadyScreen from './components/GetReadyScreen.jsx';
@@ -81,10 +81,12 @@ const App = () => {
   };
 
 
+  const providerValue = useMemo(() => ({ ...ctx, navigate }), [ctx, navigate]);
+
   return (
-    <MathGameContext.Provider value={{ ...ctx, navigate }}>
+    <MathGameContext.Provider value={providerValue}>
       {/* NEW: Use Suspense to show a fallback while waiting for code to load */}
-      <Suspense>
+      <Suspense fallback={<InitialLoadingScreen />}>
       <Routes>
         <Route path="/" element={<StartScreen />} />
         <Route path="/name" element={<NameForm />} />
