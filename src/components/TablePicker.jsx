@@ -87,12 +87,9 @@ function resolveThemeKey(preferredFromContext) {
 }
 
 const getFactVideoPath = (level) => {
-  // REQUIREMENT: "As of now use same video ie fact1.mp4 for each level"
-  // FUTURE LOGIC: When you add fact2.mp4, fact3.mp4, etc., 
-  // you can simply uncomment the dynamic line below:
-  // return `/fact${level}.mp4`; 
-  
-  return '/fact1.mp4'; 
+  if (level === 1) return '/fact_level1.mp4';
+  if (level === 2) return '/fact_level2.mp4';
+  return '/fact1.mp4';
 };
 
 /* ----------------- Component ----------------- */
