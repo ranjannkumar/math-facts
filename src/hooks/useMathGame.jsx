@@ -740,7 +740,7 @@ const nextStreak = isCorrect ? currentQuizStreak + 1 : 0;
 const isMilestone = streakMilestones.includes(nextStreak);
 
 if (!isCorrect) {
-  symbol = '✗';
+  symbol = '';
   audioManager.playWrongSound();
 } else if (!isFastAnswer || out?.slow) {
   symbol = '✓';
