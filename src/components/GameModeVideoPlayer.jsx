@@ -43,6 +43,7 @@ const GameModeVideoPlayer = () => {
       cleanupAndNavigate();
     };
 
+    videoEl.playbackRate = 2.0;
     videoEl.addEventListener("ended", handleEnded);
     videoEl.addEventListener("error", handleError);
 
