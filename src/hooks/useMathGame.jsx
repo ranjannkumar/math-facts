@@ -801,8 +801,8 @@ if (!isCorrect) {
 
     // Video should trigger ONLY when:
     // - user answered fast (⚡)
-    // - and backend totalCorrect increased to a new multiple of 10
-    // This prevents "loop at 10" even if totalCorrect stays the same on slow answers.
+    // - and backend totalCorrect increased to a new multiple of 5
+    // This prevents "loop at 5" even if totalCorrect stays the same on slow answers.
     const reachedNewMilestone =
       symbol === '⚡' &&
       nextTotal > prevTotal &&
@@ -851,6 +851,34 @@ if (!isCorrect) {
       if (options) setVideoOptions(options);
 
       setGameModeLevel((prev) => prev + 1);
+
+      // Advance to the next question before showing the video so we don't repeat it after return
+      const nextIndex =
+        typeof out?.nextIndex === 'number' ? out.nextIndex : currentQuestionIndex + 1;
+
+      if (!quizQuestions || quizQuestions.length === 0 || nextIndex >= quizQuestions.length) {
+        const restarted = await quizStart(quizRunId, childPin);
+        const backendQuestions = restarted?.questions || restarted?.run?.questions || [];
+        const mapped = backendQuestions.map(mapQuestionToFrontend);
+
+        const startIndex =
+          typeof restarted?.currentIndex === 'number'
+            ? restarted.currentIndex
+            : typeof restarted?.run?.currentIndex === 'number'
+              ? restarted.run.currentIndex
+              : 0;
+
+        const safeIndex = Math.min(Math.max(startIndex, 0), mapped.length - 1);
+
+        setQuizQuestions(mapped);
+        setCurrentQuestionIndex(safeIndex);
+        setCurrentQuestion(mapped[safeIndex]);
+      } else {
+        setCurrentQuestionIndex(nextIndex);
+        setCurrentQuestion(quizQuestions[nextIndex]);
+      }
+
+      questionStartTimestamp.current = Date.now();
 
       setIsAnimating(false);
       navigate('/game-mode-video-select', { replace: true });
