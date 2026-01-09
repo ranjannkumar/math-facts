@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSignOutAlt } from 'react-icons/fa';
+import { FaSignOutAlt, FaCog } from 'react-icons/fa';
 import { getAdminStats, userGetProgress } from '../api/mathApi.js';
 
 const MS_PER_SEC = 1000;
@@ -187,11 +187,20 @@ const AdminDashboard = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8" style={dashboardStyle}>
-      <div className="flex justify-between items-center mb-6">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-6">
         <h1 className="text-white text-3xl sm:text-4xl font-extrabold drop-shadow">
           Student Stats
         </h1>
-        <div className="flex space-x-2">
+        <button
+          onClick={() => navigate('/admin-settings')}
+          type="button"
+          className="justify-self-center bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full shadow flex items-center gap-2"
+          aria-label="Open app settings"
+        >
+          <FaCog size={16} />
+          App Settings
+        </button>
+        <div className="flex justify-self-end space-x-2">
           {/* <button
             onClick={handleRefresh}
             className="bg-green-600/90 hover:bg-green-700/90 text-white font-semibold py-2 px-4 rounded-xl shadow transition"

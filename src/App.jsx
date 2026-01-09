@@ -25,6 +25,7 @@ const GameModeVideoPlayer = lazy(() => import('./components/GameModeVideoPlayer.
 const GameModeVideoSelectScreen = lazy(() => import('./components/GameModeVideoSelectScreen.jsx'));
 const UserQuestionStats = lazy(() => import('./components/UserQuestionStats.jsx'));
 const AnalyticsScreen = lazy(() => import('./components/AnalyticsScreen.jsx'));
+const AdminSettings = lazy(() => import('./components/AdminSettings.jsx'));
 
 const SpeedTestScreen = lazy(() => import('./components/ui/SpeedTestScreen.jsx'));
 
@@ -91,6 +92,7 @@ const App = () => {
         <Route path="/" element={<StartScreen />} />
         <Route path="/name" element={<NameForm />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/admin-settings" element={<AdminSettings />} />
         <Route path="/admin/user-stats/:pin/:name" element={<UserQuestionStats />} />
         <Route
             path="/admin/students/:pin/analytics"
