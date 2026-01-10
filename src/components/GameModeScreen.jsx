@@ -11,6 +11,11 @@ const GameModeScreen = () => {
   handleAnswer,
   isAnimating,
   isTimerPaused,
+  gameModeType,
+  surfCorrectStreak,
+  completedSurfQuizzes,
+  surfQuizzesRequired,
+  questionsPerQuiz,
   transientStreakMessage,
   lightningCount,
   currentAnswerSymbol,
@@ -24,22 +29,32 @@ const GameModeScreen = () => {
   setIsTimerPaused,
 } = useContext(MathGameContext);
 
+const isSurfMode = gameModeType === 'surf' || (currentQuestion?.answers || []).length === 0;
+
 useEffect(() => {
     setIsTimerPaused(false);
   }, [setIsTimerPaused]);
+
+  useEffect(() => {
+    if (isSurfMode) {
+      setCurrentAnswerSymbol(null);
+    }
+  }, [isSurfMode, setCurrentAnswerSymbol]);
 
 
   const answerRefs = useRef([]);
   const lastClickRef = useRef({ qid: null, t: 0 });
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [typedInput, setTypedInput] = useState('');
 
   useEffect(() => {
   if (currentQuestion) {
-    answerRefs.current = currentQuestion.answers.map(
-      (_, i) => answerRefs.current[i] || React.createRef()
-    );
+    answerRefs.current = Array.isArray(currentQuestion.answers)
+      ? currentQuestion.answers.map((_, i) => answerRefs.current[i] || React.createRef())
+      : [];
     setIsAnswerSubmitted(false);
     lastClickRef.current = { qid: currentQuestion.id, t: 0 };
+    setTypedInput('');
 
     // DO NOT clear symbol here
     // Symbol must persist until next answer
@@ -72,12 +87,35 @@ useEffect(() => {
       });
   };
 
+  const handleDigitPress = (digit) => {
+    if (isAnswerSubmitted || isAnimating || isTimerPaused || !currentQuestion) return;
+    setTypedInput((prev) => (prev.length < 4 ? prev + String(digit) : prev));
+  };
+
+  const handleClear = () => {
+    if (isAnswerSubmitted || isAnimating || isTimerPaused || !currentQuestion) return;
+    setTypedInput('');
+  };
+
+  const handleSubmitTyped = () => {
+    if (!typedInput || isAnswerSubmitted || isAnimating || isTimerPaused || !currentQuestion) return;
+    const numericAnswer = Number(typedInput);
+    if (!Number.isFinite(numericAnswer)) return;
+    setIsAnswerSubmitted(true);
+    Promise.resolve(handleAnswer(numericAnswer)).finally(() => {
+      setTimeout(() => setIsAnswerSubmitted(false), 200);
+    });
+  };
+
+
   return (
     <div
       className="App min-h-screen w-full relative landscape-optimized portrait-optimized ios-notch"
       style={{
-        // Using a distinct dark theme for Game Mode
-        background: 'linear-gradient(135deg, #1A237E 0%, #303F9F 60%, #3F51B5 100%)', 
+        // Game Mode 2 background should feel distinct
+        background: isSurfMode
+          ? 'radial-gradient(circle at 20% 20%, #2dd4bf 0%, #1e3a8a 38%, #0f172a 100%)'
+          : 'linear-gradient(135deg, #1A237E 0%, #303F9F 60%, #3F51B5 100%)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -103,40 +141,50 @@ useEffect(() => {
         </div>
 
         
-        <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6">
+        <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-3 sm:mb-4">
           
          {/* --- LIGHTNING COUNTER & STREAK MESSAGE CONTAINER (Modified) --- */}
-          <div className="relative h-5 mb-2 flex flex-col justify-end">
+          <div className="relative h-4 sm:h-5 mb-1 sm:mb-2 flex flex-col justify-end">
              
-            {/* TOP: Lightning Bolt Counter */}
-            <div className="w-full flex justify-between items-center bg-yellow-900/50 rounded-lg p-2 mb-20 shadow-inner">
+            {/* TOP: Counter */}
+            {isSurfMode ? (
+              <div className="w-full flex justify-between items-center bg-emerald-900/40 rounded-lg p-2 mb-4 sm:mb-6 shadow-inner">
+                <span className="text-lg font-bold text-emerald-200">
+                  Games Won:  {completedSurfQuizzes}/{surfQuizzesRequired}
+                </span>
+              </div>
+            ) : (
+              <div className="w-full flex justify-between items-center bg-yellow-900/50 rounded-lg p-2 mb-12 sm:mb-16 shadow-inner">
                 <span className="text-xl font-bold text-yellow-400">⚡ Bolts:</span>
                 <span className="text-3xl font-black text-white">{lightningCount % 5}</span>
-            </div>
+              </div>
+            )}
 
             {/* Middle: Transient Symbol Display */}
-            <div className="flex justify-center items-center absolute w-full top-15">
-              <AnimatePresence>
-              {currentAnswerSymbol && (
-                <motion.span
-                    key="answer-symbol"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 1.5 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className={`text-5xl font-black drop-shadow-lg ${
-                      currentAnswerSymbol.symbol === '⚡'
-                        ? 'text-yellow-400'
-                        : currentAnswerSymbol.symbol === '✓'
-                        ? 'text-green-500'
-                        : 'text-red-500'
-                    }`}
-                >
-                  {currentAnswerSymbol.symbol}
-                </motion.span>
-              )}
-              </AnimatePresence>
-            </div>
+            {!isSurfMode && (
+              <div className="flex justify-center items-center absolute w-full top-15">
+                <AnimatePresence>
+                {currentAnswerSymbol && (
+                  <motion.span
+                      key="answer-symbol"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 1.5 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className={`text-5xl font-black drop-shadow-lg ${
+                        currentAnswerSymbol.symbol === '⚡'
+                          ? 'text-yellow-400'
+                          : currentAnswerSymbol.symbol === '✓'
+                          ? 'text-green-500'
+                          : 'text-red-500'
+                      }`}
+                  >
+                    {currentAnswerSymbol.symbol}
+                  </motion.span>
+                )}
+                </AnimatePresence>
+              </div>
+            )}
 
 
             {/* BOTTOM: Transient Streak Message (Positioned over the answer area) */}
@@ -163,44 +211,119 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4">
-          <div className="bg-white backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 border-2 border-gray-200 min-h-[200px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center">
-            <div className="text-center mb-3 sm:mb-4 md:mb-6">
-              <h3 className="text-7xl font-extrabold text-blue-600 mb-1 sm:mb-2 drop-shadow-lg">
+        <div
+          className={`w-full mx-auto px-1 sm:px-2 md:px-4 ${
+            isSurfMode ? 'max-w-md sm:max-w-lg md:max-w-xl' : 'max-w-lg sm:max-w-xl'
+          }`}
+        >
+          <div
+            className={`bg-white backdrop-blur-sm rounded-xl sm:rounded-2xl mb-4 sm:mb-6 border-2 border-gray-200 flex flex-col justify-center ${
+              isSurfMode
+                ? 'p-4 sm:p-5 md:p-6 min-h-[200px] sm:min-h-[260px] md:min-h-[320px]'
+                : 'p-3 sm:p-4 md:p-6 min-h-[200px] sm:min-h-[300px] md:min-h-[400px]'
+            }`}
+          >
+            <div className="text-center mb-4 sm:mb-5 md:mb-6">
+              <h3
+                className={`font-extrabold text-blue-600 mb-1 sm:mb-2 drop-shadow-lg ${
+                  isSurfMode ? 'text-5xl sm:text-6xl md:text-7xl' : 'text-7xl'
+                }`}
+              >
                 {currentQuestion?.question || '1 + 1'}
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 md:gap-3 w-full">
-              {(currentQuestion?.answers || [1, 2, 3, 4]).map((answer, index) => (
-                <button
-                  key={index}
-                  ref={answerRefs.current[index]}
-                  onClick={() => handleAnswerClick(answer)}
-                  disabled={isAnimating || !currentQuestion || isTimerPaused || isAnswerSubmitted}
-                  className={
-                    [
-                      'w-full bg-gray-200/80 border-gray-300/80 backdrop-blur-sm rounded-lg sm:rounded-xl',
-                      'p-3 sm:p-4 md:p-6 border-2',
-                      'transition-none select-none',
-                      'disabled:bg-gray-200/80 disabled:opacity-100 disabled:cursor-default disabled:shadow-none',
-                      'focus:outline-none focus:ring-0 active:outline-none active:ring-0'
-                    ].join(' ')
-                  }
-                  style={{
-                    WebkitTapHighlightColor: 'transparent'
-                  }}
-                  onMouseDown={(e) => e.preventDefault()}
-                >
-                  <div
-                    className="text-xl sm:text-2xl md:text-3xl font-baloo text-gray-800 drop-shadow-md"
-                    style={{ fontFamily: 'Baloo 2, Comic Neue, cursive', letterSpacing: 2 }}
+            {!isSurfMode && (
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2 md:gap-3 w-full">
+                {(currentQuestion?.answers || [1, 2, 3, 4]).map((answer, index) => (
+                  <button
+                    key={index}
+                    ref={answerRefs.current[index]}
+                    onClick={() => handleAnswerClick(answer)}
+                    disabled={isAnimating || !currentQuestion || isTimerPaused || isAnswerSubmitted}
+                    className={
+                      [
+                        'w-full bg-gray-200/80 border-gray-300/80 backdrop-blur-sm rounded-lg sm:rounded-xl',
+                        'p-3 sm:p-4 md:p-6 border-2',
+                        'transition-none select-none',
+                        'disabled:bg-gray-200/80 disabled:opacity-100 disabled:cursor-default disabled:shadow-none',
+                        'focus:outline-none focus:ring-0 active:outline-none active:ring-0'
+                      ].join(' ')
+                    }
+                    style={{
+                      WebkitTapHighlightColor: 'transparent'
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
                   >
-                    {answer}
+                    <div
+                      className="text-xl sm:text-2xl md:text-3xl font-baloo text-gray-800 drop-shadow-md"
+                      style={{ fontFamily: 'Baloo 2, Comic Neue, cursive', letterSpacing: 2 }}
+                    >
+                      {answer}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {isSurfMode && (
+              <div className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
+                <div className="relative px-3 sm:px-4 py-2">
+                  <div className="w-full bg-white border-4 border-blue-300 rounded-2xl h-11 sm:h-12 md:h-14 flex items-center justify-center text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 shadow mb-3 sm:mb-4">
+                    {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
                   </div>
-                </button>
-              ))}
-            </div>
+
+                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => handleDigitPress(n)}
+                        disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
+                        className="bg-gray-200 text-gray-900 text-base sm:text-lg font-bold py-2 sm:py-3 rounded-lg shadow-md hover:bg-gray-300 active:scale-95 transition select-none border border-gray-200"
+                      >
+                        {n}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => handleDigitPress(9)}
+                      disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
+                      className="bg-gray-200 text-gray-900 text-base sm:text-lg font-bold py-2 sm:py-3 rounded-lg shadow-md hover:bg-gray-300 active:scale-95 transition select-none border border-gray-200"
+                    >
+                      9
+                    </button>
+                    <button
+                      onClick={() => handleDigitPress(0)}
+                      disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
+                      className="bg-gray-200 text-gray-900 text-base sm:text-lg font-bold py-2 sm:py-3 rounded-lg shadow-md hover:bg-gray-300 active:scale-95 transition select-none border border-gray-200"
+                    >
+                      0
+                    </button>
+                    <button
+                      onClick={handleClear}
+                      disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
+                      className="bg-gray-300 text-gray-800 text-sm sm:text-base font-semibold py-2 sm:py-3 rounded-lg shadow-md hover:bg-gray-400 active:scale-95 transition col-span-2 border border-gray-300"
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  <div className="flex justify-center mt-3 sm:mt-4">
+                    <button
+                      onClick={handleSubmitTyped}
+                      disabled={
+                        isAnimating ||
+                        isTimerPaused ||
+                        isAnswerSubmitted ||
+                        typedInput === ''
+                      }
+                      className="bg-green-600 text-white text-sm sm:text-base font-bold py-2 sm:py-3 px-8 rounded-xl shadow-md hover:bg-green-700 active:scale-95 transition disabled:bg-green-400 disabled:cursor-not-allowed"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         {/* --- SETTINGS / QUIT MODAL --- */}

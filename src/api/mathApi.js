@@ -54,13 +54,15 @@ export const quizPrepare = async (
   pin,
   operation = 'add',
   gameMode = false,
-  targetCorrect = 100
+  targetCorrect = null,
+  gameModeType = null
 ) => {
   const body = { level, beltOrDegree, operation };
 
   if (gameMode) {
     body.gameMode = true;
-    body.targetCorrect = targetCorrect;
+    if (targetCorrect != null) body.targetCorrect = targetCorrect;
+    if (gameModeType) body.gameModeType = gameModeType;
   }
 
   return callApi('/quiz/prepare', 'POST', body, pin);
@@ -178,12 +180,14 @@ export function mapQuestionToFrontend(backendQuestion) {
       ? backendQuestion.correctAnswer
       : computed;
 
-  // 3) Choices (fallback if API didn’t send them or sent < 4)
-  let answers = Array.isArray(backendQuestion.choices)
+  // 3) Choices
+  const choicesProvided = Array.isArray(backendQuestion.choices);
+  let answers = choicesProvided
     ? backendQuestion.choices.filter((n) => typeof n === 'number')
     : [];
 
-  const needToBuild = !answers.length || answers.length < 4;
+  // Only auto-generate if the backend didn't send choices at all.
+  const needToBuild = !choicesProvided;
   if (needToBuild && Number.isFinite(correct)) {
     const set = new Set(answers);
     set.add(correct);

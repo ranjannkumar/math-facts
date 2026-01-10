@@ -23,6 +23,9 @@ const GameModeExitScreen = lazy(() => import('./components/GameModeExitScreen.js
 const GameModeVideoScreen = lazy(() => import('./components/GameModeVideoScreen.jsx'));
 const GameModeVideoPlayer = lazy(() => import('./components/GameModeVideoPlayer.jsx'));
 const GameModeVideoSelectScreen = lazy(() => import('./components/GameModeVideoSelectScreen.jsx'));
+const GameModeSurfVideoScreen = lazy(() => import('./components/GameModeSurfVideoScreen.jsx'));
+const GameModeSurfIntroScreen = lazy(() => import('./components/GameModeSurfIntroScreen.jsx'));
+const GameModeLightningCompleteScreen = lazy(() => import('./components/GameModeLightningCompleteScreen.jsx'));
 const UserQuestionStats = lazy(() => import('./components/UserQuestionStats.jsx'));
 const AnalyticsScreen = lazy(() => import('./components/AnalyticsScreen.jsx'));
 const AdminSettings = lazy(() => import('./components/AdminSettings.jsx'));
@@ -107,6 +110,9 @@ const App = () => {
         <Route path="/game-mode-video-select" element={<GameModeVideoSelectScreen />} /> 
         {/* Update this route to use the new path for the player */}
         <Route path="/game-mode-video-play/:videoName" element={<GameModeVideoPlayer />} />
+        <Route path="/game-mode-lightning-complete" element={<GameModeLightningCompleteScreen />} />
+        <Route path="/game-mode-surf-intro" element={<GameModeSurfIntroScreen />} />
+        <Route path="/game-mode-surf-video/:kind" element={<GameModeSurfVideoScreen />} />
 
 
         <Route path="/game-mode-intro" element={<GameModeIntroScreen />} />

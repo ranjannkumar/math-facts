@@ -60,6 +60,7 @@ const useMathGame = () => {
 
   // --- GAME MODE STATE ---
   const [isGameMode, setIsGameMode] = useState(false);
+  const [gameModeType, setGameModeType] = useState(null); // 'lightning' | 'surf'
   const [lightningCount, setLightningCount] = useState(0);
   const [showWayToGoAfterFailure, setShowWayToGoAfterFailure] = useState(false);
   const [gameModeLevel, setGameModeLevel] = useState(1);
@@ -68,6 +69,13 @@ const useMathGame = () => {
   const [videoList, setVideoList] = useState([]);
   const [lastAnswerMeta, setLastAnswerMeta] = useState(null);
 // { isCorrect, isFast }
+
+  // Surf mode progress (backend-driven)
+  const [surfQuizNumber, setSurfQuizNumber] = useState(1);
+  const [surfCorrectStreak, setSurfCorrectStreak] = useState(0);
+  const [completedSurfQuizzes, setCompletedSurfQuizzes] = useState(0);
+  const [surfQuizzesRequired, setSurfQuizzesRequired] = useState(5);
+  const [questionsPerQuiz, setQuestionsPerQuiz] = useState(4);
 
 
   // { symbol: '⚡' | '✓' | '✗', isCorrect: boolean }
@@ -172,6 +180,15 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
   }, 500);
 }, []);
 
+  const applySurfState = useCallback((payload) => {
+    if (!payload) return;
+    if (typeof payload.surfQuizNumber === 'number') setSurfQuizNumber(payload.surfQuizNumber);
+    if (typeof payload.surfCorrectStreak === 'number') setSurfCorrectStreak(payload.surfCorrectStreak);
+    if (typeof payload.completedSurfQuizzes === 'number') setCompletedSurfQuizzes(payload.completedSurfQuizzes);
+    if (typeof payload.surfQuizzesRequired === 'number') setSurfQuizzesRequired(payload.surfQuizzesRequired);
+    if (typeof payload.questionsPerQuiz === 'number') setQuestionsPerQuiz(payload.questionsPerQuiz);
+  }, []);
+
 
   const hardResetQuizState = useCallback(() => {
     if (inactivityTimeoutId.current) {
@@ -209,10 +226,16 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
 
     // Reset Game Mode state
     setIsGameMode(false);
+    setGameModeType(null);
     setLightningCount(0);
     setCurrentAnswerSymbol(null);
     setIsGameModePractice(false);
     setGameModeInterventionIndex(null);
+    setSurfQuizNumber(1);
+    setSurfCorrectStreak(0);
+    setCompletedSurfQuizzes(0);
+    setSurfQuizzesRequired(5);
+    setQuestionsPerQuiz(4);
 
     setVideoOptions(null);
     setShouldExitAfterVideo(false);
@@ -515,6 +538,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       operation = 'add',
       navigateToGameMode = false,
       navigateToIntro = false,
+      gameModeType: requestedGameModeType = 'lightning',
     } = {}) => {
       const reqLevel =
         level != null
@@ -545,9 +569,14 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       setCurrentQuestion(null);
       setCurrentQuestionIndex(0);
       setQuizRunId(null);
+      setCurrentQuizStreak(0);
+      setStreakPosition(0);
+      setAnswerSymbols([]);
+      setTransientStreakMessage(null);
 
       // Enter game mode state
       setIsGameMode(true);
+      setGameModeType(requestedGameModeType || 'lightning');
       setIsGameModePractice(false);
       setInterventionQuestion(null);
       setGameModeInterventionIndex(null);
@@ -557,11 +586,22 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       localStorage.setItem('game-mode-table', String(reqLevel));
 
       try {
-        // IMPORTANT: gameMode=true + targetCorrect
-        const prep = await quizPrepare(reqLevel, reqBelt, childPin, operation, true, LIGHTNING_GOAL);
+        const targetCorrect =
+          (requestedGameModeType || 'lightning') === 'lightning' ? LIGHTNING_GOAL : null;
+        const prep = await quizPrepare(
+          reqLevel,
+          reqBelt,
+          childPin,
+          operation,
+          true,
+          targetCorrect,
+          requestedGameModeType
+        );
 
         setQuizRunId(prep.quizRunId);
         setLightningCount(typeof prep.totalCorrect === 'number' ? prep.totalCorrect : 0);
+        if (prep?.gameModeType) setGameModeType(prep.gameModeType);
+        applySurfState(prep);
 
         const started = await quizStart(prep.quizRunId, childPin);
 
@@ -571,6 +611,8 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         }
 
         const mapped = backendQuestions.map(mapQuestionToFrontend);
+        if (started?.gameModeType) setGameModeType(started.gameModeType);
+        applySurfState(started);
 
         const startIndex =
           typeof started?.currentIndex === 'number'
@@ -596,7 +638,36 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         console.error('[GameMode] Failed to start/resume:', e);
       }
     },
-    [childPin, selectedTable, selectedDifficulty, navigate]
+    [childPin, selectedTable, selectedDifficulty, navigate, applySurfState]
+  );
+
+  const startSurfNextQuiz = useCallback(
+    async ({ navigateToGameMode = true } = {}) => {
+      if (!quizRunId || !childPin) return;
+
+      try {
+        const started = await quizStart(quizRunId, childPin);
+        const backendQuestions = started?.questions || started?.run?.questions || [];
+
+        if (!backendQuestions || backendQuestions.length === 0) {
+          throw new Error('No questions returned from quizStart for Surf Mode.');
+        }
+
+        const mapped = backendQuestions.map(mapQuestionToFrontend);
+        if (started?.gameModeType) setGameModeType(started.gameModeType);
+        applySurfState(started);
+
+        setQuizQuestions(mapped);
+        setCurrentQuestionIndex(0);
+        setCurrentQuestion(mapped[0]);
+        questionStartTimestamp.current = Date.now();
+
+        if (navigateToGameMode) navigate('/game-mode', { replace: true });
+      } catch (e) {
+        console.error('[SurfMode] Failed to start next quiz:', e);
+      }
+    },
+    [quizRunId, childPin, navigate, applySurfState]
   );
 
   /**
@@ -626,6 +697,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
           await startOrResumeGameModeRun({
             level: table,
             beltOrDegree: difficulty,
+            gameModeType: prep?.gameModeType || 'lightning',
             navigateToGameMode: true,
           });
           return;
@@ -726,6 +798,76 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       return;
     }
 
+    const resolvedGameModeType = out?.gameModeType || gameModeType || 'lightning';
+    if (resolvedGameModeType && resolvedGameModeType !== gameModeType) {
+      setGameModeType(resolvedGameModeType);
+    }
+    if (resolvedGameModeType === 'surf') {
+      setGameModeType('surf');
+      applySurfState(out);
+      setCurrentQuizStreak(0);
+      setTransientStreakMessage(null);
+
+      if (out?.dailyStats) {
+        setCorrectCount(out.dailyStats.correctCount);
+        setDailyTotalMs(out.dailyStats.totalActiveMs);
+        if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
+        if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
+      }
+      if (out?.updatedProgress) setTableProgress(out.updatedProgress);
+
+      const surfCompleted = !!out?.completed && (out?.beltAwarded || out?.passed);
+      if (surfCompleted) {
+        setIsGameMode(false);
+        setIsAnimating(false);
+
+        setIsTimerPaused(true);
+        setPausedTime(Date.now());
+        navigate('/game-mode-surf-video/win', {
+          replace: true,
+          state: { exitAfter: true },
+        });
+        return;
+      }
+
+      const surfPassed = !!out?.surfQuizPassed;
+      if (surfPassed && out?.showWinVideo) {
+        setIsTimerPaused(true);
+        setPausedTime(Date.now());
+        setIsAnimating(false);
+        navigate('/game-mode-surf-video/win', {
+          replace: true,
+          state: { exitAfter: false },
+        });
+        return;
+      }
+
+      if (surfPassed && !out?.showWinVideo) {
+        await startSurfNextQuiz({ navigateToGameMode: true });
+        setIsAnimating(false);
+        return;
+      }
+
+      // No answer symbol in Surf Mode 2
+      if (!isCorrect) audioManager.playWrongSound();
+      if (isCorrect) audioManager.playCompleteSound();
+
+      const nextIndex =
+        typeof out?.nextIndex === 'number' ? out.nextIndex : currentQuestionIndex + 1;
+
+      if (!quizQuestions || quizQuestions.length === 0 || nextIndex >= quizQuestions.length) {
+        await startSurfNextQuiz({ navigateToGameMode: false });
+        setIsAnimating(false);
+        return;
+      }
+
+      setCurrentQuestionIndex(nextIndex);
+      setCurrentQuestion(quizQuestions[nextIndex]);
+      questionStartTimestamp.current = Date.now();
+      setIsAnimating(false);
+      return;
+    }
+
       //  Determine fast/slow from actual response time (fast ≤ 2s)
       const isFastAnswer = responseMs <= 2000;
 
@@ -821,7 +963,17 @@ if (!isCorrect) {
         if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
         if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
       }
-      
+      if (out?.lightningComplete && out?.surfRequired) {
+        setIsTimerPaused(true);
+        setPausedTime(Date.now());
+        setQuizQuestions([]);
+        setCurrentQuestion(null);
+        setCurrentQuestionIndex(0);
+        setIsAnimating(false);
+        navigate('/game-mode-lightning-complete', { replace: true });
+        return;
+      }
+
       if (reachedNewMilestone) {
         setShouldExitAfterVideo(true);
         setIsTimerPaused(true);
@@ -1094,8 +1246,11 @@ if (!isCorrect) {
       answerSymbols,
       elapsedTime,
       isGameMode,
+      gameModeType,
       lightningCount,
       navigate,
+      applySurfState,
+      startSurfNextQuiz,
     ]
   );
 
@@ -1115,6 +1270,30 @@ if (!isCorrect) {
           setIsTimerPaused(false);
           setElapsedTime(0);
           setSessionCorrectCount(out.sessionCorrectCount || 0);
+          return out;
+        }
+
+        if (out?.surfQuizRestarted) {
+          if (out?.questions && Array.isArray(out.questions)) {
+            const mapped = out.questions.map(mapQuestionToFrontend);
+            setQuizQuestions(mapped);
+            setCurrentQuestionIndex(0);
+            setCurrentQuestion(mapped[0]);
+            questionStartTimestamp.current = Date.now();
+          }
+
+          setGameModeType('surf');
+          applySurfState(out);
+          setIsGameModePractice(false);
+
+          if (out?.showLoseVideo) {
+            setIsTimerPaused(true);
+            setPausedTime(Date.now());
+            navigate('/game-mode-surf-video/lose', { replace: true });
+            return out;
+          }
+
+          navigate('/game-mode', { replace: true });
           return out;
         }
 
@@ -1149,7 +1328,7 @@ if (!isCorrect) {
         return { stillPracticing: true, error: e.message };
       }
     },
-    [quizRunId, childPin, pausedTime, isGameMode, navigate]
+    [quizRunId, childPin, pausedTime, isGameMode, navigate, applySurfState]
   );
 
   // ---------------- INACTIVITY TIMER ----------------
@@ -1356,8 +1535,15 @@ if (!isCorrect) {
     // GAME MODE
     isGameMode,
     setIsGameMode,
+    gameModeType,
+    setGameModeType,
     lightningCount,
     setLightningCount,
+    surfQuizNumber,
+    surfCorrectStreak,
+    completedSurfQuizzes,
+    surfQuizzesRequired,
+    questionsPerQuiz,
     currentAnswerSymbol,
     setCurrentAnswerSymbol,
     LIGHTNING_GOAL,
@@ -1371,6 +1557,7 @@ if (!isCorrect) {
     videoOptions,
     handleVideoSelection,
     videoList,
+    startSurfNextQuiz,
 
     // backend-driven starter
     startOrResumeGameModeRun,
@@ -1511,7 +1698,6 @@ if (!isCorrect) {
 
     // kept exports (minimal breakage)
     setSessionCorrectCount,
-    sessionCorrectCount,
   };
 };
 

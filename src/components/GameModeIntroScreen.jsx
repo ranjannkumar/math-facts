@@ -21,7 +21,7 @@ const GameModeIntroScreen = () => {
     // 3. Start Game & Navigate ONLY when backend is ready
     // We pass 'navigateToGameMode: true' so the hook handles the navigation
     // immediately after the API successfully returns the questions.
-    startOrResumeGameModeRun({ navigateToGameMode: true });
+    startOrResumeGameModeRun({ navigateToGameMode: true, gameModeType: 'lightning' });
 
   }, [setIsGameMode, startOrResumeGameModeRun]);
 

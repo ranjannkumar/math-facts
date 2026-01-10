@@ -356,11 +356,14 @@ useEffect(() => {
     if (isGameMode && isGameModePractice) {
       const out = await handlePracticeAnswer(practiceQ.id, answerNumber);
 
-      if (out.resume) {
+      if (out.resume || out.surfQuizRestarted) {
         setIsClosing(true);
         setInterventionQuestion(null);
         setShowLearningModule(false);
-        navigate('/game-mode', { replace: true });
+
+        if (out.resume) {
+          navigate('/game-mode', { replace: true });
+        }
       } else {
         console.error('Game Mode Practice failed to resume.');
       }
