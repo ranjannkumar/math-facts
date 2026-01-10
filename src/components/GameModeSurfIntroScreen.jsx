@@ -22,10 +22,10 @@ const GameModeSurfIntroScreen = () => {
         className="text-center p-10 bg-white/90 rounded-3xl shadow-2xl border-4 border-emerald-500 transform scale-105 cursor-default"
         aria-label="Surf mode loading"
       >
-        <h1 className="text-4xl sm:text-5xl font-black text-emerald-700 mb-3">
+        <h1 className="text-4xl sm:text-5xl font-black text-emerald-700 mb-3 animate-bounce">
           Don't fall off 
         </h1>
-        <h1 className="text-4xl sm:text-5xl font-black text-emerald-700 mb-3">
+        <h1 className="text-4xl sm:text-5xl font-black text-emerald-700 mb-3 animate-bounce">
            the Surfboard
         </h1>
         

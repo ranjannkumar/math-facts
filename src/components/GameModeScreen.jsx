@@ -316,7 +316,7 @@ useEffect(() => {
                         isAnswerSubmitted ||
                         typedInput === ''
                       }
-                      className="bg-green-600 text-white text-sm sm:text-base font-bold py-2 sm:py-3 px-8 rounded-xl shadow-md hover:bg-green-700 active:scale-95 transition disabled:bg-green-400 disabled:cursor-not-allowed"
+                      className="bg-blue-600 text-white text-sm sm:text-base font-bold py-2 sm:py-3 px-8 rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition disabled"
                     >
                       Submit
                     </button>
