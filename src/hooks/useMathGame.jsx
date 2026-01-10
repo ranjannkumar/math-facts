@@ -68,6 +68,8 @@ const useMathGame = () => {
   const [videoOptions, setVideoOptions] = useState(null); // { option1, option2 }
   const [videoList, setVideoList] = useState([]);
   const [lastAnswerMeta, setLastAnswerMeta] = useState(null);
+  const [shouldGoToLightningCompleteAfterVideo, setShouldGoToLightningCompleteAfterVideo] = useState(false);
+
 // { isCorrect, isFast }
 
   // Surf mode progress (backend-driven)
@@ -969,10 +971,31 @@ if (!isCorrect) {
         setQuizQuestions([]);
         setCurrentQuestion(null);
         setCurrentQuestionIndex(0);
+
+        const options = generateRandomVideoOptions();
+
+        // If we have bonus videos, ALWAYS play them at lightning completion (100),
+        // even if the last answer was not ⚡ (because 100 is also a 5-milestone).
+        if (options) {
+          setVideoOptions(options);
+
+          // after the selected video ends, go to Lightning Complete screen
+          setShouldGoToLightningCompleteAfterVideo(true);
+
+          // make sure we don't accidentally route to /game-mode-exit
+          setShouldExitAfterVideo(false);
+
+          setIsAnimating(false);
+          navigate('/game-mode-video-select', { replace: true });
+          return;
+        }
+
+        // Fallback: no videos available
         setIsAnimating(false);
         navigate('/game-mode-lightning-complete', { replace: true });
         return;
       }
+
 
       if (reachedNewMilestone) {
         setShouldExitAfterVideo(true);
@@ -1558,6 +1581,9 @@ if (!isCorrect) {
     handleVideoSelection,
     videoList,
     startSurfNextQuiz,
+    shouldGoToLightningCompleteAfterVideo,
+    setShouldGoToLightningCompleteAfterVideo,
+
 
     // backend-driven starter
     startOrResumeGameModeRun,

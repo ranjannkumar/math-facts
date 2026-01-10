@@ -10,6 +10,9 @@ const GameModeVideoPlayer = () => {
     setPausedTime,
     shouldExitAfterVideo,
     setShouldExitAfterVideo,
+    shouldGoToLightningCompleteAfterVideo,
+    setShouldGoToLightningCompleteAfterVideo,
+
   } = useContext(MathGameContext);
 
   const { videoName } = useParams();
@@ -29,12 +32,16 @@ const GameModeVideoPlayer = () => {
       }
       setPausedTime?.(0);
 
-      if (shouldExitAfterVideo) {
-        setShouldExitAfterVideo(false);
-        navigate("/game-mode-exit", { replace: true });
-      } else {
-        navigate("/game-mode", { replace: true });
-      }
+      if (shouldGoToLightningCompleteAfterVideo) {
+        setShouldGoToLightningCompleteAfterVideo(false);
+        navigate("/game-mode-lightning-complete", { replace: true });
+        } else if (shouldExitAfterVideo) {
+          setShouldExitAfterVideo(false);
+          navigate("/game-mode-exit", { replace: true });
+        } else {
+          navigate("/game-mode", { replace: true });
+        }
+
     };
 
     const handleEnded = () => cleanupAndNavigate();
@@ -66,6 +73,9 @@ const GameModeVideoPlayer = () => {
     setPausedTime,
     shouldExitAfterVideo,
     setShouldExitAfterVideo,
+    shouldGoToLightningCompleteAfterVideo,
+    setShouldGoToLightningCompleteAfterVideo,
+
   ]);
 
   if (!videoUrl) {
