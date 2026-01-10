@@ -574,7 +574,7 @@ useEffect(() => {
               <button
                 onClick={handleSubmitTypedAnswer}
                 disabled={isSubmitting || typedInput === ''}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1 disabled:from-green-300 disabled:to-emerald-300 disabled:cursor-not-allowed"
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
               >
                 Submit
               </button>
