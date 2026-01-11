@@ -20,6 +20,9 @@ const GameModeSurfVideoScreen = () => {
     setIsTimerPaused,
     setPausedTime,
     setShouldExitAfterVideo,
+    pendingSurfPractice,
+    setPendingSurfPractice,
+    setShowLearningModule,
   } = useContext(MathGameContext);
 
   const videoSrc = VIDEO_MAP[kind] || VIDEO_MAP.intro;
@@ -41,6 +44,13 @@ const GameModeSurfVideoScreen = () => {
         setIsTimerPaused(false);
         setPausedTime(0);
         navigate('/game-mode-surf-intro', { replace: true });
+        return;
+      }
+
+      if (kind === 'lose' && pendingSurfPractice) {
+        setShowLearningModule(true);
+        setPendingSurfPractice(false);
+        navigate('/learning', { replace: true });
         return;
       }
 
@@ -70,6 +80,9 @@ const GameModeSurfVideoScreen = () => {
     setPausedTime,
     startSurfNextQuiz,
     setShouldExitAfterVideo,
+    pendingSurfPractice,
+    setPendingSurfPractice,
+    setShowLearningModule,
   ]);
 
   return (

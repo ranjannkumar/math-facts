@@ -65,6 +65,7 @@ const useMathGame = () => {
   const [showWayToGoAfterFailure, setShowWayToGoAfterFailure] = useState(false);
   const [gameModeLevel, setGameModeLevel] = useState(1);
   const [shouldExitAfterVideo, setShouldExitAfterVideo] = useState(false);
+  const [pendingSurfPractice, setPendingSurfPractice] = useState(false);
   const [videoOptions, setVideoOptions] = useState(null); // { option1, option2 }
   const [videoList, setVideoList] = useState([]);
   const [lastAnswerMeta, setLastAnswerMeta] = useState(null);
@@ -241,6 +242,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
 
     setVideoOptions(null);
     setShouldExitAfterVideo(false);
+    setPendingSurfPractice(false);
     setGameModeLevel(1);
   }, []);
 
@@ -796,6 +798,12 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       setIsGameModePractice(true);
       setGameModeInterventionIndex(currentQuestionIndex);
       setIsAnimating(false);
+      const practiceMode = out?.gameModeType || gameModeType;
+      if (isGameMode && practiceMode === 'surf') {
+        setPendingSurfPractice(true);
+        navigate('/game-mode-surf-video/lose', { replace: true });
+        return;
+      }
       navigate('/learning');
       return;
     }
@@ -1309,13 +1317,6 @@ if (!isCorrect) {
           applySurfState(out);
           setIsGameModePractice(false);
 
-          if (out?.showLoseVideo) {
-            setIsTimerPaused(true);
-            setPausedTime(Date.now());
-            navigate('/game-mode-surf-video/lose', { replace: true });
-            return out;
-          }
-
           navigate('/game-mode', { replace: true });
           return out;
         }
@@ -1411,6 +1412,11 @@ if (!isCorrect) {
           }
 
           setIsAwaitingInactivityResponse(false);
+          if (isGameMode && gameModeType === 'surf') {
+            setPendingSurfPractice(true);
+            navigate('/game-mode-surf-video/lose', { replace: true });
+            return;
+          }
           navigate('/learning');
           return;
         }
@@ -1577,6 +1583,8 @@ if (!isCorrect) {
     questionStartTimestamp,
     shouldExitAfterVideo,
     setShouldExitAfterVideo,
+    pendingSurfPractice,
+    setPendingSurfPractice,
     videoOptions,
     handleVideoSelection,
     videoList,
