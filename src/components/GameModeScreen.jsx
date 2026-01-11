@@ -107,6 +107,14 @@ useEffect(() => {
     });
   };
 
+  const surfEmojiCount = Math.max(
+    0,
+    Math.min(
+      Number.isFinite(surfCorrectStreak) ? surfCorrectStreak : 0,
+      Number.isFinite(questionsPerQuiz) ? questionsPerQuiz : 10
+    )
+  );
+
 
   return (
     <div
@@ -150,7 +158,10 @@ useEffect(() => {
             {isSurfMode ? (
               <div className="w-full flex justify-between items-center bg-emerald-900/40 rounded-lg p-2 mb-4 sm:mb-6 shadow-inner">
                 <span className="text-lg font-bold text-emerald-200">
-                  Games Won:  {completedSurfQuizzes}/{surfQuizzesRequired}
+                  Surfboard:  
+                </span>
+                <span className="text-lg font-bold text-emerald-200">
+                  {surfCorrectStreak}/{questionsPerQuiz}
                 </span>
               </div>
             ) : (
@@ -209,6 +220,16 @@ useEffect(() => {
             </AnimatePresence>
             
           </div>
+
+          {isSurfMode && surfCorrectStreak > 0 && (
+            <div className="flex justify-center items-center gap-2 mt-2 sm:mt-3 text-2xl sm:text-3xl">
+              {Array.from({ length: surfCorrectStreak }).map((_, index) => (
+                <span key={`surf-emoji-${index}`} role="img" aria-label="surfboard rider">
+                  🏄
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div

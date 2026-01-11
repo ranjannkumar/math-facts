@@ -1315,6 +1315,9 @@ if (!isCorrect) {
 
           setGameModeType('surf');
           applySurfState(out);
+          if (typeof out?.surfCorrectStreak !== 'number') {
+            setSurfCorrectStreak(0);
+          }
           setIsGameModePractice(false);
 
           navigate('/game-mode', { replace: true });
