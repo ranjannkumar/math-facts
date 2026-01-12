@@ -1,235 +1,227 @@
-import React, { useCallback, useContext, useEffect, useState,useRef } from 'react';
+import React, { useCallback, useContext, useEffect, useState, useRef, useMemo } from 'react';
 import { MathGameContext } from '../App.jsx';
 import { useNavigate } from 'react-router-dom';
-import { submitVideoRating } from '../api/mathApi.js';
 
+const rewardVideoModules = import.meta.glob('/public/reward-videos/**/*.mp4', { as: 'url' });
+const rewardThumbPngModules = import.meta.glob('/public/reward-videos/**/*.png', { as: 'url' });
+const rewardThumbJpgModules = import.meta.glob('/public/reward-videos/**/*.jpg', { as: 'url' });
 
-const getVideoPath = (difficulty) => {
-  if (!difficulty) return null;
-
-  // Colored Belts
-  switch (difficulty) {
-    case 'white': return '/white_video.mp4';
-    case 'yellow': return '/yellow_video.mp4';
-    case 'green': return '/green_video.mp4';
-    case 'blue': return '/blue_video.mp4';
-    case 'red': return '/red_video.mp4';
-    case 'brown': return '/brown_video.mp4';
-  }
-
-  // Black Belt Degrees
-  if (difficulty.startsWith('black-')) {
-    const degree = parseInt(difficulty.split('-')[1], 10);
-    if (degree === 1) return '/degree1_video.mp4';
-    if (degree === 2) return '/degree2_video.mp4';
-    if (degree === 3 ) return '/degree3_video.mp4'; 
-    if (degree === 4 ) return '/degree4_video.mp4';
-    if (degree === 5 ) return '/degree5_video.mp4';
-    if (degree === 6 ) return '/degree6_video.mp4';
-    if (degree === 7 ) return '/degree7_video.mp4';
-  }
-  
-  return null;
+const getRewardMeta = (path) => {
+  const parts = path.split('/');
+  const idx = parts.indexOf('reward-videos');
+  if (idx === -1 || idx + 1 >= parts.length) return null;
+  const belt = parts[idx + 1];
+  const file = parts[parts.length - 1];
+  const base = file.replace(/\.(mp4|png|jpg)$/i, '');
+  return { belt, base, key: `${belt}/${base}` };
 };
 
-//Rating Panel Component
-const RatingPanel = ({ onRate, onSkip, isSubmitting }) => {
-  const [selectedRating, setSelectedRating] = useState(0);
-
-  return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl p-8 shadow-2xl max-w-lg w-full flex flex-col items-center animate-pop-in">
-        <h2 className="text-2xl font-bold text-gray-200 mb-6">Rate this video</h2>
-
-        {/* Rating Grid */}
-        <div className="grid grid-cols-5 gap-3 w-full max-w-md mb-6">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((r) => (
-            <button
-              key={r}
-              onClick={() => setSelectedRating(r)}
-              disabled={isSubmitting}
-              className={`py-3 px-2 rounded-lg font-semibold text-lg transition-all duration-200 
-                ${selectedRating === r 
-                  ? 'bg-green-500 text-white shadow-xl scale-105' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-center space-x-4">
-          <button
-            onClick={() => onRate(selectedRating)}
-            disabled={selectedRating === 0 || isSubmitting}
-            className={`kid-btn text-white transition-all bg-gray-600 ${
-              selectedRating === 0 ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
-            }`}
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit '}
-          </button>
-          <button
-            onClick={() => onSkip()}
-            disabled={isSubmitting}
-            className="kid-btn bg-gray-800 hover:bg-gray-900 text-gray-800"
-          >
-            Skip 
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+const normalizeBeltKey = (difficulty) => {
+  if (!difficulty) return null;
+  const lower = String(difficulty).toLowerCase();
+  if (lower.startsWith('black')) {
+    const parts = lower.split('-');
+    const degree = parts[1];
+    return degree ? `black-degree-${degree}` : null;
+  }
+  return lower;
 };
 
 const VideoPlayerScreen = () => {
   const navigate = useNavigate();
   const { 
-    selectedTable, 
     setQuizRunId, 
     tempNextRoute, 
     setTempNextRoute, 
-    selectedDifficulty,
-    childPin,
+    selectedDifficulty
   } = useContext(MathGameContext);
   
-  const [videoSrc, setVideoSrc] = useState(null);
-  const [videoKey, setVideoKey] = useState(0); // Key to force remount of <video> element
-  const [videoEnded, setVideoEnded] = useState(false); // New state to track video end
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state for rating submission
-  const videoRef = useRef(null); //  ref for preventing pause
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [videoOptions, setVideoOptions] = useState(null);
+  const [videoEnded, setVideoEnded] = useState(false);
+  const videoRef = useRef(null);
+  const [rewardVideoList, setRewardVideoList] = useState([]);
+
+  const [hasAudio, setHasAudio] = useState(false);
 
   useEffect(() => {
-    // 1. Determine video path based on the completed level
-    const path = getVideoPath(selectedDifficulty);
-    
-    if (path) {
-      setVideoSrc(path);
-      setVideoKey(prev => prev + 1); // Force remount if src changes
-    } else {
-      setVideoEnded(true);
-    }
+    const v = videoRef.current;
+    if (!v) return;
 
-    return () => setTempNextRoute(null); // Clear the temp route on unmount
-  }, [selectedDifficulty, setTempNextRoute]);
+    v.muted = true;
+    v.setAttribute("playsinline", "true");
+    v.play().catch(() => { /* iOS may block until gesture */ });
+  }, [selectedVideo]);
 
-    useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
 
-    const handlePause = () => {
-      // If video isn't finished, force it to keep playing
-      if (el.currentTime < el.duration) {
-        el.play().catch(() => {
-          // Ignore play errors (e.g. Safari autoplay policies)
-        });
+  useEffect(() => {
+    const loadRewardVideos = async () => {
+      const videoEntries = Object.entries(rewardVideoModules);
+      if (videoEntries.length === 0) {
+        setRewardVideoList([]);
+        return;
       }
+
+      const videoUrls = await Promise.all(videoEntries.map(([_, loader]) => loader()));
+
+      const pngEntries = Object.entries(rewardThumbPngModules);
+      const pngUrls = await Promise.all(pngEntries.map(([_, loader]) => loader()));
+      const jpgEntries = Object.entries(rewardThumbJpgModules);
+      const jpgUrls = await Promise.all(jpgEntries.map(([_, loader]) => loader()));
+
+      const thumbMap = new Map();
+      pngEntries.forEach(([path], idx) => {
+        const meta = getRewardMeta(path);
+        if (meta) thumbMap.set(meta.key, pngUrls[idx]);
+      });
+      jpgEntries.forEach(([path], idx) => {
+        const meta = getRewardMeta(path);
+        if (meta && !thumbMap.has(meta.key)) thumbMap.set(meta.key, jpgUrls[idx]);
+      });
+
+      const videos = videoEntries
+        .map(([path], idx) => {
+          const meta = getRewardMeta(path);
+          if (!meta) return null;
+          return {
+            name: meta.base,
+            belt: meta.belt,
+            key: meta.key,
+            url: videoUrls[idx],
+            thumbnailUrl: thumbMap.get(meta.key) || null,
+          };
+        })
+        .filter(Boolean);
+
+      setRewardVideoList(videos);
     };
 
-    el.addEventListener('pause', handlePause);
+    loadRewardVideos();
+    return () => setTempNextRoute(null);
+  }, [setTempNextRoute]);
 
-    return () => {
-      el.removeEventListener('pause', handlePause);
-    };
-  }, [videoSrc]);
+  const filteredRewardVideos = useMemo(() => {
+    const beltKey = normalizeBeltKey(selectedDifficulty);
+    if (!beltKey) return rewardVideoList;
+    const scoped = rewardVideoList.filter((v) => v.belt === beltKey);
+    return scoped.length ? scoped : rewardVideoList;
+  }, [rewardVideoList, selectedDifficulty]);
 
+  // 1. Generate two random options from the reward videos
+  useEffect(() => {
+    if (filteredRewardVideos && filteredRewardVideos.length > 0) {
+      const shuffled = [...filteredRewardVideos].sort(() => Math.random() - 0.5);
+      setVideoOptions({
+        option1: shuffled[0],
+        option2: shuffled[1] || shuffled[0],
+      });
+    } else {
+      setVideoOptions(null);
+    }
+  }, [filteredRewardVideos]);
 
   const handleNavigation = useCallback(() => {
-        let finalDestination = tempNextRoute;
+    let finalDestination = tempNextRoute;
 
-        if (!finalDestination) {
-            const isBlack = String(selectedDifficulty || '').startsWith('black');
-            const degree = isBlack ? parseInt(String(selectedDifficulty).split('-')[1] || '0', 10) : 0;
+    if (!finalDestination) {
+      const isBlack = String(selectedDifficulty || '').startsWith('black');
+      const degree = isBlack ? parseInt(String(selectedDifficulty).split('-')[1] || '0', 10) : 0;
 
-            if (selectedDifficulty === 'brown' || (isBlack && degree >= 1 && degree <= 6)) {
-                finalDestination = '/black';
-            } else if (isBlack && degree === 7) {
-                finalDestination = '/levels';
-            } else {
-                finalDestination = '/belts'; 
-            }
-        }
-        
-        finalDestination = finalDestination || '/levels'; 
-
-        setQuizRunId(null);
-        setTempNextRoute(null);
-        navigate(finalDestination, { replace: true });
-
-    }, [tempNextRoute, selectedDifficulty, setQuizRunId, setTempNextRoute, navigate]);
-
-  const handleRateSubmit = async (rating) => {
-    setIsSubmitting(true);
+      if (selectedDifficulty === 'brown' || (isBlack && degree >= 1 && degree <= 6)) {
+        finalDestination = '/black';
+      } else if (isBlack && degree === 7) {
+        finalDestination = '/levels';
+      } else {
+        finalDestination = '/belts'; 
+      }
+    }
     
-    // Ensure we have the context needed for the API call
-    const level = selectedTable;
-    const beltOrDegree = selectedDifficulty;
+    finalDestination = finalDestination || '/levels'; 
+    setQuizRunId(null);
+    setTempNextRoute(null);
+    navigate(finalDestination, { replace: true });
+  }, [tempNextRoute, selectedDifficulty, setQuizRunId, setTempNextRoute, navigate]);
 
-    try {
-        if (rating > 0 && childPin && level && beltOrDegree) {
-            // Call the new API to submit rating and trigger email
-            await submitVideoRating(rating, level, beltOrDegree, childPin);
-        }
-    } catch (e) {
-        console.error('Failed to submit video rating:', e);
-        // Continue navigation even if email fails
-    } finally {
-        setIsSubmitting(false);
-        handleNavigation();
-    }
-  };
-if (!videoSrc) {
+  // Navigate automatically when video ends
+  useEffect(() => {
     if (videoEnded) {
-        return <RatingPanel 
-                    onRate={handleRateSubmit} 
-                    onSkip={() => handleNavigation()} 
-                    isSubmitting={isSubmitting} 
-                />;
+      handleNavigation();
     }
+  }, [videoEnded, handleNavigation]);
+
+  const renderCard = (option) => (
+    <button
+      type="button"
+      onClick={() => setSelectedVideo(option)}
+      className="flex-1 rounded-3xl overflow-hidden shadow-xl border-2 border-white/20 bg-slate-800/80 hover:bg-slate-700/90 transition-transform duration-150 hover:scale-[1.02] text-white"
+    >
+      <div className="w-full aspect-video bg-slate-900 overflow-hidden">
+        {option.thumbnailUrl ? (
+          <img src={option.thumbnailUrl} alt={option.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">No thumbnail</div>
+        )}
+      </div>
+      <div className="px-4 py-3 text-center">
+        <div className="text-lg sm:text-xl font-extrabold tracking-wide uppercase">
+          {option.name.length <= 16 ? option.name : option.name.slice(0, 14) + "..."}
+        </div>
+      </div>
+    </button>
+  );
+
+  // Phase 1: Selection Screen
+  if (!selectedVideo) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-black">
-        <p className="text-white">Preparing video...</p>
+      <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center px-4">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-10 text-yellow-300 drop-shadow-lg text-center">
+          Congrats 🎉 Belt Earned !
+        </h2>
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full max-w-3xl">
+          {videoOptions ? (
+            <>
+              {renderCard(videoOptions.option1)}
+              {renderCard(videoOptions.option2)}
+            </>
+          ) : (
+            <p className="text-white">Loading rewards...</p>
+          )}
+        </div>
       </div>
     );
   }
 
- return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-black">
-      {!videoEnded && (
-        <video 
-          ref={videoRef} 
-          key={videoKey} 
-          src={videoSrc}
-          onEnded={() => setVideoEnded(true)} // Set state to show rating panel
-          autoPlay
-          controls={false} 
-          className="max-w-full max-h-screen pointer-events-none"
-          style={{ width: '100vw', height: '100vh', objectFit: 'contain' }}
-        >
-          Your browser does not support the video tag.
-        </video>
-      )}
+ // Phase 2: Video Player (iOS-safe, GameModeVideoScreen style)
+return (
+  <div className="fixed inset-0 bg-black flex items-center justify-center">
+    <video
+      ref={videoRef}
+      src={selectedVideo.url}
+      muted
+      playsInline
+      preload="auto"
+      autoPlay
+      onEnded={() => setVideoEnded(true)}
+      className="w-full h-full object-contain pointer-events-none"
+    />
 
-      {/* Button to skip video and go to rating
-      {!videoEnded && (
-        <button 
-            onClick={() => setVideoEnded(true)} // Skip video -> show rating panel
-            className="fixed bottom-10 right-10 bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-xl z-50 transition-all duration-300"
-        >
-            Skip Video
-        </button>
-      )} */}
+    {!hasAudio && (
+      <button
+        className="absolute bottom-12 bg-white text-black px-6 py-3 rounded-xl shadow-xl text-lg font-semibold"
+        onClick={() => {
+          const v = videoRef.current;
+          if (!v) return;
+          v.muted = false;
+          v.play();
+          setHasAudio(true);
+        }}
+      >
+        🔊 Tap for sound
+      </button>
+    )}
+  </div>
+)
 
-      {/* Rating Panel Overlay */}
-      {videoEnded && (
-        <RatingPanel 
-            onRate={handleRateSubmit} 
-            onSkip={() => handleNavigation()} 
-            isSubmitting={isSubmitting} 
-        />
-      )}
-    </div>
-  );
 };
 
 export default VideoPlayerScreen;
