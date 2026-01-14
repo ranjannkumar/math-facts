@@ -32,7 +32,7 @@ function ms(x) {
   return `${(x / 1000).toFixed(1)}s`;
 }
 
-const FactDetailModal = ({ open, onClose, pin, factKey }) => {
+const FactDetailModal = ({ open, onClose, pin, factKey, onDetailLoaded }) => {
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState("");
@@ -50,9 +50,12 @@ const FactDetailModal = ({ open, onClose, pin, factKey }) => {
           operation: factKey.operation,
           a: factKey.a,
           b: factKey.b,
-          limit: 20,
+          limit: 200,
         });
-        if (alive) setDetail(data);
+        if (alive) {
+          setDetail(data);
+          onDetailLoaded?.(data, factKey);
+        }
       } catch (e) {
         if (alive) setError(e?.message || "Failed to load fact details");
       } finally {
@@ -189,6 +192,106 @@ export default function AnalyticsScreen() {
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailFact, setDetailFact] = useState(null);
+  const [lastFactDetail, setLastFactDetail] = useState(null);
+  const [lastFactKey, setLastFactKey] = useState(null);
+
+  const handleDetailLoaded = (data, key) => {
+    setLastFactDetail(data);
+    setLastFactKey(key);
+  };
+
+  const escapeCsv = (value) => {
+    if (value == null) return "";
+    const str = String(value);
+    if (/[",\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const formatCsvDate = (value) => {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toISOString();
+  };
+
+  const handleExportCsv = () => {
+    const rows = [];
+    const todayLabel = new Date().toISOString().slice(0, 10);
+
+    rows.push(["Summary Totals"]);
+    rows.push(["PIN", pin || ""]);
+    rows.push(["Date (exported)", todayLabel]);
+    rows.push(["Level filter", level]);
+    rows.push(["Operation filter", operation]);
+    rows.push([
+      "Total attempts",
+      summary?.overall?.totalAttempts ?? 0,
+    ]);
+    rows.push([
+      "Total correct",
+      summary?.overall?.totalCorrect ?? 0,
+    ]);
+    rows.push([
+      "Accuracy",
+      pct(summary?.overall?.accuracy ?? 0),
+    ]);
+    rows.push([]);
+    rows.push(["Facts"]);
+    rows.push(["Question", "Accuracy", "Attempts", "Avg Time", "Last Attempt", "Flags"]);
+    facts.forEach((f) => {
+      rows.push([
+        f.question,
+        pct(f.stats?.accuracy),
+        f.stats?.totalAttempts ?? 0,
+        ms(f.stats?.avgMs),
+        f.stats?.lastAttemptAt ? new Date(f.stats.lastAttemptAt).toLocaleDateString() : "",
+        `${f.stats?.mastered ? "mastered" : ""}${f.stats?.struggling ? " struggling" : ""}`.trim(),
+      ]);
+    });
+
+    rows.push([]);
+    rows.push(["Recent Attempts (Selected Fact)"]);
+    rows.push([
+      "Question",
+      "Timestamp",
+      "Correct",
+      "User Answer",
+      "Correct Answer",
+      "Response Ms",
+      "Mode",
+      "Choices",
+    ]);
+
+    if (lastFactDetail?.recentAttempts?.length) {
+      lastFactDetail.recentAttempts.forEach((a) => {
+        rows.push([
+          lastFactDetail?.fact?.question || "",
+          formatCsvDate(a.attemptedAt),
+          a.correct ? "Correct" : "Wrong",
+          a.userAnswer ?? "",
+          a.correctAnswer ?? "",
+          a.responseMs ?? "",
+          a.gameMode ? "Game mode" : "Quiz",
+          Array.isArray(a.choices) ? a.choices.join(" ") : "",
+        ]);
+      });
+    } else {
+      rows.push(["", "", "No recent attempts loaded", "", "", "", "", ""]);
+    }
+
+    const csv = rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `analytics_${pin || "user"}_${todayLabel}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     if (!pin) {
@@ -271,7 +374,13 @@ export default function AnalyticsScreen() {
             <FaArrowLeft /> 
           </button>
           <div className="text-3xl font-extrabold"> Analytics  </div>
-          <div />
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="kid-btn bg-white/90 hover:bg-white text-black px-4 py-2"
+          >
+            Export CSV
+          </button>
         </div>
 
         {(loadingTop || loadingFacts) && (
@@ -439,6 +548,7 @@ export default function AnalyticsScreen() {
         onClose={() => setDetailOpen(false)}
         pin={pin}
         factKey={detailFact}
+        onDetailLoaded={handleDetailLoaded}
       />
     </div>
   );
