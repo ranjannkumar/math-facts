@@ -238,7 +238,11 @@ useEffect(() => {
           }`}
         >
           <div
-            className={`bg-white backdrop-blur-sm rounded-xl sm:rounded-2xl mb-4 sm:mb-6 border-2 border-gray-200 flex flex-col justify-center ${
+            className={`${
+              isSurfMode
+                ? 'bg-gray-500/80 border border-gray-500/60 backdrop-blur-md'
+                : 'bg-white border-2 border-gray-200 backdrop-blur-sm'
+            } rounded-xl sm:rounded-2xl mb-4 sm:mb-6 flex flex-col justify-center ${
               isSurfMode
                 ? 'p-4 sm:p-5 md:p-6 min-h-[200px] sm:min-h-[260px] md:min-h-[320px]'
                 : 'p-3 sm:p-4 md:p-6 min-h-[200px] sm:min-h-[300px] md:min-h-[400px]'
@@ -246,8 +250,8 @@ useEffect(() => {
           >
             <div className="text-center mb-4 sm:mb-5 md:mb-6">
               <h3
-                className={`font-extrabold text-blue-600 mb-1 sm:mb-2 drop-shadow-lg ${
-                  isSurfMode ? 'text-5xl sm:text-6xl md:text-7xl' : 'text-7xl'
+                className={`font-extrabold mb-1 sm:mb-2 drop-shadow-lg ${
+                  isSurfMode ? 'text-7xl sm:text-8xl text-green-600' : 'text-7xl sm:text-8xl text-blue-600'
                 }`}
               >
                 {currentQuestion?.question || '1 + 1'}
@@ -290,7 +294,7 @@ useEffect(() => {
             {isSurfMode && (
               <div className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
                 <div className="relative px-3 sm:px-4 py-2">
-                  <div className="w-full bg-white border-4 border-blue-300 rounded-2xl h-11 sm:h-12 md:h-14 flex items-center justify-center text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 shadow mb-3 sm:mb-4">
+                  <div className="w-full bg-gray-800/60 rounded-xl sm:rounded-2xl h-11 sm:h-12 md:h-14 flex items-center justify-center text-2xl sm:text-3xl md:text-4xl font-extrabold text-white shadow mb-3 sm:mb-4">
                     {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
                   </div>
 
@@ -300,7 +304,7 @@ useEffect(() => {
                         key={n}
                         onClick={() => handleDigitPress(n)}
                         disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
-                        className="bg-gray-200 text-gray-900 text-base sm:text-lg font-bold py-2 sm:py-3 rounded-lg shadow-md hover:bg-gray-300 active:scale-95 transition select-none border border-gray-200"
+                        className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
                       >
                         {n}
                       </button>
@@ -308,21 +312,21 @@ useEffect(() => {
                     <button
                       onClick={() => handleDigitPress(9)}
                       disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
-                      className="bg-gray-200 text-gray-900 text-base sm:text-lg font-bold py-2 sm:py-3 rounded-lg shadow-md hover:bg-gray-300 active:scale-95 transition select-none border border-gray-200"
+                      className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
                     >
                       9
                     </button>
                     <button
                       onClick={() => handleDigitPress(0)}
                       disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
-                      className="bg-gray-200 text-gray-900 text-base sm:text-lg font-bold py-2 sm:py-3 rounded-lg shadow-md hover:bg-gray-300 active:scale-95 transition select-none border border-gray-200"
+                      className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
                     >
                       0
                     </button>
                     <button
                       onClick={handleClear}
                       disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
-                      className="bg-gray-300 text-gray-800 text-sm sm:text-base font-semibold py-2 sm:py-3 rounded-lg shadow-md hover:bg-gray-400 active:scale-95 transition col-span-2 border border-gray-300"
+                      className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none col-span-2"
                     >
                       Clear
                     </button>
@@ -337,7 +341,7 @@ useEffect(() => {
                         isAnswerSubmitted ||
                         typedInput === ''
                       }
-                      className="bg-blue-600 text-white text-sm sm:text-base font-bold py-2 sm:py-3 px-8 rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition disabled"
+                      className="bg-green-800 hover:bg-green-900 text-white font-bold py-3 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
                     >
                       Submit
                     </button>

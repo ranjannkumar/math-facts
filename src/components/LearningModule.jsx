@@ -534,47 +534,49 @@ useEffect(() => {
             </div>
 
             <div className="w-full max-w-sm mx-auto mb-4">
-              <div
-                className={[
-                  'w-full bg-white rounded-2xl h-24 flex items-center justify-center text-4xl font-extrabold shadow-lg',
-                  practiceStatus === 'success' ? 'border-4 border-green-500 text-green-600' : '',
-                  practiceStatus === 'error' ? 'border-4 border-red-400 text-red-600' : '',
-                  !practiceStatus ? 'border-4 border-green-300 text-gray-800' : ''
-                ].join(' ')}
-              >
+              <div className="w-full bg-gray-700/60 rounded-xl h-16 sm:h-20 flex items-center justify-center text-2xl sm:text-3xl font-extrabold text-white shadow-md">
                 {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 w-full max-w-sm mx-auto">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+            <div className="grid grid-cols-4 gap-3 w-full max-w-sm mx-auto">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
                 <button
                   key={n}
                   onClick={() => handleDigitPress(n)}
                   disabled={isSubmitting}
-                  className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
+                  className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
                 >
                   {n}
                 </button>
               ))}
               <button
-                onClick={handleClear}
+                onClick={() => handleDigitPress(9)}
                 disabled={isSubmitting}
-                className="bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl shadow-md hover:bg-gray-300 active:scale-95 transition col-span-1 border border-gray-300"
+                className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
               >
-                Clear
+                9
               </button>
               <button
                 onClick={() => handleDigitPress(0)}
                 disabled={isSubmitting}
-                className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
+                className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
               >
                 0
               </button>
               <button
+                onClick={handleClear}
+                disabled={isSubmitting}
+                className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none col-span-2"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="flex justify-center mt-4">
+              <button
                 onClick={handleSubmitTypedAnswer}
                 disabled={isSubmitting || typedInput === ''}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
+                className="bg-green-800 hover:bg-green-900 text-white font-bold py-3 px-8 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
               >
                 Submit
               </button>
@@ -635,6 +637,9 @@ useEffect(() => {
 
   };
 
+  const isFactView = isShowingFact && (isIntervention || isPreQuizFlow);
+  const isPreQuizPractice = isPreQuizFlow && !isShowingFact;
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
       <div 
@@ -648,7 +653,12 @@ useEffect(() => {
         }}
       />
       {/* Modal/Popup Container */}
-      <div className="bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm sm:max-w-md w-full mx-2 sm:mx-4 border border-blue-200/30 popup-zoom-in">
+      <div
+        className={[
+          (isFactView || isPreQuizPractice) ? 'bg-white border border-gray-200' : 'bg-gray-600/80 border border-gray-500/60',
+          'backdrop-blur-md rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm sm:max-w-md w-full mx-2 sm:mx-4 popup-zoom-in'
+        ].join(' ')}
+      >
         {renderBody()}
       </div>
     </div>
