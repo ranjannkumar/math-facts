@@ -537,7 +537,7 @@ useEffect(() => {
               <div
                 className={[
                   'w-full bg-white rounded-2xl h-24 flex items-center justify-center text-4xl font-extrabold shadow-lg',
-                  practiceStatus === 'success' ? 'border-4 border-green-500 text-green-600' : '',
+                  practiceStatus === 'success' ? 'border-4 border-green-300 text-gray-800' : '',
                   practiceStatus === 'error' ? 'border-4 border-red-400 text-red-600' : '',
                   !practiceStatus ? 'border-4 border-green-300 text-gray-800' : ''
                 ].join(' ')}

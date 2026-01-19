@@ -165,16 +165,15 @@ const QuizScreen = () => {
         </div>
 
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4">
-          <div
-            className={[
-              isBlackDegree7
-                ? 'bg-gray-500/80 border border-gray-500/60 backdrop-blur-md shadow-full'
-                : 'bg-white border-2 border-gray-200 backdrop-blur-sm',
-              'rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 min-h-[200px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center'
-            ].join(' ')}
-          >
+          <div className="bg-white backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 border-2 border-gray-200 min-h-[200px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center">
             <div className="text-center mb-3 sm:mb-4 md:mb-6">
-              <h3 className="text-7xl sm:text-8xl font-extrabold text-green-600 mb-1 sm:mb-2 drop-shadow-lg">
+              <h3
+                className={
+                  isBlackDegree7
+                    ? 'text-6xl sm:text-7xl font-extrabold text-green-500 text-center mb-6 whitespace-pre-line drop-shadow'
+                    : 'text-7xl font-extrabold text-green-600 mb-1 sm:mb-2 drop-shadow-lg'
+                }
+              >
                 {currentQuestion?.question || '1 + 1'}
               </h3>
             </div>
@@ -216,46 +215,37 @@ const QuizScreen = () => {
               <div className="flex flex-col items-center gap-4 sm:gap-5">
                 <div className="w-full max-w-sm">
                   <div
-                    className="w-full bg-gray-800/60 rounded-xl sm:rounded-2xl h-20 sm:h-24 flex items-center justify-center text-2xl sm:text-3xl font-extrabold text-white shadow-md"
+                    className="w-full bg-white rounded-2xl h-24 flex items-center justify-center text-4xl font-extrabold shadow-lg border-4 border-green-300 text-gray-800"
                   >
                     {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 sm:gap-3 w-full max-w-sm">
-                  {[1,2,3,4,5,6,7,8].map((n) => (
+                <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
+                  {[1,2,3,4,5,6,7,8,9].map((n) => (
                     <button
                       key={n}
                       onClick={() => handleDigitPress(n)}
                       disabled={isAnimating || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
-                      className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
+                      className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
                     >
                       {n}
                     </button>
                   ))}
                   <button
-                    onClick={() => handleDigitPress(9)}
+                    onClick={handleClear}
                     disabled={isAnimating || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
-                    className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
+                    className="bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl shadow-md hover:bg-gray-300 active:scale-95 transition col-span-1 border border-gray-300"
                   >
-                    9
+                    Clear
                   </button>
                   <button
                     onClick={() => handleDigitPress(0)}
                     disabled={isAnimating || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
-                    className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
+                    className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
                   >
                     0
                   </button>
-                  <button
-                    onClick={handleClear}
-                    disabled={isAnimating || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
-                    className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none col-span-2"
-                  >
-                    Clear
-                  </button>
-                </div>
-                <div className="flex justify-center mt-3 sm:mt-4">
                   <button
                     onClick={handleSubmitTyped}
                     disabled={
@@ -266,7 +256,7 @@ const QuizScreen = () => {
                       isAwaitingInactivityResponse ||
                       typedInput === ''
                     }
-                    className="bg-green-800 hover:bg-green-900 text-white font-bold py-3 px-8 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
                   >
                     Submit
                   </button>
