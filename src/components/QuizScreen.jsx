@@ -100,7 +100,13 @@ const QuizScreen = () => {
       }}
     >
       <div className="w-full min-h-screen flex flex-col items-center justify-center relative">
-        <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6">
+        <div
+          className={
+            isBlackDegree7
+              ? 'w-full max-w-sm sm:max-w-md mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6'
+              : 'w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6'
+          }
+        >
           
          {/* --- STREAK MESSAGE & PROGRESS BAR CONTAINER --- */}
           <div className="relative h-20 mb-4">
@@ -165,7 +171,13 @@ const QuizScreen = () => {
         </div>
 
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4">
-          <div className="bg-white backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 border-2 border-gray-200 min-h-[200px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center">
+          <div
+            className={
+              isBlackDegree7
+                ? 'bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm sm:max-w-md w-full mx-auto border border-blue-200/30 min-h-[200px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center'
+                : 'bg-white backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 border-2 border-gray-200 min-h-[200px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center'
+            }
+          >
             <div className="text-center mb-3 sm:mb-4 md:mb-6">
               <h3
                 className={
