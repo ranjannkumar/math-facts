@@ -5,12 +5,18 @@ import { MathGameContext } from '../App.jsx';
 import { getAdminStats } from '../api/mathApi.js';
 import { FaUserShield } from 'react-icons/fa';
 
-const inputBaseClass =
-  "block w-full max-w-xs mx-auto box-border mb-4 sm:mb-6 px-4 sm:px-6 h-14 sm:h-16 " +
-  "rounded-xl sm:rounded-2xl opacity-80 text-white font-bold text-center text-4xl tracking-widest " +
-  "transition-all duration-200 bg-gray-800/50 " +
-  "appearance-none outline-none ring-0 border-0 shadow-none " +
-  "focus:outline-none focus:ring-0 focus:border-0";
+const formInputWrapClass =
+  "w-full max-w-xs mx-auto mb-2 sm:mb-3 rounded-2xl border-4 border-green-300 " +
+  "bg-white shadow-lg focus-within:border-green-300";
+const formInputClass =
+  "w-full h-10 sm:h-12 px-3 sm:px-4 rounded-xl text-gray-800 font-bold text-center " +
+  "text-2xl sm:text-3xl tracking-widest bg-transparent outline-none border-0";
+const labelClass =
+  "text-base sm:text-lg md:text-xl text-center font-sans text-green-600 font-semibold tracking-wide mb-1";
+const panelClass =
+  "bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 rounded-2xl sm:rounded-3xl " +
+  "p-3 sm:p-4 shadow-2xl flex flex-col items-center relative z-10 mx-2 sm:mx-4 " +
+  "w-full max-w-sm border border-blue-200/30 backdrop-blur-md";
 
 
 const AdminPinModal = ({
@@ -34,7 +40,7 @@ const AdminPinModal = ({
         <button
             type="button"
             onClick={() => handleAdminKeypadInput(value)}
-            className={`h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center ${className || ''}`}
+            className={`h-10 sm:h-12 w-full bg-gray-100 text-gray-900 text-center font-bold text-sm rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200 flex items-center justify-center ${className || ''}`}
             tabIndex="-1"
             disabled={isAdminLoading}
         >
@@ -77,37 +83,39 @@ const AdminPinModal = ({
              }}
         >
             <div
-                className="bg-white/30 rounded-xl sm:rounded-2xl p-6 shadow-full flex flex-col items-center relative z-10 w-full max-w-sm backdrop-blur-md animate-pop-in"
+                className={`${panelClass} animate-pop-in`}
             >
-                <h2 className="text-2xl sm:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-4">
+                <h2 className="text-base sm:text-lg md:text-xl text-center font-sans text-green-600 font-semibold tracking-wide mb-2">
                     Enter Admin PIN
                 </h2>
-                <input
-                    data-flat-input
-                    className={inputBaseClass + " text-center"}
-                    value={adminPin}
-                    readOnly
-                    type="password"
-                    maxLength={4}
-                    inputMode="none"
-                    name="admin-passcode"
-                />
-                <div className="grid grid-cols-4 gap-2 mb-4 mx-auto justify-items-center">
+                <div className={`${formInputWrapClass} max-w-[320px] sm:max-w-[340px]`}>
+                    <input
+                        data-flat-input
+                        className={formInputClass + " text-center"}
+                        value={adminPin}
+                        readOnly
+                        type="password"
+                        maxLength={4}
+                        inputMode="none"
+                        name="admin-passcode"
+                    />
+                </div>
+                <div className="grid grid-cols-4 gap-2 mb-3 mx-auto justify-items-center w-full max-w-[320px] sm:max-w-[340px]">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                         <AdminKeypadButton key={num} value={String(num)} />
                     ))}
                     <AdminKeypadButton value="0" />
                     <AdminKeypadButton
                         value="C"
-                        className="col-span-2"
+                        className="col-span-2 bg-gray-200 text-gray-800 font-semibold border-gray-300"
                         label={<span className="text-lg w-full text-center">CLEAR</span>}
                     />
                 </div>
-                <div className="flex justify-center space-x-4 w-full">
+                <div className="flex justify-center space-x-2 w-full">
                     <button
                         type="button"
                         onClick={handleAdminPinSubmit}
-                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 sm:py-2 px-4 sm:px-6 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1"
+                        className="bg-green-800 hover:bg-green-900 text-white font-bold py-1 px-3 sm:px-4 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1 text-sm max-w-[140px]"
                         disabled={adminPin.length !== 4 || isAdminLoading}
                     >
                         {/* {isAdminLoading ? 'Checking...' : 'Enter'} */}
@@ -119,7 +127,7 @@ const AdminPinModal = ({
                             setShowAdminPinModal(false);
                             setError('');
                         }}
-                        className="bg-gray-400 hover:bg-gray-500 text-gray-800 font-bold py-1.5 sm:py-2 px-4 sm:px-6 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1"
+                        className="bg-gray-400 hover:bg-gray-500 text-gray-800 font-bold py-1 px-3 sm:px-4 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1 text-sm max-w-[140px]"
                         disabled={isAdminLoading}
                     >
                         Cancel
@@ -192,15 +200,15 @@ const NameForm = () => {
   };
   
   const UserKeypadButton = ({ value, label, className }) => (
-    <button
-        type="button"
-        onClick={() => handleUserKeypadInput(value)} 
-        className={`h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center ${className || ''}`}
-        tabIndex="-1" 
-    >
-        {label || value}
-    </button>
-);
+    <button
+      type="button"
+      onClick={() => handleUserKeypadInput(value)}
+      className={`h-10 sm:h-12 w-full bg-gray-100 text-gray-900 text-center font-bold text-sm sm:text-base rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200 flex items-center justify-center ${className || ''}`}
+      tabIndex="-1"
+    >
+      {label || value}
+    </button>
+  );
 
 
 const handleDemoClick = () => {
@@ -223,16 +231,16 @@ const handleDemoClick = () => {
       <style>{`
         /* kill autofill white */
         input:-webkit-autofill,
+        input:-webkit-autofill,
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus {
-          -webkit-text-fill-color: #ffffff !important;
-          -webkit-box-shadow: 0 0 0px 1000px rgba(31,41,55,0.5) inset !important;
+          -webkit-text-fill-color: #1f2937 !important;
+          -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
           transition: background-color 9999s ease-in-out 0s !important;
-          caret-color: #ffffff;
+          caret-color: #1f2937;
         }
-        /* nuke any UA border/shadow/focus ring on our inputs */
+        /* nuke any UA shadow/focus ring on our inputs */
         input[data-flat-input]{
-          border:0 !important;
           outline:0 !important;
           box-shadow:none !important;
           -webkit-appearance:none !important;
@@ -240,7 +248,6 @@ const handleDemoClick = () => {
         }
         input[data-flat-input]:focus,
         input[data-flat-input]:focus-visible{
-          border:0 !important;
           outline:0 !important;
           box-shadow:none !important;
         }
@@ -271,48 +278,53 @@ const handleDemoClick = () => {
         <span className="text-sm font-semibold">Admin</span>
       </button>
 
-      <div className="bg-white/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-full flex flex-col items-center relative z-10 mx-2 sm:mx-4 w-full max-w-sm backdrop-blur-md">
+      <div className={panelClass}>
 
         <form onSubmit={onSubmit} className="w-full flex flex-col items-center" autoComplete="off">
-          <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
+          <label className={labelClass}>
              Enter Your Name
           </label>
-          <input
-            data-flat-input
-            className={inputBaseClass}
-            value={childName}
-            onChange={handleNameChange}
-            type="text"
-            maxLength={15}
-            autoFocus
-            autoComplete="off"
-            name="child-name"
-          />
-          <label className="text-xl sm:text-2xl md:text-3xl text-center font-sans text-white font-semibold tracking-wide mb-2 sm:mb-3">
+          <div className={formInputWrapClass}>
+            <input
+              data-flat-input
+              className={formInputClass}
+              value={childName}
+              onChange={handleNameChange}
+              type="text"
+              maxLength={15}
+              autoFocus
+              autoComplete="off"
+              name="child-name"
+            />
+          </div>
+          <label className={labelClass}>
              Enter Your Passcode
           </label>
 
-          <input
-          data-flat-input
-            className={inputBaseClass}
-            value={childPin || ''}
-            readOnly
-            type="password"
-            maxLength={4}
-            inputMode="none"
-            autoComplete="new-password"
-            name="passcode"
-          />
+          <div className={formInputWrapClass}>
+            <input
+              data-flat-input
+              className={formInputClass}
+              value={childPin || ''}
+              readOnly
+              type="password"
+              maxLength={4}
+              inputMode="none"
+              autoComplete="new-password"
+              name="passcode"
+            />
+          </div>
 
-          <div className="grid grid-cols-4 gap-2 mb-1 mx-auto justify-items-center">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+          <div className="grid grid-cols-4 gap-2 mb-1 mx-auto justify-items-center w-full max-w-[320px] sm:max-w-[340px]">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
               <UserKeypadButton key={num} value={String(num)} />
             ))}
+            <UserKeypadButton value="9" />
             <UserKeypadButton value="0" />
             <UserKeypadButton 
               value="C" 
-              className="col-span-2" 
-              label={<span className="text-lg w-full text-center">CLEAR</span>} 
+              className="col-span-2 bg-gray-200 text-gray-800 font-semibold border-gray-300" 
+              label={<span className="text-sm sm:text-base w-full text-center">Clear</span>} 
             />
           </div>
 
@@ -322,10 +334,10 @@ const handleDemoClick = () => {
             </div>
           )}
 
-          <div className="flex justify-center space-x-4 mt-2">
+          <div className="flex justify-center space-x-2 mt-1">
             <button
               type="submit"
-              className="bg-green-800 hover:bg-green-900 text-white font-bold py-1.5 sm:py-2 px-4 sm:px-6 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1"
+              className="bg-green-800 hover:bg-green-900 text-white font-bold py-1 px-3 sm:px-4 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1 text-sm"
               disabled={isLoginLoading}
             >
               Start
@@ -334,7 +346,7 @@ const handleDemoClick = () => {
             <button
               type="button"
               onClick={handleDemoClick}
-              className="bg-green-800 hover:bg-green-900 text-white font-bold py-1.5 sm:py-2 px-4 sm:px-6 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1"
+              className="bg-green-800 hover:bg-green-900 text-white font-bold py-1 px-3 sm:px-4 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1 text-sm"
               disabled={isLoginLoading}
             >
               Demo 
