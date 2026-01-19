@@ -5,12 +5,11 @@ import { MathGameContext } from '../App.jsx';
 import { getAdminStats } from '../api/mathApi.js';
 import { FaUserShield } from 'react-icons/fa';
 
-const formInputWrapClass =
-  "w-full max-w-xs mx-auto mb-2 sm:mb-3 rounded-2xl border-4 border-green-300 " +
-  "bg-white shadow-lg focus-within:border-green-300";
 const formInputClass =
-  "w-full h-10 sm:h-12 px-3 sm:px-4 rounded-xl text-gray-800 font-bold text-center " +
-  "text-2xl sm:text-3xl tracking-widest bg-white outline-none border-0";
+  "w-full max-w-[320px] sm:max-w-[340px] mx-auto mb-2 sm:mb-3 h-10 sm:h-12 " +
+  "px-3 sm:px-4 !rounded-2xl text-gray-800 font-bold text-center " +
+  "text-2xl sm:text-3xl tracking-widest bg-white !border-4 !border-green-300 " +
+  "shadow-lg focus:outline-none focus:ring-0";
 const labelClass =
   "text-base sm:text-lg md:text-xl text-center font-sans text-green-600 font-semibold tracking-wide mb-1";
 const panelClass =
@@ -88,18 +87,15 @@ const AdminPinModal = ({
                 <h2 className="text-base sm:text-lg md:text-xl text-center font-sans text-green-600 font-semibold tracking-wide mb-2">
                     Enter Admin PIN
                 </h2>
-                <div className={`${formInputWrapClass} max-w-[320px] sm:max-w-[340px]`}>
-                    <input
-                        data-flat-input
-                        className={formInputClass + " text-center"}
-                        value={adminPin}
-                        readOnly
-                        type="password"
-                        maxLength={4}
-                        inputMode="none"
-                        name="admin-passcode"
-                    />
-                </div>
+                <input
+                    className={formInputClass + " text-center"}
+                    value={adminPin}
+                    readOnly
+                    type="password"
+                    maxLength={4}
+                    inputMode="none"
+                    name="admin-passcode"
+                />
                 <div className="grid grid-cols-4 gap-2 mb-3 mx-auto justify-items-center w-full max-w-[320px] sm:max-w-[340px]">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                         <AdminKeypadButton key={num} value={String(num)} />
@@ -228,45 +224,6 @@ const handleDemoClick = () => {
         backgroundRepeat: 'no-repeat',
       }}
     >
-      <style>{`
-        /* kill autofill white */
-        input:-webkit-autofill,
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover,
-        input:-webkit-autofill:focus {
-          -webkit-text-fill-color: #1f2937 !important;
-          -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
-          transition: background-color 9999s ease-in-out 0s !important;
-          caret-color: #1f2937;
-        }
-        /* nuke any UA shadow/focus ring on our inputs */
-        input[data-flat-input]{
-          background-color: #ffffff !important;
-          color: #1f2937 !important;
-          color-scheme: light;
-          outline:0 !important;
-          box-shadow:none !important;
-          -webkit-appearance:none !important;
-                  appearance:none !important;
-        }
-        input[data-flat-input]:focus,
-        input[data-flat-input]:focus-visible{
-          background-color: #ffffff !important;
-          color: #1f2937 !important;
-          color-scheme: light;
-          outline:0 !important;
-          box-shadow:none !important;
-        }
-        
-        /* FIX: Ensure the main form background does not show a focus ring */
-        .no-focus-ring:focus, .no-focus-ring:focus-visible { /* [!code ++] */
-          outline: none !important; /* [!code ++] */
-          box-shadow: none !important; /* [!code ++] */
-          border-color: transparent !important; /* [!code ++] */
-        } /* [!code ++] */
-
-      `}</style>
-      
       <button
         type="button"
         onClick={() => {
@@ -290,36 +247,29 @@ const handleDemoClick = () => {
           <label className={labelClass}>
              Enter Your Name
           </label>
-          <div className={formInputWrapClass}>
-            <input
-              data-flat-input
-              className={formInputClass}
-              value={childName}
-              onChange={handleNameChange}
-              type="text"
-              maxLength={15}
-              autoFocus
-              autoComplete="off"
-              name="child-name"
-            />
-          </div>
+          <input
+            className={formInputClass}
+            value={childName}
+            onChange={handleNameChange}
+            type="text"
+            maxLength={15}
+            autoComplete="off"
+            name="child-name"
+          />
           <label className={labelClass}>
              Enter Your Passcode
           </label>
 
-          <div className={formInputWrapClass}>
-            <input
-              data-flat-input
-              className={formInputClass}
-              value={childPin || ''}
-              readOnly
-              type="password"
-              maxLength={4}
-              inputMode="none"
-              autoComplete="new-password"
-              name="passcode"
-            />
-          </div>
+          <input
+            className={formInputClass}
+            value={childPin || ''}
+            readOnly
+            type="password"
+            maxLength={4}
+            inputMode="none"
+            autoComplete="new-password"
+            name="passcode"
+          />
 
           <div className="grid grid-cols-4 gap-2 mb-1 mx-auto justify-items-center w-full max-w-[320px] sm:max-w-[340px]">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
