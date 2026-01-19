@@ -10,7 +10,7 @@ const formInputWrapClass =
   "bg-white shadow-lg focus-within:border-green-300";
 const formInputClass =
   "w-full h-10 sm:h-12 px-3 sm:px-4 rounded-xl text-gray-800 font-bold text-center " +
-  "text-2xl sm:text-3xl tracking-widest bg-transparent outline-none border-0";
+  "text-2xl sm:text-3xl tracking-widest bg-white outline-none border-0";
 const labelClass =
   "text-base sm:text-lg md:text-xl text-center font-sans text-green-600 font-semibold tracking-wide mb-1";
 const panelClass =
@@ -241,6 +241,9 @@ const handleDemoClick = () => {
         }
         /* nuke any UA shadow/focus ring on our inputs */
         input[data-flat-input]{
+          background-color: #ffffff !important;
+          color: #1f2937 !important;
+          color-scheme: light;
           outline:0 !important;
           box-shadow:none !important;
           -webkit-appearance:none !important;
@@ -248,6 +251,9 @@ const handleDemoClick = () => {
         }
         input[data-flat-input]:focus,
         input[data-flat-input]:focus-visible{
+          background-color: #ffffff !important;
+          color: #1f2937 !important;
+          color-scheme: light;
           outline:0 !important;
           box-shadow:none !important;
         }
