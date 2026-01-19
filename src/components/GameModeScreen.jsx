@@ -234,25 +234,23 @@ useEffect(() => {
 
         <div
           className={`w-full mx-auto px-1 sm:px-2 md:px-4 ${
-            isSurfMode ? 'max-w-md sm:max-w-lg md:max-w-xl' : 'max-w-lg sm:max-w-xl'
+            isSurfMode ? 'max-w-sm sm:max-w-md' : 'max-w-lg sm:max-w-xl'
           }`}
         >
           <div
-            className={`${
+            className={
               isSurfMode
-                ? 'bg-gray-500/80 border border-gray-500/60 backdrop-blur-md'
-                : 'bg-white border-2 border-gray-200 backdrop-blur-sm'
-            } rounded-xl sm:rounded-2xl mb-4 sm:mb-6 flex flex-col justify-center ${
-              isSurfMode
-                ? 'p-4 sm:p-5 md:p-6 min-h-[200px] sm:min-h-[260px] md:min-h-[320px]'
-                : 'p-3 sm:p-4 md:p-6 min-h-[200px] sm:min-h-[300px] md:min-h-[400px]'
-            }`}
+                ? 'bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl w-full mx-auto border border-blue-200/30 min-h-[200px] sm:min-h-[260px] md:min-h-[320px] flex flex-col justify-center'
+                : 'bg-white backdrop-blur-sm rounded-xl sm:rounded-2xl mb-4 sm:mb-6 border-2 border-gray-200 flex flex-col justify-center p-3 sm:p-4 md:p-6 min-h-[200px] sm:min-h-[300px] md:min-h-[400px]'
+            }
           >
             <div className="text-center mb-4 sm:mb-5 md:mb-6">
               <h3
-                className={`font-extrabold mb-1 sm:mb-2 drop-shadow-lg ${
-                  isSurfMode ? 'text-7xl sm:text-8xl text-green-600' : 'text-7xl sm:text-8xl text-blue-600'
-                }`}
+                className={
+                  isSurfMode
+                    ? 'text-6xl sm:text-7xl font-extrabold text-green-500 text-center mb-6 whitespace-pre-line drop-shadow'
+                    : 'font-extrabold text-blue-600 mb-1 sm:mb-2 drop-shadow-lg text-7xl'
+                }
               >
                 {currentQuestion?.question || '1 + 1'}
               </h3>
@@ -292,60 +290,48 @@ useEffect(() => {
             )}
 
             {isSurfMode && (
-              <div className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
-                <div className="relative px-3 sm:px-4 py-2">
-                  <div className="w-full bg-gray-800/60 rounded-xl sm:rounded-2xl h-11 sm:h-12 md:h-14 flex items-center justify-center text-2xl sm:text-3xl md:text-4xl font-extrabold text-white shadow mb-3 sm:mb-4">
-                    {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
-                  </div>
+              <div className="w-full max-w-sm mx-auto">
+                <div className="w-full bg-white rounded-2xl h-24 flex items-center justify-center text-4xl font-extrabold shadow-lg border-4 border-green-300 text-gray-800 mb-4">
+                  {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
+                </div>
 
-                  <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                      <button
-                        key={n}
-                        onClick={() => handleDigitPress(n)}
-                        disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
-                        className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
-                      >
-                        {n}
-                      </button>
-                    ))}
+                <div className="grid grid-cols-3 gap-3 w-full max-w-sm mx-auto">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
                     <button
-                      onClick={() => handleDigitPress(9)}
+                      key={n}
+                      onClick={() => handleDigitPress(n)}
                       disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
-                      className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
+                      className="bg-gray-100 text-gray-1000 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
                     >
-                      9
+                      {n}
                     </button>
-                    <button
-                      onClick={() => handleDigitPress(0)}
-                      disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
-                      className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none"
-                    >
-                      0
-                    </button>
-                    <button
-                      onClick={handleClear}
-                      disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
-                      className="h-16 sm:h-20 w-full bg-gray-700 hover:bg-gray-800 text-white text-center font-bold text-xl rounded-xl transition-all duration-150 transform hover:scale-[1.03] active:scale-[0.98] shadow-md flex items-center justify-center select-none col-span-2"
-                    >
-                      Clear
-                    </button>
-                  </div>
-
-                  <div className="flex justify-center mt-3 sm:mt-4">
-                    <button
-                      onClick={handleSubmitTyped}
-                      disabled={
-                        isAnimating ||
-                        isTimerPaused ||
-                        isAnswerSubmitted ||
-                        typedInput === ''
-                      }
-                      className="bg-green-800 hover:bg-green-900 text-white font-bold py-3 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
-                    >
-                      Submit
-                    </button>
-                  </div>
+                  ))}
+                  <button
+                    onClick={handleClear}
+                    disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
+                    className="bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl shadow-md hover:bg-gray-300 active:scale-95 transition col-span-1 border border-gray-300"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => handleDigitPress(0)}
+                    disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
+                    className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
+                  >
+                    0
+                  </button>
+                  <button
+                    onClick={handleSubmitTyped}
+                    disabled={
+                      isAnimating ||
+                      isTimerPaused ||
+                      isAnswerSubmitted ||
+                      typedInput === ''
+                    }
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
+                  >
+                    Submit
+                  </button>
                 </div>
               </div>
             )}
