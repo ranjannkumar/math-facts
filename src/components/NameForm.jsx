@@ -7,7 +7,7 @@ import { FaUserShield } from 'react-icons/fa';
 
 const formInputClass =
   "!w-full !max-w-[320px] sm:!max-w-[340px] mx-auto mb-2 sm:mb-3 h-10 sm:h-12 " +
-  "px-3 sm:px-4 !rounded-2xl text-gray-800 font-bold text-center " +
+  "px-3 sm:px-4 !rounded-2xl !text-gray-800 font-bold text-center " +
   "text-2xl sm:text-3xl tracking-widest !bg-white !border-4 !border-green-300 " +
   "shadow-lg focus:outline-none focus:ring-0";
 const labelClass =
@@ -255,6 +255,7 @@ const handleDemoClick = () => {
             maxLength={15}
             autoComplete="off"
             name="child-name"
+            style={{ backgroundColor: '#ffffff', color: '#1f2937' }}
           />
           <label className={labelClass}>
              Enter Your Passcode
