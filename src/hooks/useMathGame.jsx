@@ -841,7 +841,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       }
 
       const surfPassed = !!out?.surfQuizPassed;
-      if (surfPassed && out?.showWinVideo) {
+      if (surfPassed ) {
         setIsTimerPaused(true);
         setPausedTime(Date.now());
         setIsAnimating(false);
@@ -852,7 +852,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         return;
       }
 
-      if (surfPassed && !out?.showWinVideo) {
+      if (surfPassed ) {
         await startSurfNextQuiz({ navigateToGameMode: true });
         setIsAnimating(false);
         return;

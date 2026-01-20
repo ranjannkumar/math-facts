@@ -156,14 +156,7 @@ useEffect(() => {
              
             {/* TOP: Counter */}
             {isSurfMode ? (
-              <div className="w-full flex justify-between items-center bg-emerald-900/40 rounded-lg p-2 mb-4 sm:mb-6 shadow-inner">
-                <span className="text-lg font-bold text-emerald-200">
-                  Surfboard:  
-                </span>
-                <span className="text-lg font-bold text-emerald-200">
-                  {surfCorrectStreak}/{questionsPerQuiz}
-                </span>
-              </div>
+              <div></div>
             ) : (
               <div className="w-full flex justify-between items-center bg-yellow-900/50 rounded-lg p-2 mb-12 sm:mb-16 shadow-inner">
                 <span className="text-xl font-bold text-yellow-400">⚡ Bolts:</span>
