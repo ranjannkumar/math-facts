@@ -89,6 +89,7 @@ function resolveThemeKey(preferredFromContext) {
 const getFactVideoPath = (level) => {
   if (level === 1) return '/fact_level1.mp4';
   if (level === 2) return '/fact_level2.mp4';
+  if (level === 5) return '/fact_level5.mp4';
   return '/fact1.mp4';
 };
 
