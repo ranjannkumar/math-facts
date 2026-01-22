@@ -321,4 +321,29 @@ export const analyticsGetStruggling = async (
   return callApi(`/analytics/struggling?${params.toString()}`, "GET", null, pin);
 };
 
+// ---- Admin Config API ----
+export const getAppConfig = async (adminPin) => {
+  return callApi('/config', 'GET', null, adminPin);
+};
+
+export const updateAppConfig = async (adminPin, payload) => {
+  return callApi('/config', 'PUT', payload, adminPin);
+};
+
+export const resetAppConfig = async (adminPin) => {
+  return callApi('/config/reset', 'POST', {}, adminPin);
+};
+
+export const reloadAppConfig = async (adminPin) => {
+  return callApi('/config/reload', 'POST', {}, adminPin);
+};
+
+export const updateBlackBeltTimer = async (adminPin, degree, payload) => {
+  return callApi(`/config/black-belt/${degree}`, 'PUT', payload, adminPin);
+};
+
+export const updateAdminPin = async (adminPin, currentPin, newPin) => {
+  return callApi('/config/admin-pin', 'PUT', { currentPin, newPin }, adminPin);
+};
+
 

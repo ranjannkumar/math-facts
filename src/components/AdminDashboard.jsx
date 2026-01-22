@@ -68,7 +68,7 @@ const AdminDashboard = () => {
   const adminPin = localStorage.getItem('math-admin-pin');
 
   const fetchStats = useCallback(async () => {
-    if (!adminPin || adminPin !== '7878') {
+    if (!adminPin) {
       navigate('/name');
       return;
     }

@@ -21,7 +21,6 @@ const GameModeScreen = () => {
   currentAnswerSymbol,
   setCurrentAnswerSymbol,
   questionStartTimestamp,
-  LIGHTNING_GOAL,
   showSettings,
   setShowSettings,
   handleQuit,

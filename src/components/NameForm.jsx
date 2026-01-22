@@ -49,10 +49,6 @@ const AdminPinModal = ({
 
     const handleAdminPinSubmit = async () => {
         setError('');
-        if (adminPin !== '7878') {
-            setError('Incorrect Admin PIN.');
-            return;
-        }
         if (isAdminLoading) return;
         
         setIsAdminLoading(true);

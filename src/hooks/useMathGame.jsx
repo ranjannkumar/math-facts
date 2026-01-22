@@ -24,7 +24,7 @@ const thumbPngModules = import.meta.glob('/public/game-videos/*.png', { as: 'url
 
 // Constant for inactivity timeout (same as backend, 5000ms)
 const INACTIVITY_TIMEOUT_MS = 5000;
-const LIGHTNING_GOAL = 100;
+const DEFAULT_LIGHTNING_TARGET = 100;
 
 const useMathGame = () => {
   const navigate = useNavigate();
@@ -62,6 +62,7 @@ const useMathGame = () => {
   const [isGameMode, setIsGameMode] = useState(false);
   const [gameModeType, setGameModeType] = useState(null); // 'lightning' | 'surf'
   const [lightningCount, setLightningCount] = useState(0);
+  const [lightningTargetCorrect, setLightningTargetCorrect] = useState(DEFAULT_LIGHTNING_TARGET);
   const [showWayToGoAfterFailure, setShowWayToGoAfterFailure] = useState(false);
   const [gameModeLevel, setGameModeLevel] = useState(1);
   const [shouldExitAfterVideo, setShouldExitAfterVideo] = useState(false);
@@ -190,6 +191,24 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     if (typeof payload.completedSurfQuizzes === 'number') setCompletedSurfQuizzes(payload.completedSurfQuizzes);
     if (typeof payload.surfQuizzesRequired === 'number') setSurfQuizzesRequired(payload.surfQuizzesRequired);
     if (typeof payload.questionsPerQuiz === 'number') setQuestionsPerQuiz(payload.questionsPerQuiz);
+  }, []);
+
+  const applyLightningTarget = useCallback((payload) => {
+    if (!payload) return;
+    const nextTarget =
+      typeof payload.lightningTargetCorrect === 'number'
+        ? payload.lightningTargetCorrect
+        : typeof payload.targetCorrect === 'number'
+          ? payload.targetCorrect
+          : typeof payload.lightningMode?.targetCorrect === 'number'
+            ? payload.lightningMode.targetCorrect
+            : typeof payload.gameMode?.targetCorrect === 'number'
+              ? payload.gameMode.targetCorrect
+              : null;
+
+    if (typeof nextTarget === 'number') {
+      setLightningTargetCorrect(nextTarget);
+    }
   }, []);
 
 
@@ -590,8 +609,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       localStorage.setItem('game-mode-table', String(reqLevel));
 
       try {
-        const targetCorrect =
-          (requestedGameModeType || 'lightning') === 'lightning' ? LIGHTNING_GOAL : null;
+        const targetCorrect = null;
         const prep = await quizPrepare(
           reqLevel,
           reqBelt,
@@ -605,6 +623,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         setQuizRunId(prep.quizRunId);
         setLightningCount(typeof prep.totalCorrect === 'number' ? prep.totalCorrect : 0);
         if (prep?.gameModeType) setGameModeType(prep.gameModeType);
+        applyLightningTarget(prep);
         applySurfState(prep);
 
         const started = await quizStart(prep.quizRunId, childPin);
@@ -616,6 +635,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
 
         const mapped = backendQuestions.map(mapQuestionToFrontend);
         if (started?.gameModeType) setGameModeType(started.gameModeType);
+        applyLightningTarget(started);
         applySurfState(started);
 
         const startIndex =
@@ -642,7 +662,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         console.error('[GameMode] Failed to start/resume:', e);
       }
     },
-    [childPin, selectedTable, selectedDifficulty, navigate, applySurfState]
+    [childPin, selectedTable, selectedDifficulty, navigate, applySurfState, applyLightningTarget]
   );
 
   const startSurfNextQuiz = useCallback(
@@ -878,8 +898,15 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       return;
     }
 
-      //  Determine fast/slow from actual response time (fast ≤ 2s)
-      const isFastAnswer = responseMs <= 2000;
+    // Update lightning from backend authority first so we can infer fast answers.
+    const prevTotal = lightningCount;
+    const nextTotal = typeof out?.totalCorrect === 'number' ? out.totalCorrect : prevTotal;
+    setLightningCount(nextTotal);
+
+    // Determine fast/slow using backend lightning counter when available.
+    // Backend increments totalCorrect only for "fast" answers.
+    const backendMarkedFast = isCorrect && nextTotal > prevTotal;
+    const isFastAnswer = backendMarkedFast || responseMs <= 2000;
 
     //  Symbol + sound logic (exactly like quiz behavior)
     // - wrong: ✗ + wrong sound
@@ -945,11 +972,7 @@ if (!isCorrect) {
       setTransientStreakMessage(null);
     }
 
-    //  Update lightning from backend authority
-    const prevTotal = lightningCount;
-    const nextTotal = typeof out?.totalCorrect === 'number' ? out.totalCorrect : prevTotal;
-
-    setLightningCount(nextTotal);
+    // lightningCount already updated above
 
     // Video should trigger ONLY when:
     // - user answered fast (⚡)
@@ -1571,6 +1594,7 @@ if (!isCorrect) {
     setGameModeType,
     lightningCount,
     setLightningCount,
+    lightningTargetCorrect,
     surfQuizNumber,
     surfCorrectStreak,
     completedSurfQuizzes,
@@ -1578,7 +1602,6 @@ if (!isCorrect) {
     questionsPerQuiz,
     currentAnswerSymbol,
     setCurrentAnswerSymbol,
-    LIGHTNING_GOAL,
     isGameModePractice,
     gameModeInterventionIndex,
     showWayToGoAfterFailure,

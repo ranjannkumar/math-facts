@@ -16,7 +16,7 @@ const UserQuestionStats = () => {
 
   const fetchStats = useCallback(async () => {
     // Basic authorization and data check
-    if (!adminPin || adminPin !== '7878' || !userPin) {
+    if (!adminPin || !userPin) {
       navigate('/name');
       return;
     }
