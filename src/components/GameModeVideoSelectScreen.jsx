@@ -13,6 +13,19 @@ const GameModeVideoSelectScreen = () => {
     }
   }, [videoOptions, navigate]);
 
+  useEffect(() => {
+    if (!videoOptions) return;
+
+    const timeoutId = setTimeout(() => {
+      const options = [videoOptions.option1, videoOptions.option2].filter(Boolean);
+      if (options.length === 0) return;
+      const randomPick = options[Math.floor(Math.random() * options.length)];
+      handleVideoSelection(randomPick);
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [videoOptions, handleVideoSelection]);
+
   if (!videoOptions) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center text-white">

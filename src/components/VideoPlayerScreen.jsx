@@ -170,6 +170,20 @@ const VideoPlayerScreen = () => {
     </button>
   );
 
+  useEffect(() => {
+    if (selectedVideo || !videoOptions) return;
+
+    const options = [videoOptions.option1, videoOptions.option2].filter(Boolean);
+    if (options.length === 0) return;
+
+    const timeoutId = setTimeout(() => {
+      const randomPick = options[Math.floor(Math.random() * options.length)];
+      setSelectedVideo(randomPick);
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedVideo, videoOptions]);
+
   // Phase 1: Selection Screen
   if (!selectedVideo) {
     return (
