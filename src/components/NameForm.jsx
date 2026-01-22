@@ -92,7 +92,7 @@ const AdminPinModal = ({
                     inputMode="none"
                     name="admin-passcode"
                 />
-                <div className="grid grid-cols-4 gap-2 mb-3 mx-auto justify-items-center w-full max-w-[320px] sm:max-w-[340px]">
+                <div className="grid grid-cols-3 gap-2 mb-3 mx-auto justify-items-center w-full max-w-[320px] sm:max-w-[340px]">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                         <AdminKeypadButton key={num} value={String(num)} />
                     ))}
@@ -268,7 +268,7 @@ const handleDemoClick = () => {
             name="passcode"
           />
 
-          <div className="grid grid-cols-4 gap-2 mb-1 mx-auto justify-items-center w-full max-w-[320px] sm:max-w-[340px]">
+          <div className="grid grid-cols-3 gap-2 mb-1 mx-auto justify-items-center w-full max-w-[320px] sm:max-w-[340px]">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
               <UserKeypadButton key={num} value={String(num)} />
             ))}
