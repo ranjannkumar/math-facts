@@ -22,9 +22,18 @@ const videoModules = import.meta.glob('/public/game-videos/*.mp4', { as: 'url' }
 const thumbJpgModules = import.meta.glob('/public/game-videos/*.jpg', { as: 'url' });
 const thumbPngModules = import.meta.glob('/public/game-videos/*.png', { as: 'url' });
 
-// Constant for inactivity timeout (same as backend, 5000ms)
-const INACTIVITY_TIMEOUT_MS = 5000;
+// Default config values used before backend config is loaded.
+const DEFAULT_INACTIVITY_TIMEOUT_MS = 5000;
 const DEFAULT_LIGHTNING_TARGET = 100;
+const DEFAULT_LIGHTNING_FAST_MS = 2000;
+const INACTIVITY_TIMEOUT_STORAGE_KEY = 'math-inactivity-ms';
+const LIGHTNING_TARGET_STORAGE_KEY = 'math-lightning-target';
+const LIGHTNING_FAST_MS_STORAGE_KEY = 'math-lightning-fast-ms';
+
+const readStoredNumber = (key, fallback) => {
+  const stored = Number.parseInt(localStorage.getItem(key), 10);
+  return Number.isFinite(stored) ? stored : fallback;
+};
 
 const useMathGame = () => {
   const navigate = useNavigate();
@@ -57,12 +66,20 @@ const useMathGame = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [maxQuestions, setMaxQuestions] = useState(10);
   const [quizQuestions, setQuizQuestions] = useState([]);
+  const [lightningTargetCorrect, setLightningTargetCorrect] = useState(() =>
+    readStoredNumber(LIGHTNING_TARGET_STORAGE_KEY, DEFAULT_LIGHTNING_TARGET)
+  );
+  const [lightningFastThresholdMs, setLightningFastThresholdMs] = useState(() =>
+    readStoredNumber(LIGHTNING_FAST_MS_STORAGE_KEY, DEFAULT_LIGHTNING_FAST_MS)
+  );
+  const [inactivityTimeoutMs, setInactivityTimeoutMs] = useState(() => {
+    return readStoredNumber(INACTIVITY_TIMEOUT_STORAGE_KEY, DEFAULT_INACTIVITY_TIMEOUT_MS);
+  });
 
   // --- GAME MODE STATE ---
   const [isGameMode, setIsGameMode] = useState(false);
   const [gameModeType, setGameModeType] = useState(null); // 'lightning' | 'surf'
   const [lightningCount, setLightningCount] = useState(0);
-  const [lightningTargetCorrect, setLightningTargetCorrect] = useState(DEFAULT_LIGHTNING_TARGET);
   const [showWayToGoAfterFailure, setShowWayToGoAfterFailure] = useState(false);
   const [gameModeLevel, setGameModeLevel] = useState(1);
   const [shouldExitAfterVideo, setShouldExitAfterVideo] = useState(false);
@@ -209,6 +226,18 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     if (typeof nextTarget === 'number') {
       setLightningTargetCorrect(nextTarget);
     }
+  }, []);
+
+  const syncConfigFromStorage = useCallback(() => {
+    setLightningTargetCorrect(
+      readStoredNumber(LIGHTNING_TARGET_STORAGE_KEY, DEFAULT_LIGHTNING_TARGET)
+    );
+    setLightningFastThresholdMs(
+      readStoredNumber(LIGHTNING_FAST_MS_STORAGE_KEY, DEFAULT_LIGHTNING_FAST_MS)
+    );
+    setInactivityTimeoutMs(
+      readStoredNumber(INACTIVITY_TIMEOUT_STORAGE_KEY, DEFAULT_INACTIVITY_TIMEOUT_MS)
+    );
   }, []);
 
 
@@ -563,6 +592,8 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       navigateToIntro = false,
       gameModeType: requestedGameModeType = 'lightning',
     } = {}) => {
+      syncConfigFromStorage();
+
       const reqLevel =
         level != null
           ? level
@@ -662,7 +693,15 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         console.error('[GameMode] Failed to start/resume:', e);
       }
     },
-    [childPin, selectedTable, selectedDifficulty, navigate, applySurfState, applyLightningTarget]
+    [
+      childPin,
+      selectedTable,
+      selectedDifficulty,
+      navigate,
+      applySurfState,
+      applyLightningTarget,
+      syncConfigFromStorage,
+    ]
   );
 
   const startSurfNextQuiz = useCallback(
@@ -700,6 +739,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
    */
   const startQuizWithDifficulty = useCallback(
     async (difficulty, table) => {
+      syncConfigFromStorage();
       hardResetQuizState();
       setSelectedDifficulty(difficulty);
       setSelectedTable(table);
@@ -754,7 +794,15 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         navigate('/belts');
       }
     },
-    [navigate, childPin, hardResetQuizState, determineMaxQuestions, startActualQuiz, startOrResumeGameModeRun]
+    [
+      navigate,
+      childPin,
+      hardResetQuizState,
+      determineMaxQuestions,
+      startActualQuiz,
+      startOrResumeGameModeRun,
+      syncConfigFromStorage,
+    ]
   );
 
   // ---------------- ANSWER HANDLER ----------------
@@ -906,7 +954,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     // Determine fast/slow using backend lightning counter when available.
     // Backend increments totalCorrect only for "fast" answers.
     const backendMarkedFast = isCorrect && nextTotal > prevTotal;
-    const isFastAnswer = backendMarkedFast || responseMs <= 2000;
+    const isFastAnswer = backendMarkedFast || responseMs <= lightningFastThresholdMs;
 
     //  Symbol + sound logic (exactly like quiz behavior)
     // - wrong: ✗ + wrong sound
@@ -1302,6 +1350,7 @@ if (!isCorrect) {
       isGameMode,
       gameModeType,
       lightningCount,
+      lightningFastThresholdMs,
       navigate,
       applySurfState,
       startSurfNextQuiz,
@@ -1380,6 +1429,26 @@ if (!isCorrect) {
     },
     [quizRunId, childPin, pausedTime, isGameMode, navigate, applySurfState]
   );
+
+  useEffect(() => {
+    syncConfigFromStorage();
+  }, [syncConfigFromStorage]);
+
+  useEffect(() => {
+    const trackedKeys = new Set([
+      INACTIVITY_TIMEOUT_STORAGE_KEY,
+      LIGHTNING_TARGET_STORAGE_KEY,
+      LIGHTNING_FAST_MS_STORAGE_KEY,
+    ]);
+
+    const handleStorage = (event) => {
+      if (!trackedKeys.has(event.key)) return;
+      syncConfigFromStorage();
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [syncConfigFromStorage]);
 
   // ---------------- INACTIVITY TIMER ----------------
   useEffect(() => {
@@ -1479,7 +1548,7 @@ if (!isCorrect) {
         setIsAwaitingInactivityResponse(false);
         navigate('/');
       }
-    }, INACTIVITY_TIMEOUT_MS);
+    }, inactivityTimeoutMs);
 
     return () => {
       if (inactivityTimeoutId.current) {
@@ -1487,7 +1556,17 @@ if (!isCorrect) {
         inactivityTimeoutId.current = null;
       }
     };
-  }, [currentQuestion, isTimerPaused, showResult, quizRunId, childPin, navigate, isGameMode, currentQuestionIndex]);
+  }, [
+    currentQuestion,
+    isTimerPaused,
+    showResult,
+    quizRunId,
+    childPin,
+    navigate,
+    isGameMode,
+    currentQuestionIndex,
+    inactivityTimeoutMs,
+  ]);
 
   // Timer Effect (client-side time tracking)
   useEffect(() => {

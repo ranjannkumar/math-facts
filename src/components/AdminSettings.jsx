@@ -293,6 +293,12 @@ const AdminSettings = () => {
           localStorage.setItem('math-lightning-fast-ms', String(fastThresholdMs));
         }
       }
+      if (refreshedConfig?.general) {
+        const inactivityThresholdMs = Number(refreshedConfig.general.inactivityThresholdMs);
+        if (Number.isFinite(inactivityThresholdMs)) {
+          localStorage.setItem('math-inactivity-ms', String(inactivityThresholdMs));
+        }
+      }
 
       if (hasGeneralChanges) {
         const savedQuestionsPerQuiz = Number(refreshedConfig?.surfMode?.questionsPerQuiz);

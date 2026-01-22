@@ -65,10 +65,28 @@ const AdminDashboard = () => {
   const limit = 10;
   const [hasMore, setHasMore] = useState(true);
 
-  const adminPin = localStorage.getItem('math-admin-pin');
+  const [adminPin, setAdminPin] = useState(() => localStorage.getItem('math-admin-pin'));
+
+  useEffect(() => {
+    const storedPin = localStorage.getItem('math-admin-pin');
+    if (storedPin !== adminPin) {
+      setAdminPin(storedPin);
+    }
+  }, [adminPin]);
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key !== 'math-admin-pin') return;
+      setAdminPin(event.newValue || '');
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   const fetchStats = useCallback(async () => {
-    if (!adminPin) {
+    const storedPin = localStorage.getItem('math-admin-pin') || adminPin;
+    if (!storedPin) {
       navigate('/name');
       return;
     }
@@ -77,7 +95,7 @@ const AdminDashboard = () => {
       setLoading(true);
 
       // NEW: paginated backend request
-      const initialData = await getAdminStats(adminPin, limit, offset);
+      const initialData = await getAdminStats(storedPin, limit, offset);
 
       if (initialData.length < limit) {
         setHasMore(false);
