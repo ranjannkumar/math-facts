@@ -126,10 +126,10 @@ const useMathGame = () => {
   }, []);
 
   const applyDailyStatsTotalMs = useCallback(
-    (totalActiveMs, { force = false } = {}) => {
+    (totalActiveMs, { force = false, skipSessionAdjust = false } = {}) => {
       if (!Number.isFinite(totalActiveMs)) return;
       let nextBase = totalActiveMs;
-      if (quizStartTime && !isTimerPaused) {
+      if (!skipSessionAdjust && quizStartTime && !isTimerPaused) {
         const sessionElapsedMs = Date.now() - quizStartTime;
         nextBase = Math.max(0, totalActiveMs - sessionElapsedMs);
       }
@@ -1254,7 +1254,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
 
           if (out.dailyStats) {
             setCorrectCount(out.dailyStats.correctCount);
-            applyDailyStatsTotalMs(out.dailyStats.totalActiveMs);
+            applyDailyStatsTotalMs(out.dailyStats.totalActiveMs, { skipSessionAdjust: true });
             if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
             if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
           }
