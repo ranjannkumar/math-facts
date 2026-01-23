@@ -23,10 +23,10 @@ const GameModeSurfIntroScreen = () => {
         aria-label="Surf mode loading"
       >
         <h1 className="text-4xl sm:text-5xl font-black text-emerald-700 mb-3 animate-bounce">
-          Don't fall off 
+          Stay On
         </h1>
         <h1 className="text-4xl sm:text-5xl font-black text-emerald-700 mb-3 animate-bounce">
-           the Surfboard
+           The Surfboard
         </h1>
         
       </button>
