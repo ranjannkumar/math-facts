@@ -80,6 +80,7 @@ const useMathGame = () => {
   const [isGameMode, setIsGameMode] = useState(false);
   const [gameModeType, setGameModeType] = useState(null); // 'lightning' | 'surf'
   const [lightningCount, setLightningCount] = useState(0);
+  const [lightningCycleStart, setLightningCycleStart] = useState(0);
   const [showWayToGoAfterFailure, setShowWayToGoAfterFailure] = useState(false);
   const [gameModeLevel, setGameModeLevel] = useState(1);
   const [shouldExitAfterVideo, setShouldExitAfterVideo] = useState(false);
@@ -118,6 +119,24 @@ const useMathGame = () => {
   const [totalTimeToday, setTotalTimeToday] = useState(0);
   const [pausedTime, setPausedTime] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
+
+  const updateDailyTotalMs = useCallback((nextMs, { force = false } = {}) => {
+    if (!Number.isFinite(nextMs)) return;
+    setDailyTotalMs((prev) => (force ? nextMs : Math.max(prev, nextMs)));
+  }, []);
+
+  const applyDailyStatsTotalMs = useCallback(
+    (totalActiveMs, { force = false } = {}) => {
+      if (!Number.isFinite(totalActiveMs)) return;
+      let nextBase = totalActiveMs;
+      if (quizStartTime && !isTimerPaused) {
+        const sessionElapsedMs = Date.now() - quizStartTime;
+        nextBase = Math.max(0, totalActiveMs - sessionElapsedMs);
+      }
+      updateDailyTotalMs(nextBase, { force });
+    },
+    [quizStartTime, isTimerPaused, updateDailyTotalMs]
+  );
 
   // Identity and Progress
   const [selectedTheme, setSelectedTheme] = useState(null);
@@ -279,6 +298,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     setIsGameMode(false);
     setGameModeType(null);
     setLightningCount(0);
+    setLightningCycleStart(0);
     setCurrentAnswerSymbol(null);
     setIsGameModePractice(false);
     setGameModeInterventionIndex(null);
@@ -325,7 +345,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       const stats = loginResponse.user.dailyStats || {};
 
       setTableProgress(progressResponse);
-      setDailyTotalMs(stats?.totalActiveMs || 0);
+      applyDailyStatsTotalMs(stats?.totalActiveMs || 0, { force: true });
       setCorrectCount(stats?.correctCount || 0);
       setGrandTotalCorrect(stats?.grandTotal || 0);
 
@@ -343,7 +363,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         navigate('/theme');
       }
     },
-    [navigate]
+    [navigate, applyDailyStatsTotalMs]
   );
 
   const handleDailyStreakNext = useCallback(() => {
@@ -461,7 +481,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         const stats = loginResponse.user.dailyStats || {};
 
         setTableProgress(progressResponse);
-        setDailyTotalMs(stats?.totalActiveMs || 0);
+        applyDailyStatsTotalMs(stats?.totalActiveMs || 0, { force: true });
         setCorrectCount(stats?.correctCount || 0);
         setGrandTotalCorrect(stats?.grandTotal || 0);
         setCurrentStreak(loginResponse.user.currentStreak || 0);
@@ -479,7 +499,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         throw new Error(e.message || 'Login failed.');
       }
     },
-    [navigate]
+    [navigate, applyDailyStatsTotalMs]
   );
 
   const handleDemoLogin = useCallback(() => {
@@ -652,7 +672,9 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         );
 
         setQuizRunId(prep.quizRunId);
-        setLightningCount(typeof prep.totalCorrect === 'number' ? prep.totalCorrect : 0);
+        const totalCorrect = typeof prep.totalCorrect === 'number' ? prep.totalCorrect : 0;
+        setLightningCount(totalCorrect);
+        setLightningCycleStart(Math.floor(totalCorrect / 5) * 5);
         if (prep?.gameModeType) setGameModeType(prep.gameModeType);
         applyLightningTarget(prep);
         applySurfState(prep);
@@ -888,7 +910,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
 
       if (out?.dailyStats) {
         setCorrectCount(out.dailyStats.correctCount);
-        setDailyTotalMs(out.dailyStats.totalActiveMs);
+        applyDailyStatsTotalMs(out.dailyStats.totalActiveMs);
         if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
         if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
       }
@@ -956,68 +978,28 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     const backendMarkedFast = isCorrect && nextTotal > prevTotal;
     const isFastAnswer = backendMarkedFast || responseMs <= lightningFastThresholdMs;
 
-    //  Symbol + sound logic (exactly like quiz behavior)
-    // - wrong: ✗ + wrong sound
-    // - correct slow: ✓ + complete sound
-    // - correct fast: ⚡ + lightning sound
+    //  Symbol + sound logic (lightning mode only shows lightning)
     let symbol = null;
+    const lightningSymbol = '\u26A1';
 
-    const streakMilestones = [3, 5, 10, 15, 20];
-const nextStreak = isCorrect ? currentQuizStreak + 1 : 0;
-const isMilestone = streakMilestones.includes(nextStreak);
-
-if (!isCorrect) {
-  symbol = '';
-  audioManager.playWrongSound();
-} else if (!isFastAnswer || out?.slow) {
-  symbol = '✓';
-  if (!isMilestone) audioManager.playCompleteSound();
-} else {
-  symbol = '⚡';
-  if (!isMilestone) audioManager.playLightningSound();
-}
-
-
-    //  Keep symbol visible until next question appears.
-    // GameModeScreen clears it on question change. :contentReference[oaicite:1]{index=1}
-    if (symbol) {
-  showAnswerSymbolFor300ms({ symbol, isCorrect });
-}
-
-
-    //  Streak logic (same as quiz):
-    // - increment on correct, reset on wrong
-    // - show message on milestones, clear otherwise
-    // const streakMilestones = [3, 5, 10, 15, 20];
-
-    if (isCorrect) {
-      setCurrentQuizStreak((prev) => {
-        const next = prev + 1;
-
-        if (streakMilestones.includes(next)) {
-          const isLightningStreak = symbol === '⚡';
-          setTransientStreakMessage({
-            text: `${next} IN A ROW`,
-            symbolType: isLightningStreak ? 'lightning' : 'check',
-            count: next,
-          });
-
-          // play milestone sounds like quiz (avoid overlap because we already played base sound above)
-          // If you want *only* milestone sound, comment out the base sound above for correct.
-          if (isMilestone) {
-          if (symbol === '⚡') audioManager.playLightningStreakSound(nextStreak);
-          else audioManager.playStreakSound(nextStreak);
-      }
-
-        } else {
-          setTransientStreakMessage(null);
-        }
-
-        return next;
-      });
-    } else {
+    if (!isCorrect) {
+      audioManager.playWrongSound();
       setCurrentQuizStreak(0);
       setTransientStreakMessage(null);
+    } else if (isFastAnswer && !out?.slow) {
+      symbol = lightningSymbol;
+      audioManager.playLightningSound();
+      setCurrentQuizStreak((prev) => prev + 1);
+      setTransientStreakMessage(null);
+    } else {
+      audioManager.playCompleteSound();
+      setCurrentQuizStreak((prev) => prev + 1);
+      setTransientStreakMessage(null);
+    }
+
+    // Keep symbol visible briefly; lightning mode only shows the lightning symbol.
+    if (symbol) {
+      showAnswerSymbolFor300ms({ symbol, isCorrect });
     }
 
     // lightningCount already updated above
@@ -1027,7 +1009,7 @@ if (!isCorrect) {
     // - and backend totalCorrect increased to a new multiple of 5
     // This prevents "loop at 5" even if totalCorrect stays the same on slow answers.
     const reachedNewMilestone =
-      symbol === '⚡' &&
+      symbol === lightningSymbol &&
       nextTotal > prevTotal &&
       nextTotal > 0 &&
       nextTotal % 5 === 0;
@@ -1040,7 +1022,7 @@ if (!isCorrect) {
 
       if (out?.dailyStats) {
         setCorrectCount(out.dailyStats.correctCount);
-        setDailyTotalMs(out.dailyStats.totalActiveMs);
+        applyDailyStatsTotalMs(out.dailyStats.totalActiveMs);
         if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
         if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
       }
@@ -1272,7 +1254,7 @@ if (!isCorrect) {
 
           if (out.dailyStats) {
             setCorrectCount(out.dailyStats.correctCount);
-            setDailyTotalMs(out.dailyStats.totalActiveMs);
+            applyDailyStatsTotalMs(out.dailyStats.totalActiveMs);
             if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
             if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
           }
@@ -1311,10 +1293,9 @@ if (!isCorrect) {
         } else if (uiAdvancedOptimistically) {
           if (out.dailyStats) {
             setCorrectCount(out.dailyStats.correctCount);
-            setDailyTotalMs(out.dailyStats.totalActiveMs);
+            applyDailyStatsTotalMs(out.dailyStats.totalActiveMs);
             if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
             if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
-            setQuizStartTime(Date.now());
           }
           setIsAnimating(false);
         } else {
@@ -1427,7 +1408,7 @@ if (!isCorrect) {
         return { stillPracticing: true, error: e.message };
       }
     },
-    [quizRunId, childPin, pausedTime, isGameMode, navigate, applySurfState]
+    [quizRunId, childPin, pausedTime, isGameMode, navigate, applySurfState, applyDailyStatsTotalMs]
   );
 
   useEffect(() => {
@@ -1673,6 +1654,8 @@ if (!isCorrect) {
     setGameModeType,
     lightningCount,
     setLightningCount,
+    lightningCycleStart,
+    setLightningCycleStart,
     lightningTargetCorrect,
     surfQuizNumber,
     surfCorrectStreak,

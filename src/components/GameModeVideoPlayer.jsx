@@ -12,6 +12,8 @@ const GameModeVideoPlayer = () => {
     setShouldExitAfterVideo,
     shouldGoToLightningCompleteAfterVideo,
     setShouldGoToLightningCompleteAfterVideo,
+    lightningCount,
+    setLightningCycleStart,
 
   } = useContext(MathGameContext);
 
@@ -31,6 +33,13 @@ const GameModeVideoPlayer = () => {
         questionStartTimestamp.current = Date.now();
       }
       setPausedTime?.(0);
+
+      const shouldResumeGameMode =
+        !shouldGoToLightningCompleteAfterVideo && !shouldExitAfterVideo;
+
+      if (shouldResumeGameMode) {
+        setLightningCycleStart(lightningCount);
+      }
 
       if (shouldGoToLightningCompleteAfterVideo) {
         setShouldGoToLightningCompleteAfterVideo(false);
@@ -75,6 +84,8 @@ const GameModeVideoPlayer = () => {
     setShouldExitAfterVideo,
     shouldGoToLightningCompleteAfterVideo,
     setShouldGoToLightningCompleteAfterVideo,
+    lightningCount,
+    setLightningCycleStart,
 
   ]);
 

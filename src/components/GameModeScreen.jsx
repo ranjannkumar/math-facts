@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useContext, useState } from 'react';
 import { MathGameContext } from '../App.jsx';
-import { motion, AnimatePresence } from "framer-motion";
 import { FaCog } from "react-icons/fa";
 import SettingsModal from "./SettingsModal.jsx";
 
@@ -16,10 +15,8 @@ const GameModeScreen = () => {
   completedSurfQuizzes,
   surfQuizzesRequired,
   questionsPerQuiz,
-  transientStreakMessage,
   lightningCount,
-  currentAnswerSymbol,
-  setCurrentAnswerSymbol,
+  lightningCycleStart,
   questionStartTimestamp,
   showSettings,
   setShowSettings,
@@ -29,17 +26,11 @@ const GameModeScreen = () => {
 } = useContext(MathGameContext);
 
 const isSurfMode = gameModeType === 'surf' || (currentQuestion?.answers || []).length === 0;
+const isLightningMode = gameModeType === 'lightning' && !isSurfMode;
 
 useEffect(() => {
     setIsTimerPaused(false);
   }, [setIsTimerPaused]);
-
-  useEffect(() => {
-    if (isSurfMode) {
-      setCurrentAnswerSymbol(null);
-    }
-  }, [isSurfMode, setCurrentAnswerSymbol]);
-
 
   const answerRefs = useRef([]);
   const lastClickRef = useRef({ qid: null, t: 0 });
@@ -113,6 +104,12 @@ useEffect(() => {
       Number.isFinite(questionsPerQuiz) ? questionsPerQuiz : 10
     )
   );
+  const lightningSymbol = '\u26A1';
+  const lightningCycleCount = Math.max(0, lightningCount - lightningCycleStart);
+  const lightningCycleRemainder = lightningCycleCount % 5;
+  const lightningDisplayCount =
+    lightningCycleCount === 0 ? 0 : lightningCycleRemainder === 0 ? 5 : lightningCycleRemainder;
+  const lightningDisplay = lightningSymbol.repeat(lightningDisplayCount);
 
 
   return (
@@ -152,65 +149,13 @@ useEffect(() => {
           
          {/* --- LIGHTNING COUNTER & STREAK MESSAGE CONTAINER (Modified) --- */}
           <div className="relative h-4 sm:h-5 mb-1 sm:mb-2 flex flex-col justify-end">
-             
-            {/* TOP: Counter */}
-            {isSurfMode ? (
-              <div></div>
-            ) : (
-              <div className="w-full flex justify-between items-center bg-yellow-900/50 rounded-lg p-2 mb-12 sm:mb-16 shadow-inner">
-                <span className="text-xl font-bold text-yellow-400">⚡ Bolts:</span>
-                <span className="text-3xl font-black text-white">{lightningCount % 5}</span>
+            {isLightningMode && (
+              <div className="flex justify-center items-center min-h-[2.5rem] sm:min-h-[3rem]">
+                <span className="text-4xl sm:text-5xl font-black text-yellow-400 drop-shadow-lg">
+                  {lightningDisplay}
+                </span>
               </div>
             )}
-
-            {/* Middle: Transient Symbol Display */}
-            {!isSurfMode && (
-              <div className="flex justify-center items-center absolute w-full top-15">
-                <AnimatePresence>
-                {currentAnswerSymbol && (
-                  <motion.span
-                      key="answer-symbol"
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 1.5 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
-                      className={`text-5xl font-black drop-shadow-lg ${
-                        currentAnswerSymbol.symbol === '⚡'
-                          ? 'text-yellow-400'
-                          : currentAnswerSymbol.symbol === '✓'
-                          ? 'text-green-500'
-                          : 'text-red-500'
-                      }`}
-                  >
-                    {currentAnswerSymbol.symbol}
-                  </motion.span>
-                )}
-                </AnimatePresence>
-              </div>
-            )}
-
-
-            {/* BOTTOM: Transient Streak Message (Positioned over the answer area) */}
-            <AnimatePresence>
-              {transientStreakMessage && (
-                <motion.div
-                  key="streak-message-box"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.18, ease: "easeOut" }}
-                  className="absolute z-20 top-4 text-3xl font-black whitespace-nowrap w-full text-center"
-                  style={{
-                    color: transientStreakMessage.symbolType === 'lightning' ? '#FBBF24' : '#10B981',
-                    textShadow: '0 0 6px rgba(0,0,0,0.7), 0 0 3px rgba(0,0,0,0.5)',
-                    fontWeight: 900, 
-                  }}
-                >
-                  {transientStreakMessage.text}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
           </div>
 
           {isSurfMode && surfCorrectStreak > 0 && (
