@@ -13,6 +13,8 @@ const GameModeSurfVideoScreen = () => {
   const location = useLocation();
   const { kind } = useParams();
   const videoRef = useRef(null);
+  const surfVideoListRef = useRef([]);
+  const endHandledRef = useRef(false);
   const [hasAudio, setHasAudio] = useState(false);
 
   const {
@@ -20,6 +22,9 @@ const GameModeSurfVideoScreen = () => {
     setIsTimerPaused,
     setPausedTime,
     setShouldExitAfterVideo,
+    setVideoOptions,
+    surfVideoList,
+    setSurfResumeAfterVideo,
     pendingSurfPractice,
     setPendingSurfPractice,
     setShowLearningModule,
@@ -29,8 +34,28 @@ const GameModeSurfVideoScreen = () => {
   const exitAfter = !!location.state?.exitAfter;
 
   useEffect(() => {
+    surfVideoListRef.current = surfVideoList || [];
+  }, [surfVideoList]);
+
+  useEffect(() => {
+    setHasAudio(false);
+    endHandledRef.current = false;
+  }, [kind]);
+
+  useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
+
+    // Pause timers/inactivity while surf videos play.
+    setIsTimerPaused(true);
+    setPausedTime(Date.now());
+
+    const pickTwoOptions = (list) => {
+      if (!list || list.length === 0) return null;
+      if (list.length === 1) return { option1: list[0], option2: list[0] };
+      const shuffled = [...list].sort(() => Math.random() - 0.5);
+      return { option1: shuffled[0], option2: shuffled[1] };
+    };
 
     v.muted = true;
     if (kind === 'win' || kind === 'lose') {
@@ -40,6 +65,10 @@ const GameModeSurfVideoScreen = () => {
     v.play().catch(() => {});
 
     const handleEnded = async () => {
+      // Guard against double-fire in React StrictMode/dev.
+      if (endHandledRef.current) return;
+      endHandledRef.current = true;
+
       if (kind === 'intro') {
         setIsTimerPaused(false);
         setPausedTime(0);
@@ -58,11 +87,25 @@ const GameModeSurfVideoScreen = () => {
       setPausedTime(0);
 
       if (kind === 'win') {
+        const surfOptions = pickTwoOptions(surfVideoListRef.current);
+
+        if (surfOptions) {
+          // After the bonus video, either exit or resume surf mode based on exitAfter.
+          setShouldExitAfterVideo(exitAfter);
+          setSurfResumeAfterVideo(!exitAfter);
+          setVideoOptions(surfOptions);
+          navigate('/game-mode-video-select', { replace: true });
+          return;
+        }
+
         if (exitAfter) {
+          setSurfResumeAfterVideo(false);
           setShouldExitAfterVideo(false);
           navigate('/game-mode-exit', { replace: true });
           return;
         }
+
+        setSurfResumeAfterVideo(false);
         await startSurfNextQuiz({ navigateToGameMode: true });
         return;
       }
@@ -80,6 +123,8 @@ const GameModeSurfVideoScreen = () => {
     setPausedTime,
     startSurfNextQuiz,
     setShouldExitAfterVideo,
+    setVideoOptions,
+    setSurfResumeAfterVideo,
     pendingSurfPractice,
     setPendingSurfPractice,
     setShowLearningModule,

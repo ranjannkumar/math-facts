@@ -14,6 +14,9 @@ const GameModeVideoPlayer = () => {
     setShouldGoToLightningCompleteAfterVideo,
     lightningCount,
     setLightningCycleStart,
+    surfResumeAfterVideo,
+    setSurfResumeAfterVideo,
+    startSurfNextQuiz,
 
   } = useContext(MathGameContext);
 
@@ -26,13 +29,19 @@ const GameModeVideoPlayer = () => {
     const videoEl = videoRef.current;
     if (!videoEl || !videoUrl) return;
 
-    const cleanupAndNavigate = () => {
+    const cleanupAndNavigate = async () => {
       // Resume timers & inactivity tracking
       setIsTimerPaused(false);
       if (questionStartTimestamp?.current != null) {
         questionStartTimestamp.current = Date.now();
       }
       setPausedTime?.(0);
+
+      if (surfResumeAfterVideo) {
+        setSurfResumeAfterVideo(false);
+        await startSurfNextQuiz({ navigateToGameMode: true });
+        return;
+      }
 
       const shouldResumeGameMode =
         !shouldGoToLightningCompleteAfterVideo && !shouldExitAfterVideo;
@@ -86,6 +95,9 @@ const GameModeVideoPlayer = () => {
     setShouldGoToLightningCompleteAfterVideo,
     lightningCount,
     setLightningCycleStart,
+    surfResumeAfterVideo,
+    setSurfResumeAfterVideo,
+    startSurfNextQuiz,
 
   ]);
 

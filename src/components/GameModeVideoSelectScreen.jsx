@@ -3,8 +3,19 @@ import { MathGameContext } from "../App.jsx";
 import { useNavigate } from "react-router-dom";
 
 const GameModeVideoSelectScreen = () => {
-  const { videoOptions, handleVideoSelection } = useContext(MathGameContext);
+  const {
+    videoOptions,
+    handleVideoSelection,
+    setIsTimerPaused,
+    setPausedTime,
+  } = useContext(MathGameContext);
   const navigate = useNavigate();
+
+  // Pause timers/inactivity while the selection screen is visible.
+  useEffect(() => {
+    setIsTimerPaused(true);
+    setPausedTime(Date.now());
+  }, [setIsTimerPaused, setPausedTime]);
 
   // Redirect if no options are set (e.g., direct access)
   useEffect(() => {

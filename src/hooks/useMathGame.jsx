@@ -21,6 +21,9 @@ import {
 const videoModules = import.meta.glob('/public/game-videos/*.mp4', { as: 'url' });
 const thumbJpgModules = import.meta.glob('/public/game-videos/*.jpg', { as: 'url' });
 const thumbPngModules = import.meta.glob('/public/game-videos/*.png', { as: 'url' });
+const surfVideoModules = import.meta.glob('/public/surf-videos/*.mp4', { as: 'url' });
+const surfThumbJpgModules = import.meta.glob('/public/surf-videos/*.jpg', { as: 'url' });
+const surfThumbPngModules = import.meta.glob('/public/surf-videos/*.png', { as: 'url' });
 
 // Default config values used before backend config is loaded.
 const DEFAULT_INACTIVITY_TIMEOUT_MS = 5000;
@@ -85,8 +88,10 @@ const useMathGame = () => {
   const [gameModeLevel, setGameModeLevel] = useState(1);
   const [shouldExitAfterVideo, setShouldExitAfterVideo] = useState(false);
   const [pendingSurfPractice, setPendingSurfPractice] = useState(false);
+  const [surfResumeAfterVideo, setSurfResumeAfterVideo] = useState(false);
   const [videoOptions, setVideoOptions] = useState(null); // { option1, option2 }
   const [videoList, setVideoList] = useState([]);
+  const [surfVideoList, setSurfVideoList] = useState([]);
   const [lastAnswerMeta, setLastAnswerMeta] = useState(null);
   const [shouldGoToLightningCompleteAfterVideo, setShouldGoToLightningCompleteAfterVideo] = useState(false);
 
@@ -311,6 +316,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     setVideoOptions(null);
     setShouldExitAfterVideo(false);
     setPendingSurfPractice(false);
+    setSurfResumeAfterVideo(false);
     setGameModeLevel(1);
   }, []);
 
@@ -388,18 +394,15 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     [navigate, processLoginFinal, loginPendingResponse]
   );
 
-  // Load videos/thumbs
+  // Load videos/thumbs (lightning + surf)
   useEffect(() => {
-    const loadVideosAndThumbs = async () => {
-      const videoEntries = Object.entries(videoModules);
-      if (videoEntries.length === 0) {
-        setVideoList([]);
-        return;
-      }
+    const loadVideoSet = async (modules, jpgModules, pngModules) => {
+      const videoEntries = Object.entries(modules);
+      if (videoEntries.length === 0) return [];
 
       const videoUrls = await Promise.all(videoEntries.map(([_, loader]) => loader()));
 
-      const jpgEntries = Object.entries(thumbJpgModules);
+      const jpgEntries = Object.entries(jpgModules);
       const jpgUrls = await Promise.all(jpgEntries.map(([_, loader]) => loader()));
       const jpgMap = new Map();
       jpgEntries.forEach(([path], idx) => {
@@ -407,7 +410,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         jpgMap.set(base, jpgUrls[idx]);
       });
 
-      const pngEntries = Object.entries(thumbPngModules);
+      const pngEntries = Object.entries(pngModules);
       const pngUrls = await Promise.all(pngEntries.map(([_, loader]) => loader()));
       const pngMap = new Map();
       pngEntries.forEach(([path], idx) => {
@@ -415,26 +418,36 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         pngMap.set(base, pngUrls[idx]);
       });
 
-      const videos = videoEntries.map(([path], idx) => {
+      return videoEntries.map(([path], idx) => {
         const name = path.split('/').pop().replace('.mp4', '');
         const url = videoUrls[idx];
         const thumbUrl = jpgMap.get(name) || pngMap.get(name) || null;
         return { name, url, thumbnailUrl: thumbUrl };
       });
+    };
 
-      setVideoList(videos);
-      console.log('[GameMode] Detected videos:', videos);
+    const loadVideosAndThumbs = async () => {
+      const [lightningVideos, surfVideos] = await Promise.all([
+        loadVideoSet(videoModules, thumbJpgModules, thumbPngModules),
+        loadVideoSet(surfVideoModules, surfThumbJpgModules, surfThumbPngModules),
+      ]);
+
+      setVideoList(lightningVideos);
+      setSurfVideoList(surfVideos);
+
+      console.log('[GameMode] Detected lightning videos:', lightningVideos);
+      console.log('[GameMode] Detected surf videos:', surfVideos);
     };
 
     loadVideosAndThumbs();
   }, []);
 
-  const generateRandomVideoOptions = () => {
-    if (videoList.length === 0) return null;
-    if (videoList.length === 1) {
-      return { option1: videoList[0], option2: videoList[0] };
+  const generateRandomVideoOptions = (list = videoList) => {
+    if (!list || list.length === 0) return null;
+    if (list.length === 1) {
+      return { option1: list[0], option2: list[0] };
     }
-    const shuffled = [...videoList].sort(() => Math.random() - 0.5);
+    const shuffled = [...list].sort(() => Math.random() - 0.5);
     return { option1: shuffled[0], option2: shuffled[1] };
   };
 
@@ -647,6 +660,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       setStreakPosition(0);
       setAnswerSymbols([]);
       setTransientStreakMessage(null);
+      setSurfResumeAfterVideo(false);
 
       // Enter game mode state
       setIsGameMode(true);
@@ -1673,9 +1687,13 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     setShouldExitAfterVideo,
     pendingSurfPractice,
     setPendingSurfPractice,
+    surfResumeAfterVideo,
+    setSurfResumeAfterVideo,
     videoOptions,
+    setVideoOptions,
     handleVideoSelection,
     videoList,
+    surfVideoList,
     startSurfNextQuiz,
     shouldGoToLightningCompleteAfterVideo,
     setShouldGoToLightningCompleteAfterVideo,
