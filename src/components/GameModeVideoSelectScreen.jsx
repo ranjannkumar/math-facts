@@ -8,6 +8,7 @@ const GameModeVideoSelectScreen = () => {
     handleVideoSelection,
     setIsTimerPaused,
     setPausedTime,
+    gameModeType,
   } = useContext(MathGameContext);
   const navigate = useNavigate();
 
@@ -44,6 +45,9 @@ const GameModeVideoSelectScreen = () => {
       </div>
     );
   }
+
+  const headingText =
+    gameModeType === "surf" ? "Accuracy Bonus Unlocked !" : "Speed Bonus Unlocked! ⚡";
 
   const renderCard = (option, accentClass) => {
     const displayName =
@@ -82,7 +86,7 @@ const GameModeVideoSelectScreen = () => {
   return (
     <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center px-4 text-white">
       <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-10 text-yellow-300 drop-shadow-lg text-center">
-        Speed Bonus Unlocked! ⚡
+        {headingText}
       </h2>
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full max-w-3xl">
         {renderCard(videoOptions.option1, "hover:scale-[1.02]")}
