@@ -937,28 +937,38 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
 
         setIsTimerPaused(true);
         setPausedTime(Date.now());
-        navigate('/game-mode-surf-video/win', {
-          replace: true,
-          state: { exitAfter: true },
-        });
+        const surfOptions = generateRandomVideoOptions(surfVideoList);
+        if (surfOptions) {
+          setShouldExitAfterVideo(true);
+          setSurfResumeAfterVideo(false);
+          setVideoOptions(surfOptions);
+          navigate('/game-mode-video-select', { replace: true });
+          return;
+        }
+
+        setSurfResumeAfterVideo(false);
+        setShouldExitAfterVideo(false);
+        navigate('/game-mode-exit', { replace: true });
         return;
       }
 
       const surfPassed = !!out?.surfQuizPassed;
-      if (surfPassed ) {
+      if (surfPassed) {
         setIsTimerPaused(true);
         setPausedTime(Date.now());
         setIsAnimating(false);
-        navigate('/game-mode-surf-video/win', {
-          replace: true,
-          state: { exitAfter: false },
-        });
-        return;
-      }
 
-      if (surfPassed ) {
+        const surfOptions = generateRandomVideoOptions(surfVideoList);
+        if (surfOptions) {
+          setShouldExitAfterVideo(false);
+          setSurfResumeAfterVideo(true);
+          setVideoOptions(surfOptions);
+          navigate('/game-mode-video-select', { replace: true });
+          return;
+        }
+
+        setSurfResumeAfterVideo(false);
         await startSurfNextQuiz({ navigateToGameMode: true });
-        setIsAnimating(false);
         return;
       }
 
@@ -1349,6 +1359,13 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       navigate,
       applySurfState,
       startSurfNextQuiz,
+      setShouldExitAfterVideo,
+      setSurfResumeAfterVideo,
+      setVideoOptions,
+      generateRandomVideoOptions,
+      surfVideoList,
+      setIsTimerPaused,
+      setPausedTime,
     ]
   );
 
