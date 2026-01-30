@@ -195,6 +195,18 @@ export default function AnalyticsScreen() {
   const [lastFactDetail, setLastFactDetail] = useState(null);
   const [lastFactKey, setLastFactKey] = useState(null);
 
+  const sortedFacts = useMemo(() => {
+    if (!Array.isArray(facts)) return [];
+    return [...facts].sort((a, b) => {
+      const accA = Number(a?.stats?.accuracy ?? 0);
+      const accB = Number(b?.stats?.accuracy ?? 0);
+      if (accB !== accA) return accB - accA;
+      const attemptsA = Number(a?.stats?.totalAttempts ?? 0);
+      const attemptsB = Number(b?.stats?.totalAttempts ?? 0);
+      return attemptsB - attemptsA;
+    });
+  }, [facts]);
+
   const handleDetailLoaded = (data, key) => {
     setLastFactDetail(data);
     setLastFactKey(key);
@@ -240,7 +252,7 @@ export default function AnalyticsScreen() {
     rows.push([]);
     rows.push(["Facts"]);
     rows.push(["Question", "Accuracy", "Attempts", "Avg Time", "Last Attempt", "Flags"]);
-    facts.forEach((f) => {
+    sortedFacts.forEach((f) => {
       rows.push([
         f.question,
         pct(f.stats?.accuracy),
@@ -476,11 +488,11 @@ export default function AnalyticsScreen() {
 
           {loadingFacts && <div className="text-white/70">Loading facts…</div>}
 
-          {!loadingFacts && Array.isArray(facts) && facts.length === 0 && (
+          {!loadingFacts && Array.isArray(sortedFacts) && sortedFacts.length === 0 && (
             <div className="text-white/70">No facts match this filter yet.</div>
           )}
 
-          {!loadingFacts && facts.length > 0 && (
+          {!loadingFacts && sortedFacts.length > 0 && (
             <div className="overflow-auto">
               <table className="w-full text-left border-separate border-spacing-y-2">
                 <thead className="text-xs text-white/70">
@@ -494,7 +506,7 @@ export default function AnalyticsScreen() {
                   </tr>
                 </thead>
                 <tbody>
-                  {facts.map((f, idx) => (
+                  {sortedFacts.map((f, idx) => (
                     <tr
                       key={idx}
                       className="bg-black/20 hover:bg-black/30 cursor-pointer"
