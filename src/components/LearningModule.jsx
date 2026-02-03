@@ -160,6 +160,15 @@ const LearningModule = () => {
     setSessionCorrectCount,
     setShowWayToGoAfterFailure,
     selectedDifficulty,
+    isPretest,
+    pretestTimeLimitMs,
+    setPretestResult,
+    stopPretestTimer,
+    setIsPretest,
+    selectedOperation,
+    currentQuestionIndex,
+    pretestQuestionCount,
+    hardResetQuizState,
   } = useContext(MathGameContext);
 
   const diff = useMemo(() => normalizeDifficulty(pendingDifficulty), [pendingDifficulty]);
@@ -224,17 +233,28 @@ useEffect(() => {
         startActualQuiz(quizRunId);
       }
     } else {
-      if (!isIntervention && !isPreQuizFlow) navigate('/belts');
+      if (!isIntervention && !isPreQuizFlow && !isPretest) navigate('/belts');
     }
     
-  }, [isIntervention, interventionQuestion, isPreQuizFlow, preQuizPracticeItems, navigate, startActualQuiz, setShowLearningModule, quizRunId,isClosing]);
+  }, [
+    isIntervention,
+    interventionQuestion,
+    isPreQuizFlow,
+    isPretest,
+    preQuizPracticeItems,
+    navigate,
+    startActualQuiz,
+    setShowLearningModule,
+    quizRunId,
+    isClosing,
+  ]);
   
   useEffect(() => {
-      if (!isIntervention && (!selectedTable || !diff) && !isPreQuizFlow) {
+      if (!isIntervention && (!selectedTable || !diff) && !isPreQuizFlow && !isPretest) {
           setShowLearningModule(false);
           navigate('/belts');
       }
-  }, [selectedTable, diff, isPreQuizFlow, isIntervention, setShowLearningModule, navigate]);
+  }, [selectedTable, diff, isPreQuizFlow, isIntervention, isPretest, setShowLearningModule, navigate]);
 
 // Speak the math fact during Pre-Quiz Fact screen
 //  Disabled during Game Mode learning/practice
@@ -408,6 +428,28 @@ useEffect(() => {
 
       if (isIntervention) {
         if (out.completed) {
+          if (isPretest) {
+            setIsAnimating(false);
+            setQuizStartTime(null);
+            setSessionCorrectCount(out.sessionCorrectCount || 0);
+            stopPretestTimer();
+            const resultPayload = {
+              passed: out.passed === true,
+              failReason: out.failReason || null,
+              summary: out.summary || null,
+              totalTimeMs: out.totalTimeMs ?? out.summary?.totalActiveMs ?? 0,
+              timeLimitMs: out.timeLimitMs ?? out.pretestTimeLimitMs ?? pretestTimeLimitMs,
+              level: selectedTable,
+              operation: selectedOperation,
+              levelAwarded: out.levelAwarded,
+              pretestSkipped: out.pretestSkipped,
+            };
+            setPretestResult(resultPayload);
+            navigate('/pretest-result', { replace: true, state: { pretestResult: resultPayload } });
+            setIsSubmitting(false);
+            return;
+          }
+
           if (selectedDifficulty && selectedTable != null) {
             localStorage.setItem('game-mode-belt', selectedDifficulty);
             localStorage.setItem('game-mode-table', String(selectedTable));
@@ -430,10 +472,29 @@ useEffect(() => {
           return;
         }
         if (out.resume) {
+          if (isPretest) {
+            const totalQuestions =
+              typeof pretestQuestionCount === 'number' && pretestQuestionCount > 0
+                ? pretestQuestionCount
+                : 20;
+            const isLastPretestQuestion = currentQuestionIndex >= totalQuestions - 1;
+
+            if (isLastPretestQuestion) {
+              stopPretestTimer();
+              setIsPretest(false);
+              setPretestResult(null);
+              setShowLearningModule(false);
+              hardResetQuizState();
+              navigate('/belts', { replace: true });
+              setIsSubmitting(false);
+              return;
+            }
+          }
+
           setIsClosing(true);
           setInterventionQuestion(null);
           setShowLearningModule(false);
-          navigate('/quiz', { replace: true });
+          navigate(isPretest ? '/pretest' : '/quiz', { replace: true });
           setIsSubmitting(false);
           return;
         }

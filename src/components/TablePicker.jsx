@@ -96,8 +96,8 @@ const getFactVideoPath = (level) => {
 /* ----------------- Component ----------------- */
 const TablePicker = () => {
   const navigate = useNavigate();
-  const { setSelectedTable, tableProgress, childName, selectedTheme,showDailyStreakAnimation,  playFactVideoAfterStreak,
-  setPlayFactVideoAfterStreak,setHideStatsUI
+  const { startLevelEntry, tableProgress, childName, selectedTheme,showDailyStreakAnimation,  playFactVideoAfterStreak,
+  setPlayFactVideoAfterStreak,setHideStatsUI, isInitialPrepLoading
 } = useContext(MathGameContext);
 
   // Resolve theme
@@ -151,13 +151,8 @@ const TablePicker = () => {
   const isBlackBeltUnlocked = !!levelProgress?.black?.unlocked;
 
   const handleSelect = () => {
-    if (!unlocked) return; // Safeguard
-    setSelectedTable(levelNumber);
-    if (isBlackBeltUnlocked) {
-      navigate('/black');
-    } else {
-      navigate('/belts');
-    }
+    if (!unlocked || isInitialPrepLoading) return; // Safeguard
+    startLevelEntry(levelNumber, { isBlackBeltUnlocked });
   };
 
   const factVideoSrc = getFactVideoPath(levelNumber);

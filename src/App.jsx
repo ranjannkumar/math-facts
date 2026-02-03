@@ -32,8 +32,9 @@ const AdminSettings = lazy(() => import('./components/AdminSettings.jsx'));
 
 const SpeedTestScreen = lazy(() => import('./components/ui/SpeedTestScreen.jsx'));
 
-import PreTestPopup from './components/PreTestPopup.jsx';
 import PreTestScreen from './components/PreTestScreen.jsx';
+import PretestIntroScreen from './components/PretestIntroScreen.jsx';
+import PretestResultScreen from './components/PretestResultScreen.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
 
 import { clearShootingStars } from './utils/mathGameLogic.js';
@@ -102,8 +103,9 @@ const App = () => {
             element={<AnalyticsScreen />}
           />
 
-        {/* <Route path="/pre-test-popup" element={<PreTestPopup />} /> */}
-        {/* <Route path="/pre-test" element={<PreTestScreen />} /> */}
+        <Route path="/pretest" element={<PreTestScreen />} />
+        <Route path="/pretest-intro" element={<PretestIntroScreen />} />
+        <Route path="/pretest-result" element={<PretestResultScreen />} />
 
         <Route path="/video" element={<VideoPlayerScreen />} />
         <Route path="/game-mode-video" element={<GameModeVideoScreen />} />  

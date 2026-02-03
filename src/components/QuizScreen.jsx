@@ -13,11 +13,16 @@ const QuizScreen = () => {
     isAnimating,
     showResult,
     selectedDifficulty,
+    currentQuestionIndex,
     isTimerPaused,
     // <<< NEW CONTEXT PROPS
     transientStreakMessage,
     streakPosition,
     isAwaitingInactivityResponse,
+    isPretest,
+    pretestRemainingMs,
+    pretestTimeLimitMs,
+    pretestQuestionCount,
   } = useContext(MathGameContext);
 
   const answerRefs = useRef([]);
@@ -25,6 +30,14 @@ const QuizScreen = () => {
   const lastClickRef = useRef({ qid: null, t: 0 });
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [typedInput, setTypedInput] = useState('');
+
+  const formatMs = (ms) => {
+    if (!Number.isFinite(ms)) return '--:--';
+    const totalSeconds = Math.max(0, Math.round(ms / 1000));
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (currentQuestion) {
@@ -60,14 +73,19 @@ const QuizScreen = () => {
 };
 
 
-  const maxQuestions =
-    selectedDifficulty === 'brown'
+  const maxQuestions = isPretest
+    ? pretestQuestionCount || 20
+    : selectedDifficulty === 'brown'
       ? 10
       : selectedDifficulty && selectedDifficulty.startsWith('black')
-      ? 20
-      : 10;
+        ? 20
+        : 10;
 
   const isBlackDegree7 = selectedDifficulty && selectedDifficulty.startsWith('black-7');
+  const useBlackStyle = isPretest || isBlackDegree7;
+  const displayQuestionIndex = Number.isFinite(currentQuestionIndex)
+    ? currentQuestionIndex + 1
+    : 1;
 
   const handleDigitPress = (digit) => {
     if (isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion || isAwaitingInactivityResponse) return;
@@ -100,17 +118,38 @@ const QuizScreen = () => {
       }}
     >
       <div className="w-full min-h-screen flex flex-col items-center justify-center relative">
+        {isPretest && (
+          <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-2">
+            <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-center text-white font-semibold shadow-md">
+              Pretest Timer: {formatMs(pretestRemainingMs ?? pretestTimeLimitMs)}
+            </div>
+          </div>
+        )}
         <div
           className={
-            isBlackDegree7
+            useBlackStyle
               ? 'w-full max-w-sm sm:max-w-md mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6'
               : 'w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-4 sm:mb-6'
           }
         >
           
+         {isPretest && (
+            <div className="flex items-center justify-between text-xs sm:text-sm text-gray-200 mb-2">
+              <div className="font-semibold tracking-wide">Pretest</div>
+              <div className="font-semibold">
+                Time left: {formatMs(pretestRemainingMs ?? pretestTimeLimitMs)}
+              </div>
+            </div>
+          )}
+
+          {isPretest && (
+            <div className="text-center text-xs text-gray-300 mb-2">
+              Question {Math.min(displayQuestionIndex, maxQuestions)} of {maxQuestions}
+            </div>
+          )}
+
          {/* --- STREAK MESSAGE & PROGRESS BAR CONTAINER --- */}
           <div className="relative h-20 mb-4">
-            
             {/* Answer Symbols (shifted slightly up) */}
             <div className="flex justify-center items-center absolute w-full top-0 space-x-1">
               {answerSymbols.map((answer, index) => (
@@ -173,7 +212,7 @@ const QuizScreen = () => {
         <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4">
           <div
             className={
-              isBlackDegree7
+              useBlackStyle
                 ? 'bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm sm:max-w-md w-full mx-auto border border-blue-200/30 min-h-[200px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center'
                 : 'bg-white backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 border-2 border-gray-200 min-h-[200px] sm:min-h-[300px] md:min-h-[400px] flex flex-col justify-center'
             }
@@ -181,7 +220,7 @@ const QuizScreen = () => {
             <div className="text-center mb-3 sm:mb-4 md:mb-6">
               <h3
                 className={
-                  isBlackDegree7
+                  useBlackStyle
                     ? 'text-6xl sm:text-7xl font-extrabold text-green-500 text-center mb-6 whitespace-pre-line drop-shadow'
                     : 'text-7xl font-extrabold text-green-600 mb-1 sm:mb-2 drop-shadow-lg'
                 }
@@ -190,7 +229,7 @@ const QuizScreen = () => {
               </h3>
             </div>
 
-            {!isBlackDegree7 && (
+            {!useBlackStyle && (
               <div className="grid grid-cols-2 gap-1.5 sm:gap-2 md:gap-3 w-full">
                 {(currentQuestion?.answers || [1, 2, 3, 4]).map((answer, index) => (
                   <button
@@ -223,7 +262,7 @@ const QuizScreen = () => {
               </div>
             )}
 
-            {isBlackDegree7 && (
+            {useBlackStyle && (
               <div className="flex flex-col items-center gap-4 sm:gap-5">
                 <div className="w-full max-w-sm">
                   <div

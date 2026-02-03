@@ -13,6 +13,7 @@ import {
   quizPrepare,
   quizStart,
   quizSubmitAnswer,
+  userGetProgress,
   userResetProgress,
   userUpdateTheme,
 } from '../api/mathApi.js';
@@ -29,6 +30,8 @@ const surfThumbPngModules = import.meta.glob('/public/surf-videos/*.png', { as: 
 const DEFAULT_INACTIVITY_TIMEOUT_MS = 5000;
 const DEFAULT_LIGHTNING_TARGET = 100;
 const DEFAULT_LIGHTNING_FAST_MS = 2000;
+const DEFAULT_PRETEST_QUESTION_COUNT = 20;
+const DEFAULT_PRETEST_TIME_LIMIT_MS = 50000;
 const INACTIVITY_TIMEOUT_STORAGE_KEY = 'math-inactivity-ms';
 const LIGHTNING_TARGET_STORAGE_KEY = 'math-lightning-target';
 const LIGHTNING_FAST_MS_STORAGE_KEY = 'math-lightning-fast-ms';
@@ -184,6 +187,16 @@ const useMathGame = () => {
   const [completedSections, setCompletedSections] = useState({});
   const [showPreTestPopup, setShowPreTestPopup] = useState(false);
 
+  // --- PRETEST STATE (backend-driven) ---
+  const [isPretest, setIsPretest] = useState(false);
+  const [pretestQuestionCount, setPretestQuestionCount] = useState(DEFAULT_PRETEST_QUESTION_COUNT);
+  const [pretestTimeLimitMs, setPretestTimeLimitMs] = useState(DEFAULT_PRETEST_TIME_LIMIT_MS);
+  const [pretestRemainingMs, setPretestRemainingMs] = useState(null);
+  const [pretestResult, setPretestResult] = useState(null);
+  const [selectedOperation, setSelectedOperation] = useState('add');
+  const [pretestTimerRunning, setPretestTimerRunning] = useState(false);
+  const [isPretestIntroVisible, setIsPretestIntroVisible] = useState(false);
+
   const [showSpeedTest] = useState(false);
   const [speedTestPopupVisible] = useState(false);
   const [speedTestPopupAnimation] = useState('animate-pop-in');
@@ -200,6 +213,8 @@ const useMathGame = () => {
 
   // Internal state for timer/network
   const questionStartTimestamp = useRef(null);
+  const pretestTimerStartRef = useRef(null);
+  const pretestTimerInitialRef = useRef(null);
   const inactivityTimeoutId = useRef(null);
   const isQuittingRef = useRef(false);
 
@@ -264,12 +279,34 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     );
   }, []);
 
+  const stopPretestTimer = useCallback(() => {
+    pretestTimerStartRef.current = null;
+    pretestTimerInitialRef.current = null;
+    setPretestTimerRunning(false);
+    setPretestRemainingMs(null);
+  }, []);
+
+  const startPretestTimer = useCallback((limitMs, remainingMs) => {
+    const safeLimit = Number.isFinite(limitMs) ? limitMs : DEFAULT_PRETEST_TIME_LIMIT_MS;
+    const safeRemaining = Number.isFinite(remainingMs) ? remainingMs : safeLimit;
+
+    pretestTimerInitialRef.current = safeRemaining;
+    pretestTimerStartRef.current = Date.now();
+    setPretestTimeLimitMs(safeLimit);
+    setPretestRemainingMs(safeRemaining);
+    setPretestTimerRunning(true);
+  }, []);
+
 
   const hardResetQuizState = useCallback(() => {
     if (inactivityTimeoutId.current) {
       clearTimeout(inactivityTimeoutId.current);
       inactivityTimeoutId.current = null;
     }
+
+    stopPretestTimer();
+    setIsPretest(false);
+    setIsPretestIntroVisible(false);
 
     setQuizQuestions([]);
     setQuizRunId(null);
@@ -769,6 +806,215 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     [quizRunId, childPin, navigate, applySurfState]
   );
 
+  const startPretestRun = useCallback(
+    async ({ prep, level, operation } = {}) => {
+      const runId = prep?.quizRunId;
+      if (!runId || !childPin) {
+        console.error('Cannot start pretest: missing quizRunId or childPin.');
+        setIsInitialPrepLoading(false);
+        navigate('/levels');
+        return;
+      }
+
+      setIsPretest(true);
+      setPretestResult(null);
+      setIsPretestIntroVisible(true);
+      setSelectedOperation(operation || selectedOperation);
+      if (level != null) setSelectedTable(level);
+      setSelectedDifficulty('pretest');
+      setIsGameMode(false);
+      setGameModeType(null);
+      setQuizRunId(runId);
+      setIsInitialPrepLoading(false);
+
+      const countFromPrep =
+        typeof prep?.pretestQuestionCount === 'number'
+          ? prep.pretestQuestionCount
+          : DEFAULT_PRETEST_QUESTION_COUNT;
+      setPretestQuestionCount(countFromPrep);
+      setMaxQuestions(countFromPrep);
+
+      try {
+        navigate('/pretest-intro', { replace: true });
+        const started = await quizStart(runId, childPin);
+        const backendQuestions = started?.questions || started?.run?.questions || [];
+        if (!backendQuestions || backendQuestions.length === 0) {
+          throw new Error('No questions returned from pretest start.');
+        }
+
+        const mapped = backendQuestions.map(mapQuestionToFrontend);
+        const countFromStart =
+          typeof started?.pretestQuestionCount === 'number' ? started.pretestQuestionCount : countFromPrep;
+        setPretestQuestionCount(countFromStart);
+        setMaxQuestions(countFromStart);
+        setQuizQuestions(mapped);
+
+        const resumedIndex =
+          typeof started?.currentIndex === 'number'
+            ? started.currentIndex
+            : typeof prep?.currentIndex === 'number'
+              ? prep.currentIndex
+              : 0;
+
+        let startIndex = 0;
+        if ((started?.resumed || prep?.resumed) && typeof resumedIndex === 'number') {
+          startIndex = Math.min(Math.max(resumedIndex, 0), mapped.length - 1);
+
+          const safeCorrect =
+            typeof prep?.mainFlowCorrect === 'number'
+              ? prep.mainFlowCorrect
+              : typeof started?.mainFlowCorrect === 'number'
+                ? started.mainFlowCorrect
+                : 0;
+          const safeWrong =
+            typeof prep?.wrong === 'number' ? prep.wrong : typeof started?.wrong === 'number' ? started.wrong : 0;
+
+          setSessionCorrectCount(safeCorrect);
+          setWrongCount(safeWrong);
+
+          const answeredSoFar = safeCorrect + safeWrong;
+          const totalForProgress = countFromStart || mapped.length;
+
+          if (totalForProgress > 0) {
+            const restoredProgress = Math.min((answeredSoFar / totalForProgress) * 100, 100);
+            setQuizProgress(restoredProgress);
+          }
+        } else {
+          setQuizProgress(0);
+          setSessionCorrectCount(0);
+          setWrongCount(0);
+        }
+
+        setCurrentQuestionIndex(startIndex);
+        setCurrentQuestion(mapped[startIndex]);
+
+        const now = Date.now();
+        setQuizStartTime(now);
+        questionStartTimestamp.current = now;
+        setIsTimerPaused(false);
+        setElapsedTime(0);
+        setPausedTime(0);
+
+        const limitFromStart =
+          typeof started?.pretestTimeLimitMs === 'number'
+            ? started.pretestTimeLimitMs
+            : typeof prep?.pretestTimeLimitMs === 'number'
+              ? prep.pretestTimeLimitMs
+              : started?.timer?.limitMs;
+
+        const remainingFromStart =
+          typeof started?.timer?.remainingMs === 'number'
+            ? started.timer.remainingMs
+            : limitFromStart;
+
+        startPretestTimer(limitFromStart, remainingFromStart);
+
+        setIsInitialPrepLoading(false);
+        setIsPretestIntroVisible(false);
+        navigate('/pretest', { replace: true });
+      } catch (e) {
+        console.error('Pretest start failed:', e.message);
+        setIsInitialPrepLoading(false);
+        stopPretestTimer();
+        setIsPretest(false);
+        setIsPretestIntroVisible(false);
+        alert('Failed to start pretest: ' + (e.message || 'Unknown error'));
+        navigate('/levels');
+      }
+    },
+    [
+      childPin,
+      navigate,
+      selectedOperation,
+      setSelectedTable,
+      setSelectedOperation,
+      startPretestTimer,
+      stopPretestTimer,
+    ]
+  );
+
+  const startLevelEntry = useCallback(
+    async (level, { isBlackBeltUnlocked = false, operation = selectedOperation } = {}) => {
+      if (!childPin || level == null) {
+        console.warn('Missing childPin/level; cannot start level entry.');
+        navigate('/');
+        return;
+      }
+
+      syncConfigFromStorage();
+      hardResetQuizState();
+      setSelectedTable(level);
+      setSelectedDifficulty(null);
+      setPendingDifficulty(null);
+      setSelectedOperation(operation);
+      setIsInitialPrepLoading(true);
+
+      try {
+        const levelKey = `L${level}`;
+        let progressSnapshot = tableProgress;
+
+        try {
+          const latestProgress = await userGetProgress(childPin);
+          if (latestProgress && typeof latestProgress === 'object') {
+            const normalizedProgress =
+              latestProgress?.progress && typeof latestProgress.progress === 'object'
+                ? latestProgress.progress
+                : latestProgress;
+            setTableProgress(normalizedProgress);
+            progressSnapshot = normalizedProgress;
+          }
+        } catch (err) {
+          console.warn('Could not refresh progress before pretest check:', err?.message || err);
+        }
+
+        const pretestStatus = progressSnapshot?.[levelKey]?.pretest?.[operation];
+        const pretestAlreadyTaken = pretestStatus?.taken === true;
+        const levelCompleted = !!progressSnapshot?.[levelKey]?.completed;
+
+        if (pretestAlreadyTaken || levelCompleted) {
+          setIsInitialPrepLoading(false);
+          if (isBlackBeltUnlocked) {
+            navigate('/black');
+          } else {
+            navigate('/belts');
+          }
+          return;
+        }
+
+        const prep = await quizPrepare(level, 'white', childPin, operation);
+
+        if (prep?.pretestMode || prep?.gameModeType === 'pretest') {
+          await startPretestRun({ prep, level, operation });
+          return;
+        }
+
+        setIsInitialPrepLoading(false);
+        if (isBlackBeltUnlocked) {
+          navigate('/black');
+        } else {
+          navigate('/belts');
+        }
+      } catch (e) {
+        console.error('Level entry prepare failed:', e.message);
+        setIsInitialPrepLoading(false);
+        alert('Failed to prepare level: ' + (e.message || 'Unknown error'));
+        navigate('/levels');
+      }
+    },
+    [
+      childPin,
+      navigate,
+      hardResetQuizState,
+      selectedOperation,
+      setSelectedOperation,
+      startPretestRun,
+      syncConfigFromStorage,
+      tableProgress,
+      setTableProgress,
+      userGetProgress,
+    ]
+  );
+
   /**
    * Prepare called from belt/black picker
    * if backend returns an active Game Mode run, jump straight into Game Mode resume
@@ -788,7 +1034,14 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       }
 
       try {
-        const prep = await quizPrepare(table, difficulty, childPin);
+        const prep = await quizPrepare(table, difficulty, childPin, selectedOperation);
+
+        if (prep?.pretestMode || prep?.gameModeType === 'pretest') {
+          setIsInitialPrepLoading(false);
+          alert('Pretest is required. Please start it from the Level screen.');
+          navigate('/levels');
+          return;
+        }
 
         //  If backend says "gameMode", resume it immediately (no new quiz client-side)
         if (prep?.gameMode === true) {
@@ -838,6 +1091,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       startActualQuiz,
       startOrResumeGameModeRun,
       syncConfigFromStorage,
+      selectedOperation,
     ]
   );
 
@@ -1261,11 +1515,22 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       }
 
       try {
-        const out = await quizSubmitAnswer(quizRunId, questionId, selectedAnswer, responseMs, childPin, {
-          level: selectedTable,
-          beltOrDegree: selectedDifficulty,
-          forcePass: false,
-        });
+        const answerOptions = isPretest
+          ? {}
+          : {
+              level: selectedTable,
+              beltOrDegree: selectedDifficulty,
+              forcePass: false,
+            };
+
+        const out = await quizSubmitAnswer(
+          quizRunId,
+          questionId,
+          selectedAnswer,
+          responseMs,
+          childPin,
+          answerOptions
+        );
 
         if (out.completed) {
           const totalTimeMs = out.summary?.totalActiveMs || elapsedTime * 1000;
@@ -1285,6 +1550,31 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
           if (out.updatedProgress) setTableProgress(out.updatedProgress);
 
           const isBlackDegree7 = selectedDifficulty && String(selectedDifficulty).startsWith('black-7');
+
+          if (isPretest) {
+            stopPretestTimer();
+            setIsTimerPaused(true);
+
+            const resultPayload = {
+              passed: out.passed === true,
+              failReason: out.failReason || null,
+              summary: out.summary || null,
+              totalTimeMs: out.totalTimeMs ?? out.summary?.totalActiveMs ?? totalTimeMs,
+              timeLimitMs: out.timeLimitMs ?? out.pretestTimeLimitMs ?? pretestTimeLimitMs,
+              level: selectedTable,
+              operation: selectedOperation,
+              levelAwarded: out.levelAwarded,
+              pretestSkipped: out.pretestSkipped,
+            };
+
+            setPretestResult(resultPayload);
+
+            navigate('/pretest-result', {
+              replace: true,
+              state: { sessionTimeSeconds, pretestResult: resultPayload },
+            });
+            return;
+          }
 
           if (out.passed) {
             setShowResult(true);
@@ -1366,6 +1656,10 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       surfVideoList,
       setIsTimerPaused,
       setPausedTime,
+      isPretest,
+      stopPretestTimer,
+      pretestTimeLimitMs,
+      selectedOperation,
     ]
   );
 
@@ -1419,8 +1713,9 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
             // backend gives next question
             const nextQ = mapQuestionToFrontend(out.next);
             setCurrentQuestion(nextQ);
-            questionStartTimestamp.current = Date.now();
           }
+
+          questionStartTimestamp.current = Date.now();
 
           setInterventionQuestion(null);
           setShowLearningModule(false);
@@ -1529,7 +1824,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         }
 
         if (out?.completed && !isGameMode) {
-          // Normal quiz completed by inactivity -> go WayToGo (same as fail flow)
+          // Quiz completed by inactivity -> pretest result or WayToGo
           setQuizStartTime(null);
 
           setSessionCorrectCount(out.sessionCorrectCount || 0);
@@ -1540,6 +1835,25 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
           setIsTimerPaused(true);
 
           setIsAwaitingInactivityResponse(false);
+
+          if (isPretest) {
+            stopPretestTimer();
+            const resultPayload = {
+              passed: out.passed === true,
+              failReason: out.failReason || 'time',
+              summary: out.summary || null,
+              totalTimeMs: out.totalTimeMs ?? out.summary?.totalActiveMs ?? 0,
+              timeLimitMs: out.timeLimitMs ?? out.pretestTimeLimitMs ?? pretestTimeLimitMs,
+              level: selectedTable,
+              operation: selectedOperation,
+              levelAwarded: out.levelAwarded,
+              pretestSkipped: out.pretestSkipped,
+            };
+            setPretestResult(resultPayload);
+            navigate('/pretest-result', { replace: true, state: { pretestResult: resultPayload } });
+            return;
+          }
+
           navigate('/way-to-go');
           return;
         }
@@ -1578,6 +1892,11 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     isGameMode,
     currentQuestionIndex,
     inactivityTimeoutMs,
+    isPretest,
+    stopPretestTimer,
+    pretestTimeLimitMs,
+    selectedOperation,
+    selectedTable,
   ]);
 
   // Timer Effect (client-side time tracking)
@@ -1596,6 +1915,23 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       clearInterval(timer);
     };
   }, [isTimerPaused, quizStartTime, dailyTotalMs]);
+
+  // Pretest countdown (wall-clock; does not pause during practice)
+  useEffect(() => {
+    if (!pretestTimerRunning) return;
+
+    const interval = setInterval(() => {
+      const startedAt = pretestTimerStartRef.current;
+      const initialMs = pretestTimerInitialRef.current;
+      if (!Number.isFinite(initialMs) || !Number.isFinite(startedAt)) return;
+
+      const elapsed = Date.now() - startedAt;
+      const nextRemaining = Math.max(0, initialMs - elapsed);
+      setPretestRemainingMs(nextRemaining);
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [pretestTimerRunning]);
 
   // ---------------- QUIT/RESET ----------------
   const handleConfirmQuit = useCallback(() => {
@@ -1670,6 +2006,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     setSelectedDifficulty,
     quizRunId,
     setQuizRunId,
+    startLevelEntry,
     startQuizWithDifficulty,
     startActualQuiz,
     handleAnswer,
@@ -1829,6 +2166,20 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     setPreTestResults,
     completedSections,
     showPreTestPopup,
+
+    // Pretest (backend-driven)
+    isPretest,
+    isPretestIntroVisible,
+    setIsPretest,
+    pretestQuestionCount,
+    pretestTimeLimitMs,
+    pretestRemainingMs,
+    pretestResult,
+    setPretestResult,
+    setIsPretestIntroVisible,
+    stopPretestTimer,
+    selectedOperation,
+    setSelectedOperation,
 
     navigate,
     lastQuestion,
