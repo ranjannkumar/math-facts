@@ -2,14 +2,18 @@ import React, { useContext, useEffect } from 'react';
 import { MathGameContext } from '../App.jsx';
 
 const PretestIntroScreen = () => {
-  const { isPretest, isPretestIntroVisible, pretestQuestionCount, pretestTimeLimitMs, navigate } =
+  const { isPretest, isPretestIntroVisible, pretestQuestionCount, pretestTimeLimitMs, navigate, isQuittingRef } =
     useContext(MathGameContext);
 
   useEffect(() => {
     if (!isPretest) {
+      if (isQuittingRef?.current) {
+        navigate('/', { replace: true });
+        return;
+      }
       navigate('/levels', { replace: true });
     }
-  }, [isPretest, navigate]);
+  }, [isPretest, navigate, isQuittingRef]);
 
   if (!isPretest) return null;
 

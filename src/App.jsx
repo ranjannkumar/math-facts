@@ -103,7 +103,7 @@ const App = () => {
             element={<AnalyticsScreen />}
           />
 
-        <Route path="/pretest" element={<PreTestScreen />} />
+        {/* <Route path="/pretest" element={<PreTestScreen />} /> */}
         <Route path="/pretest-intro" element={<PretestIntroScreen />} />
         <Route path="/pretest-result" element={<PretestResultScreen />} />
 
@@ -132,6 +132,7 @@ const App = () => {
           <Route path="/way-to-go" element={<WayToGoScreen />} />
           <Route path="/results" element={<ResultsScreen />} />
           <Route path="/theme" element={<ThemePicker />} />
+          <Route path="/pretest" element={<PreTestScreen />} />
 
         </Route>
       </Routes>

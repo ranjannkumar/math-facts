@@ -3,13 +3,17 @@ import { MathGameContext } from '../App.jsx';
 import QuizScreen from './QuizScreen.jsx';
 
 const PreTestScreen = () => {
-  const { isPretest, navigate } = useContext(MathGameContext);
+  const { isPretest, navigate, isQuittingRef } = useContext(MathGameContext);
 
   useEffect(() => {
     if (!isPretest) {
+      if (isQuittingRef?.current) {
+        navigate('/', { replace: true });
+        return;
+      }
       navigate('/levels', { replace: true });
     }
-  }, [isPretest, navigate]);
+  }, [isPretest, navigate, isQuittingRef]);
 
   if (!isPretest) return null;
 

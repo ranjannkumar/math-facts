@@ -2144,6 +2144,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     setShowResetModal,
     showSettings,
     setShowSettings,
+    isQuittingRef,
 
     // Progression Data
     tableProgress,
