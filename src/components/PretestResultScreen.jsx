@@ -59,65 +59,210 @@ const PretestResultScreen = () => {
       className="min-h-screen full-height-safe w-full relative px-4 py-6 flex items-center justify-center overflow-auto"
       style={{
         background:
-          'linear-gradient(180deg, #242424 0%, #1c1c1c 55%, #151515 100%)',
+          'linear-gradient(180deg, #2a2a2a 0%, #1f1f1f 55%, #161616 100%)',
       }}
     >
-      <div className="kid-bg-star star1 top-5 left-5 text-4xl sm:text-5xl">★</div>
-      <div className="kid-bg-star star2 top-20 right-10 text-3xl sm:text-4xl">★</div>
-      <div className="kid-bg-star star3 bottom-20 left-10 text-5xl sm:text-6xl">★</div>
-      <div className="kid-bg-star star4 top-50 right-5 text-2xl sm:text-3xl">★</div>
-      <div className="kid-bg-star star5 bottom-5 right-20 text-4xl sm:text-5xl">★</div>
+      {/* Falling stars only when PASS */}
+      {passed && (
+        <>
+          <style>{`
+            @keyframes fall {
+              0%   { transform: translate3d(0,-20vh,0) rotate(0deg); opacity: 0; }
+              10%  { opacity: 1; }
+              100% { transform: translate3d(0,120vh,0) rotate(280deg); opacity: 0; }
+            }
+            @keyframes shimmer {
+              0%,100% { opacity: .35; filter: drop-shadow(0 0 0 rgba(255,255,255,0)); }
+              50%     { opacity: .95; filter: drop-shadow(0 6px 14px rgba(255,255,255,.35)); }
+            }
+            .falling-star {
+              position: absolute;
+              top: -20vh;
+              z-index: 1;
+              pointer-events: none;
+              animation-name: fall, shimmer;
+              animation-timing-function: linear, ease-in-out;
+              animation-iteration-count: infinite, infinite;
+              will-change: transform, opacity;
+            }
+          `}</style>
+
+          <div
+            className="falling-star text-2xl sm:text-3xl"
+            style={{
+              left: '10%',
+              animationDuration: '2.8s, 1.2s',
+              animationDelay: '0s, .1s',
+            }}
+          >
+            ★
+          </div>
+          <div
+            className="falling-star text-3xl sm:text-4xl"
+            style={{
+              left: '28%',
+              animationDuration: '3.4s, 1.6s',
+              animationDelay: '.3s, .2s',
+            }}
+          >
+            ★
+          </div>
+          <div
+            className="falling-star text-xl sm:text-2xl"
+            style={{
+              left: '52%',
+              animationDuration: '3.1s, 1.3s',
+              animationDelay: '.6s, .15s',
+            }}
+          >
+            ★
+          </div>
+          <div
+            className="falling-star text-4xl sm:text-5xl"
+            style={{
+              left: '72%',
+              animationDuration: '3.8s, 1.8s',
+              animationDelay: '.15s, .25s',
+            }}
+          >
+            ★
+          </div>
+          <div
+            className="falling-star text-2xl sm:text-3xl"
+            style={{
+              left: '88%',
+              animationDuration: '3.0s, 1.4s',
+              animationDelay: '.9s, .05s',
+            }}
+          >
+            ★
+          </div>
+        </>
+      )}
 
       <div
         className={[
           'relative z-10 w-full max-w-lg lg:max-w-xl text-center rounded-3xl shadow-2xl',
-          'bg-white popup-zoom-in animate-pop-in',
-          'p-4 sm:p-6 md:p-10',
+          'p-4 sm:p-6 md:p-8',
         ].join(' ')}
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.06) 100%)',
+          border: '1px solid rgba(255,255,255,0.10)',
+          boxShadow: '0 24px 60px rgba(0,0,0,.55)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+        }}
       >
+        {/* Title pill */}
         <div
-          className="mx-auto mb-4 sm:mb-6 rounded-xl px-3 py-2 sm:px-6 sm:py-2 celebration-animation"
+          className="mx-auto mb-4 sm:mb-6 rounded-2xl px-4 py-3 sm:px-6 sm:py-3"
           style={{
-            maxWidth: 420,
+            maxWidth: 520,
             background: passed
-              ? 'linear-gradient(90deg, #8BEC98 0%, #FFB703 100%)'
-              : 'linear-gradient(90deg, #7C3AED 0%, #38BDF8 100%)',
-            boxShadow: '0 8px 24px rgba(0,0,0,.12)',
+              ? 'linear-gradient(90deg, rgba(139,236,152,.95) 0%, rgba(255,183,3,.95) 100%)'
+              : 'linear-gradient(90deg, rgba(124,58,237,.95) 0%, rgba(56,189,248,.95) 100%)',
+            boxShadow: '0 10px 26px rgba(0,0,0,.28)',
           }}
         >
           <h2
-            className="m-0 text-lg sm:text-2xl md:text-4xl font-extrabold tracking-wide text-center"
-            style={{ letterSpacing: '0.06em', color: '#273444' }}
+            className="m-0 text-base sm:text-xl md:text-2xl font-black tracking-wide text-center truncate"
+            style={{ letterSpacing: '0.06em', color: '#101827' }}
+            title={passed ? 'CONGRATULATONS' : 'WELCOME TO THE BELTS'}
           >
-            {passed ? 'CONGRATULATONS ' : 'WELCOME TO THE BELTS '}
+            {passed ? 'CONGRATULATONS' : 'WELCOME TO THE BELTS'}
           </h2>
+          <p
+            className="mt-1 text-xs sm:text-sm font-semibold text-center truncate"
+            style={{ color: 'rgba(16, 24, 39, .85)' }}
+            title={passed ? 'Perfect score — you cleared the pretest!' : 'No worries — belts mode is next!'}
+          >
+            {passed ? 'Perfect score — you cleared the pretest!' : 'No worries — belts mode is next!'}
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6 justify-center max-w-xl mx-auto">
-          <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
-            <div className="text-gray-700 text-lg sm:text-2xl font-extrabold tracking-wide">
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5 justify-center max-w-xl mx-auto">
+          <div
+            className="rounded-2xl p-4 sm:p-5 text-left"
+            style={{
+              background: 'rgba(20, 20, 20, 0.35)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              boxShadow: '0 10px 22px rgba(0,0,0,.30)',
+            }}
+          >
+            <div className="text-xs sm:text-sm font-bold tracking-wide uppercase truncate text-white/80">
               Correct
             </div>
-            <div className="wordart-number text-md sm:text-xl mt-2">{correct}</div>
+            <div className="mt-2 text-2xl sm:text-3xl font-black text-white truncate">
+              {correct}
+            </div>
           </div>
-          <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
-            <div className="text-gray-700 text-lg sm:text-2xl font-extrabold tracking-wide">
+
+          <div
+            className="rounded-2xl p-4 sm:p-5 text-left"
+            style={{
+              background: 'rgba(20, 20, 20, 0.35)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              boxShadow: '0 10px 22px rgba(0,0,0,.30)',
+            }}
+          >
+            <div className="text-xs sm:text-sm font-bold tracking-wide uppercase truncate text-white/80">
               Time Taken
             </div>
-            <div className="wordart-number text-md sm:text-xl mt-2">{timeUsedLabel}</div>
+            <div className="mt-2 text-2xl sm:text-3xl font-black text-white truncate">
+              {timeUsedLabel}
+            </div>
           </div>
         </div>
 
+        {/* Footer message */}
         {passed ? (
-          <div className="bg-green-100/70 border-2 border-green-300 rounded-2xl py-2 sm:py-4 px-3 mt-5 sm:mt-8 mx-auto max-w-md w-full shadow-lg">
-            <p className="text-green-700 font-extrabold text-lg sm:text-2xl md:text-4xl text-center break-words">
+          <div
+            className="mt-5 sm:mt-7 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 mx-auto max-w-md w-full"
+            style={{
+              background: 'rgba(34,197,94,0.12)',
+              border: '1px solid rgba(34,197,94,0.35)',
+              boxShadow: '0 12px 26px rgba(0,0,0,.28)',
+            }}
+          >
+            <p
+              className="m-0 text-sm sm:text-lg md:text-xl font-extrabold text-center truncate"
+              style={{ color: 'rgba(187, 247, 208, 0.98)' }}
+              title={`Welcome to level ${nextLevel ?? 'next'}`}
+            >
               Welcome to level {nextLevel ?? 'next'}
+            </p>
+            <p
+              className="m-0 mt-1 text-xs sm:text-sm font-semibold text-center truncate"
+              style={{ color: 'rgba(187, 247, 208, 0.80)' }}
+              title="Redirecting back to Levels..."
+            >
+              Redirecting back to Levels...
             </p>
           </div>
         ) : (
-          <div className="bg-blue-100/70 border-2 border-blue-300 rounded-2xl py-2 sm:py-4 px-3 mt-5 sm:mt-8 mx-auto max-w-md w-full shadow-lg">
-            <p className="text-blue-700 font-extrabold text-lg sm:text-2xl md:text-4xl text-center break-words">
-              Keep going and earn your belts !
+          <div
+            className="mt-5 sm:mt-7 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 mx-auto max-w-md w-full"
+            style={{
+              background: 'rgba(56,189,248,0.12)',
+              border: '1px solid rgba(56,189,248,0.35)',
+              boxShadow: '0 12px 26px rgba(0,0,0,.28)',
+            }}
+          >
+            <p
+              className="m-0 text-sm sm:text-lg md:text-xl font-extrabold text-center truncate"
+              style={{ color: 'rgba(186, 230, 253, 0.98)' }}
+              title="Keep going and earn your belts!"
+            >
+              Keep going and earn your belts!
+            </p>
+            <p
+              className="m-0 mt-1 text-xs sm:text-sm font-semibold text-center truncate"
+              style={{ color: 'rgba(186, 230, 253, 0.80)' }}
+              title="Taking you to Belts..."
+            >
+              Taking you to Belts...
             </p>
           </div>
         )}
