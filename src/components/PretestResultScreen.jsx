@@ -255,7 +255,7 @@ const PretestResultScreen = () => {
               style={{ color: 'rgba(186, 230, 253, 0.98)' }}
               title="Keep going and earn your belts!"
             >
-              Keep going and earn your belts!
+              Keep going and earn your belts
             </p>
             <p
               className="m-0 mt-1 text-xs sm:text-sm font-semibold text-center truncate"
