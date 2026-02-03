@@ -72,7 +72,7 @@ const PretestResultScreen = () => {
         className={[
           'relative z-10 w-full max-w-lg lg:max-w-xl text-center rounded-3xl shadow-2xl',
           'bg-white popup-zoom-in animate-pop-in',
-          'p-5 sm:p-8 md:p-10',
+          'p-4 sm:p-6 md:p-10',
         ].join(' ')}
       >
         <div
@@ -86,7 +86,7 @@ const PretestResultScreen = () => {
           }}
         >
           <h2
-            className="m-0 text-xl sm:text-3xl md:text-4xl font-extrabold tracking-wide text-center sm:whitespace-nowrap"
+            className="m-0 text-lg sm:text-2xl md:text-4xl font-extrabold tracking-wide text-center"
             style={{ letterSpacing: '0.06em', color: '#273444' }}
           >
             {passed ? 'CONGRATULATONS ' : 'WELCOME TO THE BELTS '}
@@ -105,14 +105,14 @@ const PretestResultScreen = () => {
         </div>
 
         {passed ? (
-          <div className="bg-green-100/70 border-2 border-green-300 rounded-2xl py-2 sm:py-4 px-3 mt-6 sm:mt-8 mx-auto max-w-md w-full shadow-lg">
-            <p className="text-green-700 font-extrabold text-xl sm:text-3xl md:text-4xl text-center sm:whitespace-nowrap">
+          <div className="bg-green-100/70 border-2 border-green-300 rounded-2xl py-2 sm:py-4 px-3 mt-5 sm:mt-8 mx-auto max-w-md w-full shadow-lg">
+            <p className="text-green-700 font-extrabold text-lg sm:text-2xl md:text-4xl text-center break-words">
               Welcome to level {nextLevel ?? 'next'}
             </p>
           </div>
         ) : (
-          <div className="bg-blue-100/70 border-2 border-blue-300 rounded-2xl py-2 sm:py-4 px-3 mt-6 sm:mt-8 mx-auto max-w-md w-full shadow-lg">
-            <p className="text-blue-700 font-extrabold text-xl sm:text-3xl md:text-4xl text-center sm:whitespace-nowrap">
+          <div className="bg-blue-100/70 border-2 border-blue-300 rounded-2xl py-2 sm:py-4 px-3 mt-5 sm:mt-8 mx-auto max-w-md w-full shadow-lg">
+            <p className="text-blue-700 font-extrabold text-lg sm:text-2xl md:text-4xl text-center break-words">
               Keep going and earn your belts !
             </p>
           </div>
