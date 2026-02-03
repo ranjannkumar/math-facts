@@ -118,13 +118,7 @@ const QuizScreen = () => {
       }}
     >
       <div className="w-full min-h-screen flex flex-col items-center justify-center relative">
-        {isPretest && (
-          <div className="w-full max-w-lg sm:max-w-xl mx-auto px-1 sm:px-2 md:px-4 mb-2">
-            <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-center text-white font-semibold shadow-md">
-              Pretest Timer: {formatMs(pretestRemainingMs ?? pretestTimeLimitMs)}
-            </div>
-          </div>
-        )}
+        
         <div
           className={
             useBlackStyle
@@ -133,20 +127,6 @@ const QuizScreen = () => {
           }
         >
           
-         {isPretest && (
-            <div className="flex items-center justify-between text-xs sm:text-sm text-gray-200 mb-2">
-              <div className="font-semibold tracking-wide">Pretest</div>
-              <div className="font-semibold">
-                Time left: {formatMs(pretestRemainingMs ?? pretestTimeLimitMs)}
-              </div>
-            </div>
-          )}
-
-          {isPretest && (
-            <div className="text-center text-xs text-gray-300 mb-2">
-              Question {Math.min(displayQuestionIndex, maxQuestions)} of {maxQuestions}
-            </div>
-          )}
 
          {/* --- STREAK MESSAGE & PROGRESS BAR CONTAINER --- */}
           <div className="relative h-20 mb-4">

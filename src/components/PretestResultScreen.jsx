@@ -55,30 +55,60 @@ const PretestResultScreen = () => {
   const nextLevel = Number.isFinite(selectedTable) ? selectedTable + 1 : null;
 
   return (
-    <div className={`min-h-screen w-full fixed inset-0 flex items-center justify-center p-4 ${passed ? 'bg-emerald-600' : 'bg-indigo-600'}`}>
-      <div className="bg-black/90 text-white rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.35)] max-w-md w-full text-center">
+    <div className="min-h-screen full-height-safe w-full relative px-4 py-6 flex items-center justify-center overflow-auto">
+      <div className="kid-bg-star star1 top-5 left-5 text-4xl sm:text-5xl">★</div>
+      <div className="kid-bg-star star2 top-20 right-10 text-3xl sm:text-4xl">★</div>
+      <div className="kid-bg-star star3 bottom-20 left-10 text-5xl sm:text-6xl">★</div>
+      <div className="kid-bg-star star4 top-50 right-5 text-2xl sm:text-3xl">★</div>
+      <div className="kid-bg-star star5 bottom-5 right-20 text-4xl sm:text-5xl">★</div>
+
+      <div
+        className={[
+          'relative z-10 w-full max-w-lg lg:max-w-xl text-center rounded-3xl shadow-2xl',
+          'bg-white popup-zoom-in animate-pop-in',
+          'p-5 sm:p-8 md:p-10',
+        ].join(' ')}
+      >
+        <div
+          className="mx-auto mb-4 sm:mb-6 rounded-xl px-4 py-2 sm:px-6 sm:py-2 celebration-animation"
+          style={{
+            maxWidth: 420,
+            background: passed
+              ? 'linear-gradient(90deg, #8BEC98 0%, #FFB703 100%)'
+              : 'linear-gradient(90deg, #7C3AED 0%, #38BDF8 100%)',
+            boxShadow: '0 8px 24px rgba(0,0,0,.12)',
+          }}
+        >
+          <h2
+            className="m-0 text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-wide"
+            style={{ letterSpacing: '0.06em', color: '#273444' }}
+          >
+            {passed ? 'CONGRATS!' : 'WELCOME TO THE BELTS!'}
+          </h2>
+        </div>
+
         {passed ? (
-          <>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-2">Congrats!</h2>
-            <p className="text-white/80 mb-6">
+          <div className="bg-green-100/70 border-2 border-green-300 rounded-2xl py-2 sm:py-4 px-3 mb-6 sm:mb-8 mx-auto max-w-md w-full shadow-lg">
+            <p className="text-green-700 font-extrabold text-2xl sm:text-3xl md:text-4xl">
               Welcome to level {nextLevel ?? 'next'}.
             </p>
-          </>
+          </div>
         ) : (
-          <>
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-2">Welcome to the belts!</h2>
-            <p className="text-white/80 mb-6">Keep going and earn your belts.</p>
-          </>
+          <div className="bg-blue-100/70 border-2 border-blue-300 rounded-2xl py-2 sm:py-4 px-3 mb-6 sm:mb-8 mx-auto max-w-md w-full shadow-lg">
+            <p className="text-blue-700 font-extrabold text-2xl sm:text-3xl md:text-4xl">
+              Keep going and earn your belts.
+            </p>
+          </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white/10 rounded-xl p-3">
-            <div className="text-xs text-white/70">Correct</div>
-            <div className="text-2xl font-bold">{correct}</div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 justify-center max-w-xl mx-auto">
+          <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
+            <div className="text-gray-500 text-xs sm:text-sm">Correct</div>
+            <div className="wordart-number text-2xl sm:text-4xl mt-1">{correct}</div>
           </div>
-          <div className="bg-white/10 rounded-xl p-3">
-            <div className="text-xs text-white/70">Time Taken</div>
-            <div className="text-2xl font-bold">{timeUsedLabel}</div>
+          <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
+            <div className="text-gray-500 text-xs sm:text-sm">Time Taken</div>
+            <div className="wordart-number text-2xl sm:text-4xl mt-1">{timeUsedLabel}</div>
           </div>
         </div>
       </div>
