@@ -175,9 +175,9 @@ const PretestResultScreen = () => {
           <p
             className="mt-1 text-xs sm:text-sm font-semibold text-center truncate"
             style={{ color: 'rgba(16, 24, 39, .85)' }}
-            title={passed ? 'Perfect score — you cleared the pretest!' : 'No worries — belts mode is next!'}
+            title={passed ? 'Perfect score — you cleared the pretest!' : ' belts mode is next!'}
           >
-            {passed ? 'Perfect score — you cleared the pretest!' : 'No worries — belts mode is next!'}
+            {passed ? 'Perfect score — you cleared the pretest!' : ''}
           </p>
         </div>
 
