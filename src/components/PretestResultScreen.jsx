@@ -95,12 +95,16 @@ const PretestResultScreen = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6 justify-center max-w-xl mx-auto">
           <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
-            <div className="text-gray-500 text-xs sm:text-sm">Correct</div>
-            <div className="wordart-number text-2xl sm:text-4xl mt-1">{correct}</div>
+            <div className="text-gray-700 text-lg sm:text-2xl font-extrabold tracking-wide">
+              Correct
+            </div>
+            <div className="wordart-number text-md sm:text-xl mt-2">{correct}</div>
           </div>
           <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
-            <div className="text-gray-500 text-xs sm:text-sm">Time Taken</div>
-            <div className="wordart-number text-2xl sm:text-4xl mt-1">{timeUsedLabel}</div>
+            <div className="text-gray-700 text-lg sm:text-2xl font-extrabold tracking-wide">
+              Time Taken
+            </div>
+            <div className="wordart-number text-md sm:text-xl mt-2">{timeUsedLabel}</div>
           </div>
         </div>
 

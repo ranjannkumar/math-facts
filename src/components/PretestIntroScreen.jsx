@@ -38,7 +38,7 @@ const PretestIntroScreen = () => {
             {/* Title pill */}
             <div className="mx-auto mb-5 w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-4 shadow-lg">
               <h2 className="text-center font-extrabold tracking-wide text-white whitespace-nowrap text-[22px] sm:text-3xl">
-                Welcome to the Pretest!
+                READY FOR THE PRETEST !
               </h2>
             </div>
 
