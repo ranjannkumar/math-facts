@@ -55,7 +55,13 @@ const PretestResultScreen = () => {
   const nextLevel = Number.isFinite(selectedTable) ? selectedTable + 1 : null;
 
   return (
-    <div className="min-h-screen full-height-safe w-full relative px-4 py-6 flex items-center justify-center overflow-auto">
+    <div
+      className="min-h-screen full-height-safe w-full relative px-4 py-6 flex items-center justify-center overflow-auto"
+      style={{
+        background:
+          'linear-gradient(180deg, #242424 0%, #1c1c1c 55%, #151515 100%)',
+      }}
+    >
       <div className="kid-bg-star star1 top-5 left-5 text-4xl sm:text-5xl">★</div>
       <div className="kid-bg-star star2 top-20 right-10 text-3xl sm:text-4xl">★</div>
       <div className="kid-bg-star star3 bottom-20 left-10 text-5xl sm:text-6xl">★</div>
@@ -70,7 +76,7 @@ const PretestResultScreen = () => {
         ].join(' ')}
       >
         <div
-          className="mx-auto mb-4 sm:mb-6 rounded-xl px-4 py-2 sm:px-6 sm:py-2 celebration-animation"
+          className="mx-auto mb-4 sm:mb-6 rounded-xl px-3 py-2 sm:px-6 sm:py-2 celebration-animation"
           style={{
             maxWidth: 420,
             background: passed
@@ -80,28 +86,14 @@ const PretestResultScreen = () => {
           }}
         >
           <h2
-            className="m-0 text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-wide"
+            className="m-0 text-xl sm:text-3xl md:text-4xl font-extrabold tracking-wide text-center sm:whitespace-nowrap"
             style={{ letterSpacing: '0.06em', color: '#273444' }}
           >
-            {passed ? 'CONGRATS!' : 'WELCOME TO THE BELTS!'}
+            {passed ? 'CONGRATULATONS ' : 'WELCOME TO THE BELTS '}
           </h2>
         </div>
 
-        {passed ? (
-          <div className="bg-green-100/70 border-2 border-green-300 rounded-2xl py-2 sm:py-4 px-3 mb-6 sm:mb-8 mx-auto max-w-md w-full shadow-lg">
-            <p className="text-green-700 font-extrabold text-2xl sm:text-3xl md:text-4xl">
-              Welcome to level {nextLevel ?? 'next'}.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-blue-100/70 border-2 border-blue-300 rounded-2xl py-2 sm:py-4 px-3 mb-6 sm:mb-8 mx-auto max-w-md w-full shadow-lg">
-            <p className="text-blue-700 font-extrabold text-2xl sm:text-3xl md:text-4xl">
-              Keep going and earn your belts.
-            </p>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 justify-center max-w-xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6 justify-center max-w-xl mx-auto">
           <div className="bg-white rounded-xl border-2 border-gray-200 p-3 sm:p-4 shadow">
             <div className="text-gray-500 text-xs sm:text-sm">Correct</div>
             <div className="wordart-number text-2xl sm:text-4xl mt-1">{correct}</div>
@@ -111,6 +103,20 @@ const PretestResultScreen = () => {
             <div className="wordart-number text-2xl sm:text-4xl mt-1">{timeUsedLabel}</div>
           </div>
         </div>
+
+        {passed ? (
+          <div className="bg-green-100/70 border-2 border-green-300 rounded-2xl py-2 sm:py-4 px-3 mt-6 sm:mt-8 mx-auto max-w-md w-full shadow-lg">
+            <p className="text-green-700 font-extrabold text-xl sm:text-3xl md:text-4xl text-center sm:whitespace-nowrap">
+              Welcome to level {nextLevel ?? 'next'}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-blue-100/70 border-2 border-blue-300 rounded-2xl py-2 sm:py-4 px-3 mt-6 sm:mt-8 mx-auto max-w-md w-full shadow-lg">
+            <p className="text-blue-700 font-extrabold text-xl sm:text-3xl md:text-4xl text-center sm:whitespace-nowrap">
+              Keep going and earn your belts !
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
