@@ -845,9 +845,12 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         const mapped = backendQuestions.map(mapQuestionToFrontend);
         const countFromStart =
           typeof started?.pretestQuestionCount === 'number' ? started.pretestQuestionCount : countFromPrep;
-        setPretestQuestionCount(countFromStart);
-        setMaxQuestions(countFromStart);
-        setQuizQuestions(mapped);
+        const safeCount =
+          Number.isFinite(countFromStart) && countFromStart > 0 ? countFromStart : mapped.length;
+        const limitedQuestions = mapped.slice(0, safeCount);
+        setPretestQuestionCount(safeCount);
+        setMaxQuestions(safeCount);
+        setQuizQuestions(limitedQuestions);
 
         const resumedIndex =
           typeof started?.currentIndex === 'number'
@@ -858,7 +861,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
 
         let startIndex = 0;
         if ((started?.resumed || prep?.resumed) && typeof resumedIndex === 'number') {
-          startIndex = Math.min(Math.max(resumedIndex, 0), mapped.length - 1);
+          startIndex = Math.min(Math.max(resumedIndex, 0), limitedQuestions.length - 1);
 
           const safeCorrect =
             typeof prep?.mainFlowCorrect === 'number'
@@ -873,7 +876,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
           setWrongCount(safeWrong);
 
           const answeredSoFar = safeCorrect + safeWrong;
-          const totalForProgress = countFromStart || mapped.length;
+          const totalForProgress = safeCount || limitedQuestions.length;
 
           if (totalForProgress > 0) {
             const restoredProgress = Math.min((answeredSoFar / totalForProgress) * 100, 100);
