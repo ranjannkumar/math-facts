@@ -23,6 +23,8 @@ const DEFAULT_NUMBERS = {
   surfQuestionsPerQuiz: 4,
   surfQuizzesRequired: 5,
   inactivityTimer: 5,
+  pretestQuestionCount: 20,
+  pretestTimer: 50,
 };
 
 const toInt = (value, fallback) => {
@@ -76,6 +78,22 @@ const mapConfigToValues = (config) => {
         ? Math.round(resolved.general.inactivityThresholdMs / 1000)
         : DEFAULT_NUMBERS.inactivityTimer
     ),
+    pretestQuestionCount: String(
+      Number.isFinite(resolved?.pretestMode?.questionCount)
+        ? resolved.pretestMode.questionCount
+        : Number.isFinite(resolved?.general?.pretestQuestionCount)
+        ? resolved.general.pretestQuestionCount
+        : DEFAULT_NUMBERS.pretestQuestionCount
+    ),
+    pretestTimer: String(
+      Number.isFinite(resolved?.pretestMode?.timeLimitSeconds)
+        ? Math.round(resolved.pretestMode.timeLimitSeconds)
+        : Number.isFinite(resolved?.pretestMode?.timeLimitMs)
+        ? Math.round(resolved.pretestMode.timeLimitMs / 1000)
+        : Number.isFinite(resolved?.general?.pretestTimeLimitMs)
+        ? Math.round(resolved.general.pretestTimeLimitMs / 1000)
+        : DEFAULT_NUMBERS.pretestTimer
+    ),
   };
 };
 
@@ -91,6 +109,8 @@ const buildConfigPayload = (values) => {
   const surfQuestionsPerQuiz = toInt(values.surfQuestionsPerQuiz, DEFAULT_NUMBERS.surfQuestionsPerQuiz);
   const surfQuizzesRequired = toInt(values.surfQuizzesRequired, DEFAULT_NUMBERS.surfQuizzesRequired);
   const inactivityTimer = toInt(values.inactivityTimer, DEFAULT_NUMBERS.inactivityTimer);
+  const pretestQuestionCount = toInt(values.pretestQuestionCount, DEFAULT_NUMBERS.pretestQuestionCount);
+  const pretestTimer = toInt(values.pretestTimer, DEFAULT_NUMBERS.pretestTimer);
 
   return {
     lightningTargetCorrect: lightningTarget,
@@ -98,6 +118,12 @@ const buildConfigPayload = (values) => {
     surfQuestionsPerQuiz,
     surfQuizzesRequired,
     inactivityThresholdMs: inactivityTimer * 1000,
+    pretestQuestionCount,
+    pretestTimeLimitMs: pretestTimer * 1000,
+    pretestMode: {
+      questionCount: pretestQuestionCount,
+      timeLimitMs: pretestTimer * 1000,
+    },
   };
 };
 
@@ -137,6 +163,8 @@ const AdminSettings = () => {
     surfQuestionsPerQuiz: String(DEFAULT_NUMBERS.surfQuestionsPerQuiz),
     surfQuizzesRequired: String(DEFAULT_NUMBERS.surfQuizzesRequired),
     inactivityTimer: String(DEFAULT_NUMBERS.inactivityTimer),
+    pretestQuestionCount: String(DEFAULT_NUMBERS.pretestQuestionCount),
+    pretestTimer: String(DEFAULT_NUMBERS.pretestTimer),
   }));
   const [baselineValues, setBaselineValues] = useState(() => ({
     blackDegree1: String(DEFAULT_NUMBERS.blackDegree1),
@@ -151,6 +179,8 @@ const AdminSettings = () => {
     surfQuestionsPerQuiz: String(DEFAULT_NUMBERS.surfQuestionsPerQuiz),
     surfQuizzesRequired: String(DEFAULT_NUMBERS.surfQuizzesRequired),
     inactivityTimer: String(DEFAULT_NUMBERS.inactivityTimer),
+    pretestQuestionCount: String(DEFAULT_NUMBERS.pretestQuestionCount),
+    pretestTimer: String(DEFAULT_NUMBERS.pretestTimer),
   }));
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -223,6 +253,8 @@ const AdminSettings = () => {
         'surfQuestionsPerQuiz',
         'surfQuizzesRequired',
         'inactivityTimer',
+        'pretestQuestionCount',
+        'pretestTimer',
       ];
       const hasGeneralChanges = generalKeys.some(
         (key) => values[key] !== baselineValues[key]
@@ -543,6 +575,35 @@ const AdminSettings = () => {
                 className={inputClass}
                 value={values.inactivityTimer}
                 onChange={handleChange('inactivityTimer')}
+                disabled={isBusy}
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className={`${cardClass} p-5 sm:p-6`}>
+          <div className={sectionTitleClass}>Pretest Settings</div>
+          <p className="text-white/70 text-sm mb-4">Pretest length and time limit.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
+              <span className="text-white/90">Pretest questions</span>
+              <input
+                type="number"
+                min="1"
+                className={inputClass}
+                value={values.pretestQuestionCount}
+                onChange={handleChange('pretestQuestionCount')}
+                disabled={isBusy}
+              />
+            </label>
+            <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
+              <span className="text-white/90">Pretest timer (sec)</span>
+              <input
+                type="number"
+                min="1"
+                className={inputClass}
+                value={values.pretestTimer}
+                onChange={handleChange('pretestTimer')}
                 disabled={isBusy}
               />
             </label>
