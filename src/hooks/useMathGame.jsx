@@ -1679,9 +1679,11 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
 
         if (out.completed) {
           setQuizStartTime(null);
-          setIsTimerPaused(false);
+          setIsTimerPaused(true);
           setElapsedTime(0);
           setSessionCorrectCount(out.sessionCorrectCount || 0);
+          setCurrentQuestion(null);
+          setQuizRunId(null);
           return out;
         }
 
