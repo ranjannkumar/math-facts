@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo } from 'react';
+import Confetti from 'react-confetti';
 import { useLocation } from 'react-router-dom';
 import { MathGameContext } from '../App.jsx';
 
@@ -62,6 +63,59 @@ const PretestResultScreen = () => {
           'linear-gradient(180deg, #2a2a2a 0%, #1f1f1f 55%, #161616 100%)',
       }}
     >
+      {passed && (
+        <Confetti
+          width={window.innerWidth}
+          height={window.innerHeight}
+          numberOfPieces={220}
+          gravity={0.5}
+          recycle={false}
+          style={{ position: 'fixed', inset: 0, zIndex: 40, pointerEvents: 'none' }}
+        />
+      )}
+      {passed && (
+        <>
+          <style>{`
+            @keyframes shootUp {
+              0% { transform: translate3d(0, 25vh, 0) scale(0.6); opacity: 0; }
+              12% { opacity: 1; }
+              100% { transform: translate3d(0, -90vh, 0) scale(1.05); opacity: 0; }
+            }
+            .shooting-star {
+              position: absolute;
+              bottom: -10vh;
+              z-index: 2;
+              pointer-events: none;
+              animation-name: shootUp;
+              animation-timing-function: ease-in;
+              animation-iteration-count: infinite;
+              will-change: transform, opacity;
+            }
+          `}</style>
+          {/* fast stars */}
+          <div className="shooting-star text-3xl sm:text-4xl" style={{ left: '8%', animationDuration: '2.2s', animationDelay: '0s' }}>
+            â˜…
+          </div>
+          
+          <div className="shooting-star text-4xl sm:text-5xl" style={{ left: '40%', animationDuration: '2.4s', animationDelay: '.15s' }}>
+            â˜…
+          </div>
+          
+          <div className="shooting-star text-3xl sm:text-4xl" style={{ left: '76%', animationDuration: '2.3s', animationDelay: '.1s' }}>
+            â˜…
+          </div>
+          {/* slow stars */}
+          <div className="shooting-star text-2xl sm:text-3xl" style={{ left: '14%', animationDuration: '4.2s', animationDelay: '.2s' }}>
+            â˜…
+          </div>
+          <div className="shooting-star text-3xl sm:text-4xl" style={{ left: '32%', animationDuration: '4.6s', animationDelay: '.6s' }}>
+            â˜…
+          </div>
+          <div className="shooting-star text-2xl sm:text-3xl" style={{ left: '68%', animationDuration: '4.4s', animationDelay: '.8s' }}>
+            â˜…
+          </div>
+        </>
+      )}
       <div className="kid-bg-star star1 top-5 left-5 text-4xl sm:text-5xl">★</div>
       <div className="kid-bg-star star2 top-20 right-10 text-3xl sm:text-4xl">★</div>
       <div className="kid-bg-star star3 bottom-20 left-10 text-5xl sm:text-6xl">★</div>
