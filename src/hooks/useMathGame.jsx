@@ -164,6 +164,7 @@ const useMathGame = () => {
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [uiMessage, setUiMessage] = useState(null);
 
   // LOGIN & SIBLING CHECK STATE
   const [isLoginLoading, setIsLoginLoading] = useState(false);
@@ -226,7 +227,7 @@ const useMathGame = () => {
 
   const symbolTimeoutRef = useRef(null);
 
-const showAnswerSymbolFor300ms = useCallback((payload) => {
+  const showAnswerSymbolFor300ms = useCallback((payload) => {
   // clear any previous timeout (prevents overlap)
   if (symbolTimeoutRef.current) {
     clearTimeout(symbolTimeoutRef.current);
@@ -277,6 +278,23 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     setInactivityTimeoutMs(
       readStoredNumber(INACTIVITY_TIMEOUT_STORAGE_KEY, DEFAULT_INACTIVITY_TIMEOUT_MS)
     );
+  }, []);
+
+  const showUiMessage = useCallback((payload = {}) => {
+    const nextType = payload.type || 'error';
+    setUiMessage({
+      type: nextType,
+      title: payload.title || (nextType === 'info' ? 'Heads up' : 'Something went wrong'),
+      message: payload.message || 'Please try again.',
+      details: payload.details || null,
+      navigateTo: payload.navigateTo || null,
+      primaryLabel: payload.primaryLabel || null,
+      secondaryLabel: payload.secondaryLabel || null,
+    });
+  }, []);
+
+  const clearUiMessage = useCallback(() => {
+    setUiMessage(null);
   }, []);
 
   const stopPretestTimer = useCallback(() => {
@@ -557,9 +575,14 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     const demoName = 'Demo';
     handlePinSubmit(demoPin, demoName).catch((err) => {
       console.error('Demo Login failed:', err.message);
-      alert('Demo Login failed: ' + err.message);
+      showUiMessage({
+        type: 'error',
+        title: 'Login failed',
+        message: 'We could not sign you in. Please try again.',
+        details: err.message,
+      });
     });
-  }, [handlePinSubmit]);
+  }, [handlePinSubmit, showUiMessage]);
 
   // Persist theme
   const updateThemeAndNavigate = useCallback(
@@ -639,12 +662,19 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         navigate('/quiz');
       } catch (e) {
         console.error('Quiz Start failed:', e.message);
-        alert('Failed to start quiz: ' + e.message);
+        showUiMessage({
+          type: 'error',
+          title: 'Quiz did not start',
+          message: 'We could not start the quiz. Please try again.',
+          details: e.message,
+          navigateTo: '/belts',
+          primaryLabel: 'Back to Belts',
+        });
         setIsQuizStarting(false);
         navigate('/belts');
       }
     },
-    [navigate, childPin, quizRunId, maxQuestions, selectedDifficulty, determineMaxQuestions]
+    [navigate, childPin, quizRunId, maxQuestions, selectedDifficulty, determineMaxQuestions, showUiMessage]
   );
 
   /**
@@ -921,13 +951,21 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         stopPretestTimer();
         setIsPretest(false);
         setIsPretestIntroVisible(false);
-        alert('Failed to start pretest: ' + (e.message || 'Unknown error'));
+        showUiMessage({
+          type: 'error',
+          title: 'Pretest did not start',
+          message: 'We could not start the pretest. Please try again.',
+          details: e.message || 'Unknown error',
+          navigateTo: '/levels',
+          primaryLabel: 'Back to Levels',
+        });
         navigate('/levels');
       }
     },
     [
       childPin,
       navigate,
+      showUiMessage,
       selectedOperation,
       setSelectedTable,
       setSelectedOperation,
@@ -1000,7 +1038,14 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       } catch (e) {
         console.error('Level entry prepare failed:', e.message);
         setIsInitialPrepLoading(false);
-        alert('Failed to prepare level: ' + (e.message || 'Unknown error'));
+        showUiMessage({
+          type: 'error',
+          title: 'Level not ready',
+          message: 'We could not prepare this level. Please try again.',
+          details: e.message || 'Unknown error',
+          navigateTo: '/levels',
+          primaryLabel: 'Back to Levels',
+        });
         navigate('/levels');
       }
     },
@@ -1015,6 +1060,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       tableProgress,
       setTableProgress,
       userGetProgress,
+      showUiMessage,
     ]
   );
 
@@ -1041,7 +1087,13 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
 
         if (prep?.pretestMode || prep?.gameModeType === 'pretest') {
           setIsInitialPrepLoading(false);
-          alert('Pretest is required. Please start it from the Level screen.');
+          showUiMessage({
+            type: 'info',
+            title: 'Pretest required',
+            message: 'Please start the pretest from the Level screen to unlock this quiz.',
+            navigateTo: '/levels',
+            primaryLabel: 'Go to Levels',
+          });
           navigate('/levels');
           return;
         }
@@ -1081,7 +1133,14 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         }
       } catch (e) {
         console.error('Quiz Prepare failed:', e.message);
-        alert('Failed to prepare quiz: ' + e.message);
+        showUiMessage({
+          type: 'error',
+          title: 'Quiz not ready',
+          message: 'We could not prepare this quiz. Please try again.',
+          details: e.message,
+          navigateTo: '/belts',
+          primaryLabel: 'Back to Belts',
+        });
         setIsQuizStarting(false);
         navigate('/belts');
       }
@@ -1095,6 +1154,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       startOrResumeGameModeRun,
       syncConfigFromStorage,
       selectedOperation,
+      showUiMessage,
     ]
   );
 
@@ -1626,7 +1686,14 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
           return;
         }
         setIsAnimating(false);
-        alert('Error during quiz: ' + (e.message || 'Unknown error'));
+        showUiMessage({
+          type: 'error',
+          title: 'Quiz interrupted',
+          message: 'Something went wrong while submitting your answer. Please try again.',
+          details: e.message || 'Unknown error',
+          navigateTo: '/belts',
+          primaryLabel: 'Back to Belts',
+        });
         navigate('/belts');
       }
     },
@@ -1663,6 +1730,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       stopPretestTimer,
       pretestTimeLimitMs,
       selectedOperation,
+      showUiMessage,
     ]
   );
 
@@ -2149,6 +2217,9 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     setShowResetModal,
     showSettings,
     setShowSettings,
+    uiMessage,
+    showUiMessage,
+    clearUiMessage,
     isQuittingRef,
 
     // Progression Data

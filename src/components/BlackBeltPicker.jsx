@@ -1,5 +1,5 @@
 // src/components/BlackBeltPicker.jsx
-import React, { useContext, useMemo, useEffect } from 'react';
+import React, { useContext, useMemo, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MathGameContext } from '../App.jsx';
 import { FaArrowLeft } from 'react-icons/fa';
@@ -14,7 +14,14 @@ const BlackBeltPicker = () => {
     tableProgress,
     isQuizStarting,
   } = useContext(MathGameContext);
+  const [isPickLocked, setIsPickLocked] = useState(false);
+  const isMountedRef = useRef(true);
 
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!selectedTable) {
@@ -49,10 +56,14 @@ const BlackBeltPicker = () => {
    const isUnlocked = (deg) => deg <= effectiveMaxUnlocked; 
   const isCompleted = (deg) => completedSet.has(deg);
 
-  const handlePick = (deg) => {
-    if (!isUnlocked(deg) || isQuizStarting) return; 
-    startQuizWithDifficulty(`black-${deg}`, selectedTable);
-    // navigate('/quiz');
+  const handlePick = async (deg) => {
+    if (!isUnlocked(deg) || isQuizStarting || isPickLocked) return;
+    setIsPickLocked(true);
+    try {
+      await startQuizWithDifficulty(`black-${deg}`, selectedTable);
+    } finally {
+      if (isMountedRef.current) setIsPickLocked(false);
+    }
   };
 
   const CardShell = ({ children, locked, stripColor, highlighted }) => (
@@ -115,7 +126,7 @@ const BlackBeltPicker = () => {
           if (isCompleted(deg)) return null;
 
           const locked = !isUnlocked(deg);
-          const isDisabled = locked || isQuizStarting;
+          const isDisabled = locked || isQuizStarting || isPickLocked;
 
           return (
             <button

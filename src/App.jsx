@@ -36,6 +36,7 @@ import PreTestScreen from './components/PreTestScreen.jsx';
 import PretestIntroScreen from './components/PretestIntroScreen.jsx';
 import PretestResultScreen from './components/PretestResultScreen.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
+import StatusModal from './components/StatusModal.jsx';
 
 import { clearShootingStars } from './utils/mathGameLogic.js';
 import audioManager from './utils/audioUtils.js';
@@ -201,6 +202,27 @@ const App = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {ctx.uiMessage && (
+        <StatusModal
+          type={ctx.uiMessage.type}
+          title={ctx.uiMessage.title}
+          message={ctx.uiMessage.message}
+          details={ctx.uiMessage.details}
+          primaryLabel={
+            ctx.uiMessage.primaryLabel || (ctx.uiMessage.navigateTo ? 'Back' : 'OK')
+          }
+          secondaryLabel={ctx.uiMessage.secondaryLabel}
+          onPrimary={() => {
+            const target = ctx.uiMessage.navigateTo;
+            ctx.clearUiMessage();
+            if (target) {
+              ctx.navigate(target);
+            }
+          }}
+          onSecondary={() => ctx.clearUiMessage()}
+        />
       )}
     </MathGameContext.Provider>
   );
