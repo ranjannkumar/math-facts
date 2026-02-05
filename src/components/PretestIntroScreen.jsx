@@ -38,12 +38,17 @@ const PretestIntroScreen = () => {
             {/* Title pill */}
             <div className="mx-auto mb-5 w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-4 shadow-lg">
               <h2 className="text-center font-extrabold tracking-wide text-white whitespace-nowrap text-[22px] sm:text-3xl">
-                READY FOR THE PRETEST 
+                Loading Pretest...
               </h2>
             </div>
 
+            {/* Spinner */}
+            <div className="flex items-center justify-center pb-3">
+              <div className="h-10 w-10 rounded-full border-[3px] border-white/30 border-t-emerald-400 animate-spin" />
+            </div>
+
             {/* Badges */}
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            {/* <div className="flex flex-wrap items-center justify-center gap-3">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-gradient-to-r from-sky-500/25 to-indigo-500/25 px-4 py-2 font-semibold text-white shadow-[0_10px_25px_rgba(0,0,0,0.35)]">
                 <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-sky-400/80 px-2 text-sm font-extrabold text-black">
                   {questions}
@@ -57,7 +62,7 @@ const PretestIntroScreen = () => {
                 </span>
                 <span className="whitespace-nowrap">Limit</span>
               </span>
-            </div>
+            </div> */}
           </div>
 
           {/* bottom accent bar */}
