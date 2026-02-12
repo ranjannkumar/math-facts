@@ -209,7 +209,6 @@ const App = () => {
           type={ctx.uiMessage.type}
           title={ctx.uiMessage.title}
           message={ctx.uiMessage.message}
-          details={ctx.uiMessage.details}
           primaryLabel={
             ctx.uiMessage.primaryLabel || (ctx.uiMessage.navigateTo ? 'Back' : 'OK')
           }

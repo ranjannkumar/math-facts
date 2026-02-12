@@ -297,6 +297,22 @@ const useMathGame = () => {
     setUiMessage(null);
   }, []);
 
+  const logClientError = useCallback((label, error, meta = {}) => {
+    console.error(label, {
+      message: error?.message || String(error || ''),
+      ...meta,
+    });
+  }, []);
+
+  const getRecoveryRoute = useCallback(
+    (beltOrDegree = selectedDifficulty, level = selectedTable) => {
+      if (beltOrDegree && String(beltOrDegree).startsWith('black')) return '/black';
+      if (level != null) return '/belts';
+      return '/levels';
+    },
+    [selectedDifficulty, selectedTable]
+  );
+
   const stopPretestTimer = useCallback(() => {
     pretestTimerStartRef.current = null;
     pretestTimerInitialRef.current = null;
@@ -793,7 +809,23 @@ const useMathGame = () => {
           navigate('/game-mode', { replace: true });
         }
       } catch (e) {
-        console.error('[GameMode] Failed to start/resume:', e);
+        const fallbackRoute = getRecoveryRoute(reqBelt, reqLevel);
+        logClientError('[GameMode] Failed to start/resume', e, {
+          gameModeType: requestedGameModeType,
+          level: reqLevel,
+          beltOrDegree: reqBelt,
+        });
+        setIsGameMode(false);
+        setGameModeType(null);
+        setQuizRunId(null);
+        setQuizQuestions([]);
+        setCurrentQuestion(null);
+        showUiMessage({
+          type: 'error',
+          title: "We couldn't start this quiz right now",
+          message: 'Please try again.',
+        });
+        navigate(fallbackRoute, { replace: true });
       }
     },
     [
@@ -804,6 +836,9 @@ const useMathGame = () => {
       applySurfState,
       applyLightningTarget,
       syncConfigFromStorage,
+      getRecoveryRoute,
+      logClientError,
+      showUiMessage,
     ]
   );
 
@@ -830,10 +865,25 @@ const useMathGame = () => {
 
         if (navigateToGameMode) navigate('/game-mode', { replace: true });
       } catch (e) {
-        console.error('[SurfMode] Failed to start next quiz:', e);
+        const fallbackRoute = getRecoveryRoute();
+        logClientError('[SurfMode] Failed to start next quiz', e, {
+          quizRunId,
+          gameModeType: 'surf',
+        });
+        setIsGameMode(false);
+        setGameModeType(null);
+        setQuizRunId(null);
+        setQuizQuestions([]);
+        setCurrentQuestion(null);
+        showUiMessage({
+          type: 'error',
+          title: "We couldn't start this quiz right now",
+          message: 'Please try again.',
+        });
+        navigate(fallbackRoute, { replace: true });
       }
     },
-    [quizRunId, childPin, navigate, applySurfState]
+    [quizRunId, childPin, navigate, applySurfState, getRecoveryRoute, logClientError, showUiMessage]
   );
 
   const startPretestRun = useCallback(
@@ -1502,8 +1552,24 @@ const useMathGame = () => {
     setIsAnimating(false);
     return;
   } catch (e) {
-    console.error('[GameMode] Failed to submit answer:', e);
+    const fallbackRoute = getRecoveryRoute();
+    logClientError('[GameMode] Failed to submit answer', e, {
+      quizRunId,
+      questionId,
+      gameModeType,
+    });
     setIsAnimating(false);
+    setIsGameMode(false);
+    setGameModeType(null);
+    setQuizRunId(null);
+    setQuizQuestions([]);
+    setCurrentQuestion(null);
+    showUiMessage({
+      type: 'error',
+      title: "We couldn't continue this quiz right now",
+      message: 'Please try again.',
+    });
+    navigate(fallbackRoute, { replace: true });
     return;
   }
 }
@@ -1731,6 +1797,8 @@ const useMathGame = () => {
       pretestTimeLimitMs,
       selectedOperation,
       showUiMessage,
+      getRecoveryRoute,
+      logClientError,
     ]
   );
 
@@ -1941,11 +2009,17 @@ const useMathGame = () => {
 
         setIsAwaitingInactivityResponse(false);
       } catch (e) {
-        console.error('Inactivity API failed:', e.message);
+        const fallbackRoute = getRecoveryRoute();
+        logClientError('Inactivity API failed', e, { quizRunId, isGameMode, isPretest });
         setIsTimerPaused(true);
         setPausedTime(Date.now());
         setIsAwaitingInactivityResponse(false);
-        navigate('/');
+        showUiMessage({
+          type: 'error',
+          title: "We couldn't continue this quiz right now",
+          message: 'Please try again.',
+        });
+        navigate(fallbackRoute, { replace: true });
       }
     }, inactivityTimeoutMs);
 
@@ -1970,6 +2044,9 @@ const useMathGame = () => {
     pretestTimeLimitMs,
     selectedOperation,
     selectedTable,
+    getRecoveryRoute,
+    logClientError,
+    showUiMessage,
   ]);
 
   // Timer Effect (client-side time tracking)
