@@ -24,8 +24,9 @@ const DEFAULT_NUMBERS = {
   surfQuizzesRequired: 5,
   inactivityTimer: 5,
   pretestQuestionCount: 20,
-  pretestTimer: 50,
+  pretestDefaultTimer: 50,
 };
+const PRETEST_LEVEL_COUNT = 19;
 
 const toInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);
@@ -37,6 +38,60 @@ const timerSeconds = (timer, fallback) => {
   if (Number.isFinite(timer.seconds)) return timer.seconds;
   if (Number.isFinite(timer.ms)) return Math.round(timer.ms / 1000);
   return fallback;
+};
+
+const buildEmptyPretestLevelTimers = () =>
+  Object.fromEntries(
+    Array.from({ length: PRETEST_LEVEL_COUNT }, (_, idx) => [String(idx + 1), ''])
+  );
+
+const parseLevelFromKey = (key) => {
+  if (typeof key !== 'string') return null;
+  if (key.startsWith('level')) {
+    return Number.parseInt(key.replace('level', ''), 10);
+  }
+  return Number.parseInt(key, 10);
+};
+
+const parseSecondsFromTimerValue = (value) => {
+  if (Number.isFinite(value)) {
+    return value >= 1000 ? Math.round(value / 1000) : Math.round(value);
+  }
+  if (!value || typeof value !== 'object') return null;
+  if (Number.isFinite(value.seconds)) return Math.round(value.seconds);
+  if (Number.isFinite(value.ms)) return Math.round(value.ms / 1000);
+  return null;
+};
+
+const mapPretestLevelTimers = (resolved) => {
+  const mapped = buildEmptyPretestLevelTimers();
+  const sources = [
+    resolved?.pretestMode?.timeLimitsPerLevel,
+    resolved?.pretestMode?.timeLimitsPerLevelMs,
+    resolved?.pretestTimeLimitsPerLevelMs,
+  ];
+
+  sources.forEach((source) => {
+    if (!source || typeof source !== 'object') return;
+    Object.entries(source).forEach(([key, value]) => {
+      const level = parseLevelFromKey(key);
+      if (!Number.isInteger(level) || level < 1 || level > PRETEST_LEVEL_COUNT) return;
+      const seconds = parseSecondsFromTimerValue(value);
+      if (Number.isFinite(seconds) && seconds > 0) {
+        mapped[String(level)] = String(seconds);
+      }
+    });
+  });
+
+  return mapped;
+};
+
+const isPretestLevelTimersEqual = (a = {}, b = {}) => {
+  for (let level = 1; level <= PRETEST_LEVEL_COUNT; level += 1) {
+    const key = String(level);
+    if ((a[key] ?? '') !== (b[key] ?? '')) return false;
+  }
+  return true;
 };
 
 const mapConfigToValues = (config) => {
@@ -85,15 +140,20 @@ const mapConfigToValues = (config) => {
         ? resolved.general.pretestQuestionCount
         : DEFAULT_NUMBERS.pretestQuestionCount
     ),
-    pretestTimer: String(
-      Number.isFinite(resolved?.pretestMode?.timeLimitSeconds)
+    pretestDefaultTimer: String(
+      Number.isFinite(resolved?.pretestMode?.defaultTimeLimitSeconds)
+        ? Math.round(resolved.pretestMode.defaultTimeLimitSeconds)
+        : Number.isFinite(resolved?.pretestMode?.defaultTimeLimitMs)
+        ? Math.round(resolved.pretestMode.defaultTimeLimitMs / 1000)
+        : Number.isFinite(resolved?.pretestMode?.timeLimitSeconds)
         ? Math.round(resolved.pretestMode.timeLimitSeconds)
         : Number.isFinite(resolved?.pretestMode?.timeLimitMs)
         ? Math.round(resolved.pretestMode.timeLimitMs / 1000)
         : Number.isFinite(resolved?.general?.pretestTimeLimitMs)
         ? Math.round(resolved.general.pretestTimeLimitMs / 1000)
-        : DEFAULT_NUMBERS.pretestTimer
+        : DEFAULT_NUMBERS.pretestDefaultTimer
     ),
+    pretestTimersPerLevel: mapPretestLevelTimers(resolved),
   };
 };
 
@@ -110,7 +170,6 @@ const buildConfigPayload = (values) => {
   const surfQuizzesRequired = toInt(values.surfQuizzesRequired, DEFAULT_NUMBERS.surfQuizzesRequired);
   const inactivityTimer = toInt(values.inactivityTimer, DEFAULT_NUMBERS.inactivityTimer);
   const pretestQuestionCount = toInt(values.pretestQuestionCount, DEFAULT_NUMBERS.pretestQuestionCount);
-  const pretestTimer = toInt(values.pretestTimer, DEFAULT_NUMBERS.pretestTimer);
 
   return {
     lightningTargetCorrect: lightningTarget,
@@ -119,10 +178,8 @@ const buildConfigPayload = (values) => {
     surfQuizzesRequired,
     inactivityThresholdMs: inactivityTimer * 1000,
     pretestQuestionCount,
-    pretestTimeLimitMs: pretestTimer * 1000,
     pretestMode: {
       questionCount: pretestQuestionCount,
-      timeLimitMs: pretestTimer * 1000,
     },
   };
 };
@@ -164,7 +221,8 @@ const AdminSettings = () => {
     surfQuizzesRequired: String(DEFAULT_NUMBERS.surfQuizzesRequired),
     inactivityTimer: String(DEFAULT_NUMBERS.inactivityTimer),
     pretestQuestionCount: String(DEFAULT_NUMBERS.pretestQuestionCount),
-    pretestTimer: String(DEFAULT_NUMBERS.pretestTimer),
+    pretestDefaultTimer: String(DEFAULT_NUMBERS.pretestDefaultTimer),
+    pretestTimersPerLevel: buildEmptyPretestLevelTimers(),
   }));
   const [baselineValues, setBaselineValues] = useState(() => ({
     blackDegree1: String(DEFAULT_NUMBERS.blackDegree1),
@@ -180,7 +238,8 @@ const AdminSettings = () => {
     surfQuizzesRequired: String(DEFAULT_NUMBERS.surfQuizzesRequired),
     inactivityTimer: String(DEFAULT_NUMBERS.inactivityTimer),
     pretestQuestionCount: String(DEFAULT_NUMBERS.pretestQuestionCount),
-    pretestTimer: String(DEFAULT_NUMBERS.pretestTimer),
+    pretestDefaultTimer: String(DEFAULT_NUMBERS.pretestDefaultTimer),
+    pretestTimersPerLevel: buildEmptyPretestLevelTimers(),
   }));
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -227,6 +286,17 @@ const AdminSettings = () => {
     setValues((prev) => ({ ...prev, [key]: e.target.value }));
   };
 
+  const handlePretestLevelTimerChange = (level) => (e) => {
+    const key = String(level);
+    setValues((prev) => ({
+      ...prev,
+      pretestTimersPerLevel: {
+        ...prev.pretestTimersPerLevel,
+        [key]: e.target.value,
+      },
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const storedPin = getStoredAdminPin();
@@ -254,14 +324,46 @@ const AdminSettings = () => {
         'surfQuizzesRequired',
         'inactivityTimer',
         'pretestQuestionCount',
-        'pretestTimer',
       ];
       const hasGeneralChanges = generalKeys.some(
         (key) => values[key] !== baselineValues[key]
       );
+      const hasPerLevelPretestTimerChanges = !isPretestLevelTimersEqual(
+        values.pretestTimersPerLevel,
+        baselineValues.pretestTimersPerLevel
+      );
 
-      if (hasGeneralChanges) {
+      if (hasGeneralChanges || hasPerLevelPretestTimerChanges) {
         const payload = buildConfigPayload(values);
+        if (hasPerLevelPretestTimerChanges) {
+          const pretestTimeLimitsPerLevelMs = {};
+          for (let level = 1; level <= PRETEST_LEVEL_COUNT; level += 1) {
+            const key = String(level);
+            const nextRaw = String(values.pretestTimersPerLevel?.[key] ?? '').trim();
+            const prevRaw = String(baselineValues.pretestTimersPerLevel?.[key] ?? '').trim();
+            if (nextRaw === prevRaw) continue;
+
+            if (nextRaw === '') {
+              pretestTimeLimitsPerLevelMs[key] = 0;
+              continue;
+            }
+
+            const nextSeconds = Number.parseInt(nextRaw, 10);
+            if (!Number.isFinite(nextSeconds) || nextSeconds < 0) {
+              setStatus({
+                type: 'error',
+                message: `Pretest timer for level ${level} must be 0 or greater.`,
+              });
+              setIsSaving(false);
+              return;
+            }
+            pretestTimeLimitsPerLevelMs[key] = nextSeconds === 0 ? 0 : nextSeconds * 1000;
+          }
+
+          if (Object.keys(pretestTimeLimitsPerLevelMs).length > 0) {
+            payload.pretestTimeLimitsPerLevelMs = pretestTimeLimitsPerLevelMs;
+          }
+        }
         await updateAppConfig(storedPin, payload);
       }
 
@@ -275,7 +377,7 @@ const AdminSettings = () => {
         );
       }
 
-      if (hasGeneralChanges || degreeChanges.length > 0) {
+      if (hasGeneralChanges || hasPerLevelPretestTimerChanges || degreeChanges.length > 0) {
         await reloadAppConfig(storedPin);
       }
 
@@ -464,7 +566,7 @@ const AdminSettings = () => {
         <p className="text-white/70 text-sm mb-4">Loading configuration...</p>
       )}
 
-      <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-6">
+      <form onSubmit={handleSubmit} autoComplete="off" className="max-w-5xl mx-auto space-y-6">
         <div className={`${cardClass} p-5 sm:p-6`}>
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -596,17 +698,32 @@ const AdminSettings = () => {
                 disabled={isBusy}
               />
             </label>
-            <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
-              <span className="text-white/90">Pretest timer (sec)</span>
-              <input
-                type="number"
-                min="1"
-                className={inputClass}
-                value={values.pretestTimer}
-                onChange={handleChange('pretestTimer')}
-                disabled={isBusy}
-              />
-            </label>
+          </div>
+          <div className="mt-4">
+            <p className="text-white/70 text-sm mb-3">
+              Per-level Pretest timer (sec).
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {Array.from({ length: PRETEST_LEVEL_COUNT }, (_, idx) => idx + 1).map((level) => (
+                <label
+                  key={`pretest-level-${level}`}
+                  className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3"
+                >
+                  <span className="text-white/90">Level {level}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    className={inputClass}
+                    value={values.pretestTimersPerLevel[String(level)]}
+                    onChange={handlePretestLevelTimerChange(level)}
+                    placeholder={values.pretestDefaultTimer}
+                    autoComplete="off"
+                    name={`pretest-level-${level}-timer`}
+                    disabled={isBusy}
+                  />
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
