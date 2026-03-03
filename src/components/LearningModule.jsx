@@ -668,7 +668,7 @@ useEffect(() => {
               : (practiceQ.answers || []).map((ans) => ({ value: ans, label: String(ans) }));
           return (
             <>
-              <div className="text-6xl sm:text-7xl font-extrabold text-blue-500 text-center mb-6 whitespace-pre-line drop-shadow">
+              <div className="text-6xl sm:text-7xl font-extrabold text-green-500 text-center mb-6 whitespace-pre-line drop-shadow">
                 {reverseQuestion}
               </div>
               <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full max-w-md mx-auto">
@@ -677,7 +677,7 @@ useEffect(() => {
                     key={idx}
                     onClick={() => handleInterventionChoice(option.value, option.label)}
                     disabled={isSubmitting}
-                    className="w-full bg-gray-100 text-gray-900 font-bold py-4 sm:py-5 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200 text-2xl"
+                    className="w-full bg-gray-100 text-gray-700 font-bold py-4 sm:py-5 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200 text-2xl"
                   >
                     {option.label}
                   </button>

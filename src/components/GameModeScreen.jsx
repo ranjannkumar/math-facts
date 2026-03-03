@@ -209,7 +209,7 @@ useEffect(() => {
                 className={
                   isSurfMode
                     ? 'text-6xl sm:text-7xl font-extrabold text-green-500 text-center mb-6 whitespace-pre-line drop-shadow'
-                    : 'font-extrabold text-blue-600 mb-1 sm:mb-2 drop-shadow-lg text-7xl'
+                    : 'font-extrabold text-green-500 mb-1 sm:mb-2 drop-shadow-lg text-7xl'
                 }
               >
                 {currentQuestion?.question || '1 + 1'}
@@ -239,7 +239,7 @@ useEffect(() => {
                     onMouseDown={(e) => e.preventDefault()}
                   >
                     <div
-                      className="text-xl sm:text-2xl md:text-3xl font-baloo text-gray-800 drop-shadow-md"
+                      className="text-xl sm:text-2xl md:text-3xl font-baloo text-gray-700 drop-shadow-md"
                       style={{ fontFamily: 'Baloo 2, Comic Neue, cursive', letterSpacing: 2 }}
                     >
                       {currentQuestion?.answerLabels?.[answer] ?? answer}

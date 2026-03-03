@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MathGameContext } from '../App.jsx';
 
@@ -12,6 +12,7 @@ const GameModeRocketVideoScreen = () => {
   const { kind } = useParams();
   const videoRef = useRef(null);
   const finishedRef = useRef(false);
+  const [hasAudio, setHasAudio] = useState(false);
 
   const {
     setIsTimerPaused,
@@ -25,6 +26,7 @@ const GameModeRocketVideoScreen = () => {
 
   useEffect(() => {
     finishedRef.current = false;
+    setHasAudio(false);
   }, [kind]);
 
   useEffect(() => {
@@ -89,6 +91,21 @@ const GameModeRocketVideoScreen = () => {
         autoPlay
         className="w-full h-full object-contain"
       />
+
+      {!hasAudio && (
+        <button
+          className="absolute bottom-12 bg-white text-black px-6 py-3 rounded-xl shadow-xl text-lg font-semibold"
+          onClick={() => {
+            const v = videoRef.current;
+            if (!v) return;
+            v.muted = false;
+            v.play().catch(() => {});
+            setHasAudio(true);
+          }}
+        >
+          Tap for sound
+        </button>
+      )}
     </div>
   );
 };
