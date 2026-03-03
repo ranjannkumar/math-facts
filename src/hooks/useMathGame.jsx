@@ -25,6 +25,9 @@ const thumbPngModules = import.meta.glob('/public/game-videos/*.png', { as: 'url
 const surfVideoModules = import.meta.glob('/public/surf-videos/*.mp4', { as: 'url' });
 const surfThumbJpgModules = import.meta.glob('/public/surf-videos/*.jpg', { as: 'url' });
 const surfThumbPngModules = import.meta.glob('/public/surf-videos/*.png', { as: 'url' });
+const rocketVideoModules = import.meta.glob('/public/rocket-videos/*.mp4', { as: 'url' });
+const rocketThumbJpgModules = import.meta.glob('/public/rocket-videos/*.jpg', { as: 'url' });
+const rocketThumbPngModules = import.meta.glob('/public/rocket-videos/*.png', { as: 'url' });
 
 // Default config values used before backend config is loaded.
 const DEFAULT_INACTIVITY_TIMEOUT_MS = 5000;
@@ -32,6 +35,25 @@ const DEFAULT_LIGHTNING_TARGET = 100;
 const DEFAULT_LIGHTNING_FAST_MS = 2000;
 const DEFAULT_PRETEST_QUESTION_COUNT = 20;
 const DEFAULT_PRETEST_TIME_LIMIT_MS = 50000;
+const ROCKET_VIDEO_FALLBACKS = [
+  {
+    name: 'Jetpack',
+    url: '/rocket-videos/Jetpack.mp4',
+    thumbnailUrl: '/rocket-videos/Jetpack.png',
+  },
+  {
+    name: 'Concert',
+    url: '/rocket-videos/Concert.mp4',
+    thumbnailUrl: '/rocket-videos/Concert.png',
+  },
+];
+// Rocket flow should be on by default once Surf is completed.
+// Opt-out switches:
+// - VITE_ENABLE_ROCKET_MODE=false
+// - localStorage.setItem('math-enable-rocket-mode', '0')
+const ENABLE_ROCKET_MODE =
+  import.meta.env.VITE_ENABLE_ROCKET_MODE !== 'false' &&
+  localStorage.getItem('math-enable-rocket-mode') !== '0';
 const INACTIVITY_TIMEOUT_STORAGE_KEY = 'math-inactivity-ms';
 const LIGHTNING_TARGET_STORAGE_KEY = 'math-lightning-target';
 const LIGHTNING_FAST_MS_STORAGE_KEY = 'math-lightning-fast-ms';
@@ -84,19 +106,26 @@ const useMathGame = () => {
 
   // --- GAME MODE STATE ---
   const [isGameMode, setIsGameMode] = useState(false);
-  const [gameModeType, setGameModeType] = useState(null); // 'lightning' | 'surf'
+  const [gameModeType, setGameModeType] = useState(null); // 'lightning' | 'surf' | 'rocket'
   const [lightningCount, setLightningCount] = useState(0);
   const [lightningCycleStart, setLightningCycleStart] = useState(0);
   const [showWayToGoAfterFailure, setShowWayToGoAfterFailure] = useState(false);
   const [gameModeLevel, setGameModeLevel] = useState(1);
   const [shouldExitAfterVideo, setShouldExitAfterVideo] = useState(false);
   const [pendingSurfPractice, setPendingSurfPractice] = useState(false);
+  const [pendingRocketPractice, setPendingRocketPractice] = useState(false);
+  const [rocketPracticeFact, setRocketPracticeFact] = useState(null);
+  const [rocketPracticeReverse, setRocketPracticeReverse] = useState(null);
   const [surfResumeAfterVideo, setSurfResumeAfterVideo] = useState(false);
+  const [rocketResumeAfterVideo, setRocketResumeAfterVideo] = useState(false);
   const [videoOptions, setVideoOptions] = useState(null); // { option1, option2 }
   const [videoList, setVideoList] = useState([]);
   const [surfVideoList, setSurfVideoList] = useState([]);
+  const [rocketVideoList, setRocketVideoList] = useState([]);
   const [lastAnswerMeta, setLastAnswerMeta] = useState(null);
   const [shouldGoToLightningCompleteAfterVideo, setShouldGoToLightningCompleteAfterVideo] = useState(false);
+  const [shouldGoToRocketIntroAfterVideo, setShouldGoToRocketIntroAfterVideo] = useState(false);
+  const [shouldGoToSurfCompleteAfterVideo, setShouldGoToSurfCompleteAfterVideo] = useState(false);
 
 // { isCorrect, isFast }
 
@@ -106,6 +135,11 @@ const useMathGame = () => {
   const [completedSurfQuizzes, setCompletedSurfQuizzes] = useState(0);
   const [surfQuizzesRequired, setSurfQuizzesRequired] = useState(5);
   const [questionsPerQuiz, setQuestionsPerQuiz] = useState(4);
+  const [rocketQuizNumber, setRocketQuizNumber] = useState(1);
+  const [rocketCorrectStreak, setRocketCorrectStreak] = useState(0);
+  const [completedRocketQuizzes, setCompletedRocketQuizzes] = useState(0);
+  const [rocketQuizzesRequired, setRocketQuizzesRequired] = useState(5);
+  const [rocketQuestionsPerQuiz, setRocketQuestionsPerQuiz] = useState(4);
 
 
   // { symbol: '⚡' | '✓' | '✗', isCorrect: boolean }
@@ -250,6 +284,15 @@ const useMathGame = () => {
     if (typeof payload.questionsPerQuiz === 'number') setQuestionsPerQuiz(payload.questionsPerQuiz);
   }, []);
 
+  const applyRocketState = useCallback((payload) => {
+    if (!payload) return;
+    if (typeof payload.rocketQuizNumber === 'number') setRocketQuizNumber(payload.rocketQuizNumber);
+    if (typeof payload.rocketCorrectStreak === 'number') setRocketCorrectStreak(payload.rocketCorrectStreak);
+    if (typeof payload.completedRocketQuizzes === 'number') setCompletedRocketQuizzes(payload.completedRocketQuizzes);
+    if (typeof payload.rocketQuizzesRequired === 'number') setRocketQuizzesRequired(payload.rocketQuizzesRequired);
+    if (typeof payload.rocketQuestionsPerQuiz === 'number') setRocketQuestionsPerQuiz(payload.rocketQuestionsPerQuiz);
+  }, []);
+
   const applyLightningTarget = useCallback((payload) => {
     if (!payload) return;
     const nextTarget =
@@ -387,8 +430,19 @@ const useMathGame = () => {
     setVideoOptions(null);
     setShouldExitAfterVideo(false);
     setPendingSurfPractice(false);
+    setPendingRocketPractice(false);
+    setRocketPracticeFact(null);
+    setRocketPracticeReverse(null);
     setSurfResumeAfterVideo(false);
+    setRocketResumeAfterVideo(false);
+    setShouldGoToRocketIntroAfterVideo(false);
+    setShouldGoToSurfCompleteAfterVideo(false);
     setGameModeLevel(1);
+    setRocketQuizNumber(1);
+    setRocketCorrectStreak(0);
+    setCompletedRocketQuizzes(0);
+    setRocketQuizzesRequired(5);
+    setRocketQuestionsPerQuiz(4);
   }, []);
 
   // Ensure totalTimeToday reflects the daily base time when no quiz is running.
@@ -498,16 +552,21 @@ const useMathGame = () => {
     };
 
     const loadVideosAndThumbs = async () => {
-      const [lightningVideos, surfVideos] = await Promise.all([
+      const [lightningVideos, surfVideos, rocketVideos] = await Promise.all([
         loadVideoSet(videoModules, thumbJpgModules, thumbPngModules),
         loadVideoSet(surfVideoModules, surfThumbJpgModules, surfThumbPngModules),
+        loadVideoSet(rocketVideoModules, rocketThumbJpgModules, rocketThumbPngModules),
       ]);
 
       setVideoList(lightningVideos);
       setSurfVideoList(surfVideos);
+      setRocketVideoList(
+        rocketVideos && rocketVideos.length > 0 ? rocketVideos : ROCKET_VIDEO_FALLBACKS
+      );
 
       console.log('[GameMode] Detected lightning videos:', lightningVideos);
       console.log('[GameMode] Detected surf videos:', surfVideos);
+      console.log('[GameMode] Detected rocket videos:', rocketVideos);
     };
 
     loadVideosAndThumbs();
@@ -707,6 +766,7 @@ const useMathGame = () => {
       navigateToGameMode = false,
       navigateToIntro = false,
       gameModeType: requestedGameModeType = 'lightning',
+      suppressStartError = false,
     } = {}) => {
       syncConfigFromStorage();
 
@@ -744,6 +804,7 @@ const useMathGame = () => {
       setAnswerSymbols([]);
       setTransientStreakMessage(null);
       setSurfResumeAfterVideo(false);
+      setRocketResumeAfterVideo(false);
 
       // Enter game mode state
       setIsGameMode(true);
@@ -775,6 +836,7 @@ const useMathGame = () => {
         if (prep?.gameModeType) setGameModeType(prep.gameModeType);
         applyLightningTarget(prep);
         applySurfState(prep);
+        applyRocketState(prep);
 
         const started = await quizStart(prep.quizRunId, childPin);
 
@@ -787,6 +849,7 @@ const useMathGame = () => {
         if (started?.gameModeType) setGameModeType(started.gameModeType);
         applyLightningTarget(started);
         applySurfState(started);
+        applyRocketState(started);
 
         const startIndex =
           typeof started?.currentIndex === 'number'
@@ -808,6 +871,7 @@ const useMathGame = () => {
           // Requirement: user should directly start where they left off
           navigate('/game-mode', { replace: true });
         }
+        return true;
       } catch (e) {
         const fallbackRoute = getRecoveryRoute(reqBelt, reqLevel);
         logClientError('[GameMode] Failed to start/resume', e, {
@@ -820,12 +884,15 @@ const useMathGame = () => {
         setQuizRunId(null);
         setQuizQuestions([]);
         setCurrentQuestion(null);
-        showUiMessage({
-          type: 'error',
-          title: "We couldn't start this quiz right now",
-          message: 'Please try again.',
-        });
-        navigate(fallbackRoute, { replace: true });
+        if (!suppressStartError) {
+          showUiMessage({
+            type: 'error',
+            title: "We couldn't start this quiz right now",
+            message: 'Please try again.',
+          });
+          navigate(fallbackRoute, { replace: true });
+        }
+        return false;
       }
     },
     [
@@ -834,6 +901,7 @@ const useMathGame = () => {
       selectedDifficulty,
       navigate,
       applySurfState,
+      applyRocketState,
       applyLightningTarget,
       syncConfigFromStorage,
       getRecoveryRoute,
@@ -884,6 +952,58 @@ const useMathGame = () => {
       }
     },
     [quizRunId, childPin, navigate, applySurfState, getRecoveryRoute, logClientError, showUiMessage]
+  );
+
+  const startRocketNextQuiz = useCallback(
+    async ({ navigateToGameMode = true } = {}) => {
+      if (!quizRunId || !childPin) return;
+
+      try {
+        const started = await quizStart(quizRunId, childPin);
+        const backendQuestions = started?.questions || started?.run?.questions || [];
+
+        if (!backendQuestions || backendQuestions.length === 0) {
+          throw new Error('No questions returned from quizStart for Rocket Mode.');
+        }
+
+        const mapped = backendQuestions.map(mapQuestionToFrontend);
+        if (started?.gameModeType) setGameModeType(started.gameModeType);
+        applyRocketState(started);
+
+        const startIndex =
+          typeof started?.currentIndex === 'number'
+            ? started.currentIndex
+            : typeof started?.run?.currentIndex === 'number'
+              ? started.run.currentIndex
+              : 0;
+        const safeIndex = Math.min(Math.max(startIndex, 0), mapped.length - 1);
+
+        setQuizQuestions(mapped);
+        setCurrentQuestionIndex(safeIndex);
+        setCurrentQuestion(mapped[safeIndex]);
+        questionStartTimestamp.current = Date.now();
+
+        if (navigateToGameMode) navigate('/game-mode', { replace: true });
+      } catch (e) {
+        const fallbackRoute = getRecoveryRoute();
+        logClientError('[RocketMode] Failed to start next quiz', e, {
+          quizRunId,
+          gameModeType: 'rocket',
+        });
+        setIsGameMode(false);
+        setGameModeType(null);
+        setQuizRunId(null);
+        setQuizQuestions([]);
+        setCurrentQuestion(null);
+        showUiMessage({
+          type: 'error',
+          title: "We couldn't start this quiz right now",
+          message: 'Please try again.',
+        });
+        navigate(fallbackRoute, { replace: true });
+      }
+    },
+    [quizRunId, childPin, navigate, applyRocketState, getRecoveryRoute, logClientError, showUiMessage]
   );
 
   const startPretestRun = useCallback(
@@ -1237,7 +1357,7 @@ const useMathGame = () => {
       const questionId = currentQuestion.id;
 
       // ------------ GAME MODE BRANCH (BACKEND-DRIVEN) ------------
-      if (isGameMode) {
+  if (isGameMode) {
   try {
     // revent double-submits (sounds overlap + double navigation)
     // isAnimating is already checked before entering handleAnswer, but keep it safe here too
@@ -1271,10 +1391,40 @@ const useMathGame = () => {
       setIsAnimating(false);
       const practiceMode = out?.gameModeType || gameModeType;
       if (isGameMode && practiceMode === 'surf') {
+        setRocketPracticeFact(null);
+        setRocketPracticeReverse(null);
         setPendingSurfPractice(true);
         navigate('/game-mode-surf-video/lose', { replace: true });
         return;
       }
+      if (isGameMode && practiceMode === 'rocket') {
+        const reverseFact =
+          currentQuestion?.question != null && typeof out?.correctExpression === 'string'
+            ? `${currentQuestion.question} = ${out.correctExpression}`
+            : null;
+        const reverseQuestion =
+          currentQuestion?.question != null ? String(currentQuestion.question) : null;
+        const reverseOptions =
+          Array.isArray(currentQuestion?.answers) &&
+          Array.isArray(currentQuestion?.answerLabels) &&
+          currentQuestion.answerLabels.length > 0
+            ? currentQuestion.answers.map((answer) => ({
+                value: answer,
+                label: currentQuestion.answerLabels[answer] ?? String(answer),
+              }))
+            : null;
+        setRocketPracticeFact(reverseFact);
+        setRocketPracticeReverse(
+          reverseQuestion && reverseOptions && reverseOptions.length > 0
+            ? { question: reverseQuestion, options: reverseOptions }
+            : null
+        );
+        setPendingRocketPractice(true);
+        navigate('/game-mode-rocket-video/lose', { replace: true });
+        return;
+      }
+      setRocketPracticeFact(null);
+      setRocketPracticeReverse(null);
       navigate('/learning');
       return;
     }
@@ -1304,6 +1454,21 @@ const useMathGame = () => {
 
         setIsTimerPaused(true);
         setPausedTime(Date.now());
+        if (ENABLE_ROCKET_MODE) {
+          const surfOptions = generateRandomVideoOptions(surfVideoList);
+          setSurfResumeAfterVideo(false);
+          setShouldGoToRocketIntroAfterVideo(false);
+          setShouldExitAfterVideo(false);
+          setShouldGoToSurfCompleteAfterVideo(true);
+          if (surfOptions) {
+            setVideoOptions(surfOptions);
+            navigate('/game-mode-video-select', { replace: true });
+            return;
+          }
+          navigate('/game-mode-surf-complete', { replace: true });
+          return;
+        }
+
         const surfOptions = generateRandomVideoOptions(surfVideoList);
         if (surfOptions) {
           setShouldExitAfterVideo(true);
@@ -1348,6 +1513,74 @@ const useMathGame = () => {
 
       if (!quizQuestions || quizQuestions.length === 0 || nextIndex >= quizQuestions.length) {
         await startSurfNextQuiz({ navigateToGameMode: false });
+        setIsAnimating(false);
+        return;
+      }
+
+      setCurrentQuestionIndex(nextIndex);
+      setCurrentQuestion(quizQuestions[nextIndex]);
+      questionStartTimestamp.current = Date.now();
+      setIsAnimating(false);
+      return;
+    }
+
+    if (resolvedGameModeType === 'rocket') {
+      setGameModeType('rocket');
+      applyRocketState(out);
+      setCurrentQuizStreak(0);
+      setTransientStreakMessage(null);
+
+      if (out?.dailyStats) {
+        setCorrectCount(out.dailyStats.correctCount);
+        applyDailyStatsTotalMs(out.dailyStats.totalActiveMs);
+        if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
+        if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
+      }
+      if (out?.updatedProgress) setTableProgress(out.updatedProgress);
+
+      const rocketCompleted =
+        !!out?.completed && (out?.beltAwarded || out?.passed || out?.levelAwarded);
+      if (rocketCompleted) {
+        setIsGameMode(false);
+        setIsAnimating(false);
+        setIsTimerPaused(true);
+        setPausedTime(Date.now());
+        navigate('/game-mode-rocket-complete', { replace: true });
+        return;
+      }
+
+      const rocketPassed = !!out?.rocketQuizPassed;
+      if (rocketPassed) {
+        setIsTimerPaused(true);
+        setPausedTime(Date.now());
+        setIsAnimating(false);
+
+        const rocketOptions = generateRandomVideoOptions(
+          rocketVideoList && rocketVideoList.length > 0
+            ? rocketVideoList
+            : ROCKET_VIDEO_FALLBACKS
+        );
+        if (rocketOptions) {
+          setShouldExitAfterVideo(false);
+          setRocketResumeAfterVideo(true);
+          setVideoOptions(rocketOptions);
+          navigate('/game-mode-video-select', { replace: true });
+          return;
+        }
+
+        setRocketResumeAfterVideo(false);
+        await startRocketNextQuiz({ navigateToGameMode: true });
+        return;
+      }
+
+      if (!isCorrect) audioManager.playWrongSound();
+      if (isCorrect) audioManager.playCompleteSound();
+
+      const nextIndex =
+        typeof out?.nextIndex === 'number' ? out.nextIndex : currentQuestionIndex + 1;
+
+      if (!quizQuestions || quizQuestions.length === 0 || nextIndex >= quizQuestions.length) {
+        await startRocketNextQuiz({ navigateToGameMode: false });
         setIsAnimating(false);
         return;
       }
@@ -1782,14 +2015,22 @@ const useMathGame = () => {
       gameModeType,
       lightningCount,
       lightningFastThresholdMs,
+      inactivityTimeoutMs,
       navigate,
       applySurfState,
+      applyRocketState,
       startSurfNextQuiz,
+      startRocketNextQuiz,
       setShouldExitAfterVideo,
       setSurfResumeAfterVideo,
+      setRocketResumeAfterVideo,
+      setPendingRocketPractice,
+      setShouldGoToRocketIntroAfterVideo,
+      setShouldGoToSurfCompleteAfterVideo,
       setVideoOptions,
       generateRandomVideoOptions,
       surfVideoList,
+      rocketVideoList,
       setIsTimerPaused,
       setPausedTime,
       isPretest,
@@ -1843,6 +2084,26 @@ const useMathGame = () => {
           return out;
         }
 
+        if (out?.rocketQuizRestarted) {
+          if (out?.questions && Array.isArray(out.questions)) {
+            const mapped = out.questions.map(mapQuestionToFrontend);
+            setQuizQuestions(mapped);
+            setCurrentQuestionIndex(0);
+            setCurrentQuestion(mapped[0]);
+            questionStartTimestamp.current = Date.now();
+          }
+
+          setGameModeType('rocket');
+          applyRocketState(out);
+          if (typeof out?.rocketCorrectStreak !== 'number') {
+            setRocketCorrectStreak(0);
+          }
+          setIsGameModePractice(false);
+
+          navigate('/game-mode', { replace: true });
+          return out;
+        }
+
         if (out.resume) {
           setIsTimerPaused(false);
 
@@ -1875,7 +2136,17 @@ const useMathGame = () => {
         return { stillPracticing: true, error: e.message };
       }
     },
-    [quizRunId, childPin, pausedTime, isGameMode, navigate, applySurfState, applyDailyStatsTotalMs]
+    [
+      quizRunId,
+      childPin,
+      pausedTime,
+      isGameMode,
+      navigate,
+      applySurfState,
+      applyRocketState,
+      setRocketCorrectStreak,
+      applyDailyStatsTotalMs,
+    ]
   );
 
   useEffect(() => {
@@ -1956,10 +2227,40 @@ const useMathGame = () => {
 
           setIsAwaitingInactivityResponse(false);
           if (isGameMode && gameModeType === 'surf') {
+            setRocketPracticeFact(null);
+            setRocketPracticeReverse(null);
             setPendingSurfPractice(true);
             navigate('/game-mode-surf-video/lose', { replace: true });
             return;
           }
+          if (isGameMode && gameModeType === 'rocket') {
+            const reverseFact =
+              currentQuestion?.question != null && typeof out?.correctExpression === 'string'
+                ? `${currentQuestion.question} = ${out.correctExpression}`
+                : null;
+            const reverseQuestion =
+              currentQuestion?.question != null ? String(currentQuestion.question) : null;
+            const reverseOptions =
+              Array.isArray(currentQuestion?.answers) &&
+              Array.isArray(currentQuestion?.answerLabels) &&
+              currentQuestion.answerLabels.length > 0
+                ? currentQuestion.answers.map((answer) => ({
+                    value: answer,
+                    label: currentQuestion.answerLabels[answer] ?? String(answer),
+                  }))
+                : null;
+            setRocketPracticeFact(reverseFact);
+            setRocketPracticeReverse(
+              reverseQuestion && reverseOptions && reverseOptions.length > 0
+                ? { question: reverseQuestion, options: reverseOptions }
+                : null
+            );
+            setPendingRocketPractice(true);
+            navigate('/game-mode-rocket-video/lose', { replace: true });
+            return;
+          }
+          setRocketPracticeFact(null);
+          setRocketPracticeReverse(null);
           navigate('/learning');
           return;
         }
@@ -2003,6 +2304,10 @@ const useMathGame = () => {
         if (out?.completed && isGameMode) {
           setIsAwaitingInactivityResponse(false);
           setIsGameMode(false);
+          if (gameModeType === 'rocket') {
+            navigate('/game-mode-rocket-complete', { replace: true });
+            return;
+          }
           navigate('/game-mode-exit', { replace: true });
           return;
         }
@@ -2037,6 +2342,7 @@ const useMathGame = () => {
     childPin,
     navigate,
     isGameMode,
+    gameModeType,
     currentQuestionIndex,
     inactivityTimeoutMs,
     isPretest,
@@ -2180,6 +2486,11 @@ const useMathGame = () => {
     completedSurfQuizzes,
     surfQuizzesRequired,
     questionsPerQuiz,
+    rocketQuizNumber,
+    rocketCorrectStreak,
+    completedRocketQuizzes,
+    rocketQuizzesRequired,
+    rocketQuestionsPerQuiz,
     currentAnswerSymbol,
     setCurrentAnswerSymbol,
     isGameModePractice,
@@ -2191,16 +2502,30 @@ const useMathGame = () => {
     setShouldExitAfterVideo,
     pendingSurfPractice,
     setPendingSurfPractice,
+    pendingRocketPractice,
+    setPendingRocketPractice,
+    rocketPracticeFact,
+    setRocketPracticeFact,
+    rocketPracticeReverse,
+    setRocketPracticeReverse,
     surfResumeAfterVideo,
     setSurfResumeAfterVideo,
+    rocketResumeAfterVideo,
+    setRocketResumeAfterVideo,
     videoOptions,
     setVideoOptions,
     handleVideoSelection,
     videoList,
     surfVideoList,
     startSurfNextQuiz,
+    startRocketNextQuiz,
     shouldGoToLightningCompleteAfterVideo,
     setShouldGoToLightningCompleteAfterVideo,
+    shouldGoToRocketIntroAfterVideo,
+    setShouldGoToRocketIntroAfterVideo,
+    shouldGoToSurfCompleteAfterVideo,
+    setShouldGoToSurfCompleteAfterVideo,
+    isRocketModeEnabled: ENABLE_ROCKET_MODE,
 
 
     // backend-driven starter

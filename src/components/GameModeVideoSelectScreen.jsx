@@ -47,7 +47,11 @@ const GameModeVideoSelectScreen = () => {
   }
 
   const headingText =
-    gameModeType === "surf" ? "Accuracy Bonus Unlocked !" : "Speed Bonus Unlocked! ⚡";
+    gameModeType === "surf"
+      ? "Accuracy Bonus Unlocked !"
+      : gameModeType === "rocket"
+        ? "Rocket Bonus Unlocked !"
+        : "Speed Bonus Unlocked! ⚡";
 
   const renderCard = (option, accentClass) => {
     const displayName =

@@ -156,6 +156,15 @@ export const submitVideoRating = async (rating, level, beltOrDegree, pin) => {
 export function mapQuestionToFrontend(backendQuestion) {
   if (!backendQuestion) return null;
 
+  const textChoices = Array.isArray(backendQuestion?.textChoices)
+    ? backendQuestion.textChoices.filter((choice) => typeof choice === 'string' && choice.trim().length > 0)
+    : [];
+  const isRocketQuestion =
+    textChoices.length > 0 &&
+    (backendQuestion?.gameModeType === 'rocket' ||
+      backendQuestion?.source === 'rocket' ||
+      backendQuestion?.source === 'rocket-practice');
+
   // 1) Build display string
   const a =
     backendQuestion?.params?.a ??
@@ -175,58 +184,66 @@ export function mapQuestionToFrontend(backendQuestion) {
 
   // 2) Correct answer
   const computed = Number.isFinite(a) && Number.isFinite(b) ? a + b : undefined;
-  const correct =
+  const rawCorrect =
     typeof backendQuestion.correctAnswer === 'number'
       ? backendQuestion.correctAnswer
       : computed;
+  const correct = rawCorrect;
 
   // 3) Choices
-  const choicesProvided = Array.isArray(backendQuestion.choices);
-  let answers = choicesProvided
-    ? backendQuestion.choices.filter((n) => typeof n === 'number')
-    : [];
+  let answers = [];
+  if (isRocketQuestion) {
+    answers = textChoices.map((_, idx) => idx);
+  } else {
+    const choicesProvided = Array.isArray(backendQuestion.choices);
+    answers = choicesProvided
+      ? backendQuestion.choices.filter((n) => typeof n === 'number')
+      : [];
 
-  // Only auto-generate if the backend didn't send choices at all.
-  const needToBuild = !choicesProvided;
-  if (needToBuild && Number.isFinite(correct)) {
-    const set = new Set(answers);
-    set.add(correct);
+    // Only auto-generate if the backend didn't send choices at all.
+    const needToBuild = !choicesProvided;
+    if (needToBuild && Number.isFinite(correct)) {
+      const set = new Set(answers);
+      set.add(correct);
 
-    // simple pool around the correct answer + some small numbers
-    const candidates = [
-      correct - 1,
-      correct + 1,
-      correct + 2,
-      correct - 2,
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      a ?? 0,
-      b ?? 0,
-    ];
+      // simple pool around the correct answer + some small numbers
+      const candidates = [
+        correct - 1,
+        correct + 1,
+        correct + 2,
+        correct - 2,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        a ?? 0,
+        b ?? 0,
+      ];
 
-    for (const c of candidates) {
-      if (set.size >= 4) break;
-      if (Number.isFinite(c) && c >= 0) set.add(c);
+      for (const c of candidates) {
+        if (set.size >= 4) break;
+        if (Number.isFinite(c) && c >= 0) set.add(c);
+      }
+
+      // if still not 4, jitter around the correct until we reach 4 unique options
+      while (set.size < 4) {
+        const jitter = Math.floor(Math.random() * 9) - 4; // [-4..4]
+        const c = Math.max(0, correct + jitter);
+        set.add(c);
+      }
+
+      answers = Array.from(set).slice(0, 4);
     }
-
-    // if still not 4, jitter around the correct until we reach 4 unique options
-    while (set.size < 4) {
-      const jitter = Math.floor(Math.random() * 9) - 4; // [-4..4]
-      const c = Math.max(0, correct + jitter);
-      set.add(c);
-    }
-
-    answers = Array.from(set).slice(0, 4);
   }
 
-  // 4) Shuffle
-  for (let i = answers.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [answers[i], answers[j]] = [answers[j], answers[i]];
+  // 4) Shuffle non-rocket choices
+  if (!isRocketQuestion) {
+    for (let i = answers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [answers[i], answers[j]] = [answers[j], answers[i]];
+    }
   }
 
   return {
@@ -234,6 +251,8 @@ export function mapQuestionToFrontend(backendQuestion) {
     question: questionString || String(backendQuestion.question || ''),
     correctAnswer: correct,
     answers,
+    answerLabels: isRocketQuestion ? textChoices : null,
+    isRocketQuestion,
   };
 }
 

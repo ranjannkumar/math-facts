@@ -154,6 +154,7 @@ const LearningModule = () => {
     isQuizStarting,     // <--- ADD THIS LINE
     setIsQuizStarting,
     isGameMode,
+    gameModeType,
     isGameModePractice,
     setIsAnimating,
     setQuizStartTime,
@@ -169,6 +170,10 @@ const LearningModule = () => {
     currentQuestionIndex,
     pretestQuestionCount,
     hardResetQuizState,
+    rocketPracticeFact,
+    setRocketPracticeFact,
+    rocketPracticeReverse,
+    setRocketPracticeReverse,
   } = useContext(MathGameContext);
 
   const diff = useMemo(() => normalizeDifficulty(pendingDifficulty), [pendingDifficulty]);
@@ -186,6 +191,8 @@ const LearningModule = () => {
 
   const isIntervention = !!interventionQuestion;
   const isPreQuizFlow = !isIntervention && preQuizPracticeItems?.length > 0;
+  const isRocketInterventionPractice =
+    isIntervention && isGameMode && isGameModePractice && gameModeType === 'rocket';
 
   const [isClosing, setIsClosing] = useState(false);
 
@@ -376,9 +383,11 @@ useEffect(() => {
     if (isGameMode && isGameModePractice) {
       const out = await handlePracticeAnswer(practiceQ.id, answerNumber);
 
-      if (out.resume || out.surfQuizRestarted) {
+      if (out.resume || out.surfQuizRestarted || out.rocketQuizRestarted) {
         setIsClosing(true);
         setInterventionQuestion(null);
+        setRocketPracticeFact(null);
+        setRocketPracticeReverse(null);
         setShowLearningModule(false);
 
         if (out.resume) {
@@ -493,6 +502,8 @@ useEffect(() => {
 
           setIsClosing(true);
           setInterventionQuestion(null);
+          setRocketPracticeFact(null);
+          setRocketPracticeReverse(null);
           setShowLearningModule(false);
           navigate(isPretest ? '/pretest' : '/quiz', { replace: true });
           setIsSubmitting(false);
@@ -506,6 +517,65 @@ useEffect(() => {
       setPracticeMsg('Error submitting practice: ' + msg);
       setIsSubmitting(false);
       setPracticeStatus('error');
+    }
+  };
+
+  const evaluateExpression = (expr) => {
+    if (typeof expr !== 'string') return null;
+    const cleaned = expr.replace(/\s+/g, '');
+    const match = cleaned.match(/^(-?\d+)([+\-xX*\/])(-?\d+)$/);
+    if (!match) return null;
+    const left = Number(match[1]);
+    const op = match[2];
+    const right = Number(match[3]);
+    if (!Number.isFinite(left) || !Number.isFinite(right)) return null;
+    if (op === '+') return left + right;
+    if (op === '-') return left - right;
+    if (op === 'x' || op === 'X' || op === '*') return left * right;
+    if (op === '/') return right === 0 ? null : left / right;
+    return null;
+  };
+
+  const handleInterventionChoice = async (answer, label = null) => {
+    if (!practiceQ || isSubmitting) return;
+    setIsSubmitting(true);
+    setPracticeMsg('');
+    setPracticeStatus(null);
+
+    const answerToSubmit =
+      isRocketInterventionPractice && typeof label === 'string'
+        ? evaluateExpression(label)
+        : answer;
+    const isCorrect = answerToSubmit === practiceQ.correctAnswer;
+    if (!isCorrect) {
+      audioManager.playWrongSound?.();
+      setIsShowingFact(true);
+      setSelectedAnswer(answer);
+      setIsSubmitting(false);
+      return;
+    }
+
+    audioManager.playCorrectSound?.();
+    setSelectedAnswer(answer);
+    setPracticeStatus('success');
+
+    try {
+      const out = await handlePracticeAnswer(practiceQ.id, answerToSubmit);
+      if (out.resume || out.surfQuizRestarted || out.rocketQuizRestarted) {
+        setIsClosing(true);
+        setInterventionQuestion(null);
+        setRocketPracticeFact(null);
+        setRocketPracticeReverse(null);
+        setShowLearningModule(false);
+        navigate('/game-mode', { replace: true });
+      }
+    } catch (e) {
+      const msg = e.message || 'Error submitting practice.';
+      console.error('Practice submission failed:', msg);
+      setPracticeMsg('Error submitting practice: ' + msg);
+      setPracticeStatus('error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -575,7 +645,9 @@ useEffect(() => {
         return (
           <>
             <div className="text-8xl sm:text-10xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
-              {extractFactDisplay(practiceQ)}
+              {isRocketInterventionPractice && rocketPracticeFact
+                ? rocketPracticeFact
+                : extractFactDisplay(practiceQ)}
             </div>
             <div className="flex justify-center">
               <button
@@ -588,6 +660,33 @@ useEffect(() => {
           </>
         );
       } else {
+        if (isRocketInterventionPractice) {
+          const reverseQuestion = rocketPracticeReverse?.question || extractQuestion(practiceQ);
+          const reverseOptions =
+            Array.isArray(rocketPracticeReverse?.options) && rocketPracticeReverse.options.length > 0
+              ? rocketPracticeReverse.options
+              : (practiceQ.answers || []).map((ans) => ({ value: ans, label: String(ans) }));
+          return (
+            <>
+              <div className="text-6xl sm:text-7xl font-extrabold text-blue-500 text-center mb-6 whitespace-pre-line drop-shadow">
+                {reverseQuestion}
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full max-w-md mx-auto">
+                {reverseOptions.map((option, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleInterventionChoice(option.value, option.label)}
+                    disabled={isSubmitting}
+                    className="w-full bg-gray-100 text-gray-900 font-bold py-4 sm:py-5 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200 text-2xl"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          );
+        }
+
         return (
           <>
             <div className="text-6xl sm:text-7xl font-extrabold text-green-500 text-center mb-6 whitespace-pre-line drop-shadow">

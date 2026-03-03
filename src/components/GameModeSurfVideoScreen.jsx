@@ -32,6 +32,7 @@ const GameModeSurfVideoScreen = () => {
 
   const videoSrc = VIDEO_MAP[kind] || VIDEO_MAP.intro;
   const exitAfter = !!location.state?.exitAfter;
+  const toRocketFlow = !!location.state?.toRocketFlow;
 
   useEffect(() => {
     surfVideoListRef.current = surfVideoList || [];
@@ -87,6 +88,11 @@ const GameModeSurfVideoScreen = () => {
       setPausedTime(0);
 
       if (kind === 'win') {
+        if (toRocketFlow) {
+          navigate('/game-mode-surf-complete', { replace: true });
+          return;
+        }
+
         const surfOptions = pickTwoOptions(surfVideoListRef.current);
 
         if (surfOptions) {
@@ -117,6 +123,7 @@ const GameModeSurfVideoScreen = () => {
     return () => v.removeEventListener('ended', handleEnded);
   }, [
     kind,
+    toRocketFlow,
     exitAfter,
     navigate,
     setIsTimerPaused,

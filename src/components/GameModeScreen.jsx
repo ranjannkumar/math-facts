@@ -15,6 +15,10 @@ const GameModeScreen = () => {
   completedSurfQuizzes,
   surfQuizzesRequired,
   questionsPerQuiz,
+  rocketCorrectStreak,
+  completedRocketQuizzes,
+  rocketQuizzesRequired,
+  rocketQuestionsPerQuiz,
   lightningCount,
   lightningCycleStart,
   questionStartTimestamp,
@@ -25,7 +29,8 @@ const GameModeScreen = () => {
   setIsTimerPaused,
 } = useContext(MathGameContext);
 
-const isSurfMode = gameModeType === 'surf' || (currentQuestion?.answers || []).length === 0;
+const isSurfMode = gameModeType === 'surf';
+const isRocketMode = gameModeType === 'rocket';
 const isLightningMode = gameModeType === 'lightning' && !isSurfMode;
 
 useEffect(() => {
@@ -110,6 +115,13 @@ useEffect(() => {
   const lightningDisplayCount =
     lightningCycleCount === 0 ? 0 : lightningCycleRemainder === 0 ? 5 : lightningCycleRemainder;
   const lightningDisplay = lightningSymbol.repeat(lightningDisplayCount);
+  const rocketEmojiCount = Math.max(
+    0,
+    Math.min(
+      Number.isFinite(rocketCorrectStreak) ? rocketCorrectStreak : 0,
+      Number.isFinite(rocketQuestionsPerQuiz) ? rocketQuestionsPerQuiz : 10
+    )
+  );
 
 
   return (
@@ -119,6 +131,8 @@ useEffect(() => {
         // Game Mode 2 background should feel distinct
         background: isSurfMode
           ? 'radial-gradient(circle at 20% 20%, #2dd4bf 0%, #1e3a8a 38%, #0f172a 100%)'
+          : isRocketMode
+            ? 'radial-gradient(circle at 20% 20%, #fb923c 0%, #7c2d12 45%, #111827 100%)'
           : 'linear-gradient(135deg, #1A237E 0%, #303F9F 60%, #3F51B5 100%)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -163,6 +177,15 @@ useEffect(() => {
               {Array.from({ length: surfCorrectStreak }).map((_, index) => (
                 <span key={`surf-emoji-${index}`} role="img" aria-label="surfboard rider">
                   🏄
+                </span>
+              ))}
+            </div>
+          )}
+          {isRocketMode && rocketEmojiCount > 0 && (
+            <div className="flex justify-center items-center gap-2 mt-2 sm:mt-3 text-2xl sm:text-3xl">
+              {Array.from({ length: rocketEmojiCount }).map((_, index) => (
+                <span key={`rocket-emoji-${index}`} role="img" aria-label="rocket">
+                  {String.fromCodePoint(0x1f680)}
                 </span>
               ))}
             </div>
@@ -219,7 +242,7 @@ useEffect(() => {
                       className="text-xl sm:text-2xl md:text-3xl font-baloo text-gray-800 drop-shadow-md"
                       style={{ fontFamily: 'Baloo 2, Comic Neue, cursive', letterSpacing: 2 }}
                     >
-                      {answer}
+                      {currentQuestion?.answerLabels?.[answer] ?? answer}
                     </div>
                   </button>
                 ))}

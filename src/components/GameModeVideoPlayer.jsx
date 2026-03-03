@@ -12,11 +12,18 @@ const GameModeVideoPlayer = () => {
     setShouldExitAfterVideo,
     shouldGoToLightningCompleteAfterVideo,
     setShouldGoToLightningCompleteAfterVideo,
+    shouldGoToRocketIntroAfterVideo,
+    setShouldGoToRocketIntroAfterVideo,
+    shouldGoToSurfCompleteAfterVideo,
+    setShouldGoToSurfCompleteAfterVideo,
     lightningCount,
     setLightningCycleStart,
     surfResumeAfterVideo,
     setSurfResumeAfterVideo,
     startSurfNextQuiz,
+    rocketResumeAfterVideo,
+    setRocketResumeAfterVideo,
+    startRocketNextQuiz,
   } = useContext(MathGameContext);
 
   const { videoName } = useParams();
@@ -49,29 +56,54 @@ const GameModeVideoPlayer = () => {
         videoEl.pause();
       } catch {}
 
-      // Resume timers & inactivity tracking
-      setIsTimerPaused(false);
-      if (questionStartTimestamp?.current != null) {
-        questionStartTimestamp.current = Date.now();
-      }
-      setPausedTime?.(0);
-
       if (surfResumeAfterVideo) {
+        setIsTimerPaused(false);
+        if (questionStartTimestamp?.current != null) {
+          questionStartTimestamp.current = Date.now();
+        }
+        setPausedTime?.(0);
         setSurfResumeAfterVideo(false);
         await startSurfNextQuiz({ navigateToGameMode: true });
         return;
       }
+      if (rocketResumeAfterVideo) {
+        setIsTimerPaused(false);
+        if (questionStartTimestamp?.current != null) {
+          questionStartTimestamp.current = Date.now();
+        }
+        setPausedTime?.(0);
+        setRocketResumeAfterVideo(false);
+        await startRocketNextQuiz({ navigateToGameMode: true });
+        return;
+      }
 
       const shouldResumeGameMode =
-        !shouldGoToLightningCompleteAfterVideo && !shouldExitAfterVideo;
+        !shouldGoToLightningCompleteAfterVideo &&
+        !shouldGoToSurfCompleteAfterVideo &&
+        !shouldGoToRocketIntroAfterVideo &&
+        !shouldExitAfterVideo;
 
       if (shouldResumeGameMode) {
+        setIsTimerPaused(false);
+        if (questionStartTimestamp?.current != null) {
+          questionStartTimestamp.current = Date.now();
+        }
+        setPausedTime?.(0);
         setLightningCycleStart(lightningCount);
+      } else {
+        setIsTimerPaused(true);
+        setPausedTime?.(Date.now());
       }
 
       if (shouldGoToLightningCompleteAfterVideo) {
         setShouldGoToLightningCompleteAfterVideo(false);
         navigate("/game-mode-lightning-complete", { replace: true });
+      } else if (shouldGoToSurfCompleteAfterVideo) {
+        setShouldGoToSurfCompleteAfterVideo(false);
+        navigate("/game-mode-surf-complete", { replace: true });
+      } else if (shouldGoToRocketIntroAfterVideo) {
+        setShouldGoToRocketIntroAfterVideo(false);
+        navigate("/game-mode-rocket-video/intro", { replace: true });
       } else if (shouldExitAfterVideo) {
         setShouldExitAfterVideo(false);
         navigate("/game-mode-exit", { replace: true });
@@ -111,11 +143,18 @@ const GameModeVideoPlayer = () => {
     setShouldExitAfterVideo,
     shouldGoToLightningCompleteAfterVideo,
     setShouldGoToLightningCompleteAfterVideo,
+    shouldGoToRocketIntroAfterVideo,
+    setShouldGoToRocketIntroAfterVideo,
+    shouldGoToSurfCompleteAfterVideo,
+    setShouldGoToSurfCompleteAfterVideo,
     lightningCount,
     setLightningCycleStart,
     surfResumeAfterVideo,
     setSurfResumeAfterVideo,
     startSurfNextQuiz,
+    rocketResumeAfterVideo,
+    setRocketResumeAfterVideo,
+    startRocketNextQuiz,
   ]);
 
   if (!videoUrl) {
