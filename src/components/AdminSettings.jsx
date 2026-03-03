@@ -22,6 +22,8 @@ const DEFAULT_NUMBERS = {
   lightningTimer: 2,
   surfQuestionsPerQuiz: 4,
   surfQuizzesRequired: 5,
+  rocketQuestionsPerQuiz: 4,
+  rocketQuizzesRequired: 5,
   inactivityTimer: 5,
   pretestQuestionCount: 20,
   pretestDefaultTimer: 50,
@@ -126,6 +128,16 @@ const mapConfigToValues = (config) => {
         ? resolved.surfMode.quizzesRequired
         : DEFAULT_NUMBERS.surfQuizzesRequired
     ),
+    rocketQuestionsPerQuiz: String(
+      Number.isFinite(resolved?.rocketMode?.questionsPerQuiz)
+        ? resolved.rocketMode.questionsPerQuiz
+        : DEFAULT_NUMBERS.rocketQuestionsPerQuiz
+    ),
+    rocketQuizzesRequired: String(
+      Number.isFinite(resolved?.rocketMode?.quizzesRequired)
+        ? resolved.rocketMode.quizzesRequired
+        : DEFAULT_NUMBERS.rocketQuizzesRequired
+    ),
     inactivityTimer: String(
       Number.isFinite(resolved?.general?.inactivityThresholdSeconds)
         ? resolved.general.inactivityThresholdSeconds
@@ -168,6 +180,14 @@ const buildConfigPayload = (values) => {
   const lightningTimer = toInt(values.lightningTimer, DEFAULT_NUMBERS.lightningTimer);
   const surfQuestionsPerQuiz = toInt(values.surfQuestionsPerQuiz, DEFAULT_NUMBERS.surfQuestionsPerQuiz);
   const surfQuizzesRequired = toInt(values.surfQuizzesRequired, DEFAULT_NUMBERS.surfQuizzesRequired);
+  const rocketQuestionsPerQuiz = toInt(
+    values.rocketQuestionsPerQuiz,
+    DEFAULT_NUMBERS.rocketQuestionsPerQuiz
+  );
+  const rocketQuizzesRequired = toInt(
+    values.rocketQuizzesRequired,
+    DEFAULT_NUMBERS.rocketQuizzesRequired
+  );
   const inactivityTimer = toInt(values.inactivityTimer, DEFAULT_NUMBERS.inactivityTimer);
   const pretestQuestionCount = toInt(values.pretestQuestionCount, DEFAULT_NUMBERS.pretestQuestionCount);
 
@@ -176,6 +196,8 @@ const buildConfigPayload = (values) => {
     lightningFastThresholdMs: lightningTimer * 1000,
     surfQuestionsPerQuiz,
     surfQuizzesRequired,
+    rocketQuestionsPerQuiz,
+    rocketQuizzesRequired,
     inactivityThresholdMs: inactivityTimer * 1000,
     pretestQuestionCount,
     pretestMode: {
@@ -219,6 +241,8 @@ const AdminSettings = () => {
     lightningTimer: String(DEFAULT_NUMBERS.lightningTimer),
     surfQuestionsPerQuiz: String(DEFAULT_NUMBERS.surfQuestionsPerQuiz),
     surfQuizzesRequired: String(DEFAULT_NUMBERS.surfQuizzesRequired),
+    rocketQuestionsPerQuiz: String(DEFAULT_NUMBERS.rocketQuestionsPerQuiz),
+    rocketQuizzesRequired: String(DEFAULT_NUMBERS.rocketQuizzesRequired),
     inactivityTimer: String(DEFAULT_NUMBERS.inactivityTimer),
     pretestQuestionCount: String(DEFAULT_NUMBERS.pretestQuestionCount),
     pretestDefaultTimer: String(DEFAULT_NUMBERS.pretestDefaultTimer),
@@ -236,6 +260,8 @@ const AdminSettings = () => {
     lightningTimer: String(DEFAULT_NUMBERS.lightningTimer),
     surfQuestionsPerQuiz: String(DEFAULT_NUMBERS.surfQuestionsPerQuiz),
     surfQuizzesRequired: String(DEFAULT_NUMBERS.surfQuizzesRequired),
+    rocketQuestionsPerQuiz: String(DEFAULT_NUMBERS.rocketQuestionsPerQuiz),
+    rocketQuizzesRequired: String(DEFAULT_NUMBERS.rocketQuizzesRequired),
     inactivityTimer: String(DEFAULT_NUMBERS.inactivityTimer),
     pretestQuestionCount: String(DEFAULT_NUMBERS.pretestQuestionCount),
     pretestDefaultTimer: String(DEFAULT_NUMBERS.pretestDefaultTimer),
@@ -322,6 +348,8 @@ const AdminSettings = () => {
         'lightningTimer',
         'surfQuestionsPerQuiz',
         'surfQuizzesRequired',
+        'rocketQuestionsPerQuiz',
+        'rocketQuizzesRequired',
         'inactivityTimer',
         'pretestQuestionCount',
       ];
@@ -444,6 +472,19 @@ const AdminSettings = () => {
           setStatus({
             type: 'error',
             message: 'Save completed, but the backend did not persist the new surf quiz count.',
+          });
+          return;
+        }
+
+        const savedRocketQuestionsPerQuiz = Number(refreshedConfig?.rocketMode?.questionsPerQuiz);
+        if (
+          Number.isFinite(savedRocketQuestionsPerQuiz) &&
+          savedRocketQuestionsPerQuiz !==
+            toInt(values.rocketQuestionsPerQuiz, DEFAULT_NUMBERS.rocketQuestionsPerQuiz)
+        ) {
+          setStatus({
+            type: 'error',
+            message: 'Save completed, but the backend did not persist the new rocket quiz count.',
           });
           return;
         }
@@ -658,6 +699,36 @@ const AdminSettings = () => {
                   className={inputClass}
                   value={values.surfQuizzesRequired}
                   onChange={handleChange('surfQuizzesRequired')}
+                  disabled={isBusy}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className={`${cardClass} p-5 sm:p-6`}>
+            <div className={sectionTitleClass}>Game Mode 3 (Rocket)</div>
+            <p className="text-white/70 text-sm mb-4">Reverse quiz size and wins required.</p>
+
+            <div className="space-y-3">
+              <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
+                <span className="text-white/90">Questions per rocket quiz</span>
+                <input
+                  type="number"
+                  min="1"
+                  className={inputClass}
+                  value={values.rocketQuestionsPerQuiz}
+                  onChange={handleChange('rocketQuestionsPerQuiz')}
+                  disabled={isBusy}
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
+                <span className="text-white/90">Rocket quizzes required</span>
+                <input
+                  type="number"
+                  min="1"
+                  className={inputClass}
+                  value={values.rocketQuizzesRequired}
+                  onChange={handleChange('rocketQuizzesRequired')}
                   disabled={isBusy}
                 />
               </label>
