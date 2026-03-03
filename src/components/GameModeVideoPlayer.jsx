@@ -16,6 +16,8 @@ const GameModeVideoPlayer = () => {
     setShouldGoToRocketIntroAfterVideo,
     shouldGoToSurfCompleteAfterVideo,
     setShouldGoToSurfCompleteAfterVideo,
+    shouldGoToRocketCompleteAfterVideo,
+    setShouldGoToRocketCompleteAfterVideo,
     lightningCount,
     setLightningCycleStart,
     surfResumeAfterVideo,
@@ -81,6 +83,7 @@ const GameModeVideoPlayer = () => {
         !shouldGoToLightningCompleteAfterVideo &&
         !shouldGoToSurfCompleteAfterVideo &&
         !shouldGoToRocketIntroAfterVideo &&
+        !shouldGoToRocketCompleteAfterVideo &&
         !shouldExitAfterVideo;
 
       if (shouldResumeGameMode) {
@@ -104,6 +107,9 @@ const GameModeVideoPlayer = () => {
       } else if (shouldGoToRocketIntroAfterVideo) {
         setShouldGoToRocketIntroAfterVideo(false);
         navigate("/game-mode-rocket-video/intro", { replace: true });
+      } else if (shouldGoToRocketCompleteAfterVideo) {
+        setShouldGoToRocketCompleteAfterVideo(false);
+        navigate("/game-mode-rocket-complete", { replace: true });
       } else if (shouldExitAfterVideo) {
         setShouldExitAfterVideo(false);
         navigate("/game-mode-exit", { replace: true });
@@ -147,6 +153,8 @@ const GameModeVideoPlayer = () => {
     setShouldGoToRocketIntroAfterVideo,
     shouldGoToSurfCompleteAfterVideo,
     setShouldGoToSurfCompleteAfterVideo,
+    shouldGoToRocketCompleteAfterVideo,
+    setShouldGoToRocketCompleteAfterVideo,
     lightningCount,
     setLightningCycleStart,
     surfResumeAfterVideo,

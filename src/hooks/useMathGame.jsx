@@ -126,6 +126,7 @@ const useMathGame = () => {
   const [shouldGoToLightningCompleteAfterVideo, setShouldGoToLightningCompleteAfterVideo] = useState(false);
   const [shouldGoToRocketIntroAfterVideo, setShouldGoToRocketIntroAfterVideo] = useState(false);
   const [shouldGoToSurfCompleteAfterVideo, setShouldGoToSurfCompleteAfterVideo] = useState(false);
+  const [shouldGoToRocketCompleteAfterVideo, setShouldGoToRocketCompleteAfterVideo] = useState(false);
 
 // { isCorrect, isFast }
 
@@ -437,6 +438,7 @@ const useMathGame = () => {
     setRocketResumeAfterVideo(false);
     setShouldGoToRocketIntroAfterVideo(false);
     setShouldGoToSurfCompleteAfterVideo(false);
+    setShouldGoToRocketCompleteAfterVideo(false);
     setGameModeLevel(1);
     setRocketQuizNumber(1);
     setRocketCorrectStreak(0);
@@ -1545,6 +1547,20 @@ const useMathGame = () => {
         setIsAnimating(false);
         setIsTimerPaused(true);
         setPausedTime(Date.now());
+        const rocketOptions = generateRandomVideoOptions(
+          rocketVideoList && rocketVideoList.length > 0
+            ? rocketVideoList
+            : ROCKET_VIDEO_FALLBACKS
+        );
+        setRocketResumeAfterVideo(false);
+        setShouldExitAfterVideo(false);
+        setShouldGoToRocketCompleteAfterVideo(true);
+        if (rocketOptions) {
+          setVideoOptions(rocketOptions);
+          navigate('/game-mode-video-select', { replace: true });
+          return;
+        }
+        setShouldGoToRocketCompleteAfterVideo(false);
         navigate('/game-mode-rocket-complete', { replace: true });
         return;
       }
@@ -1554,6 +1570,7 @@ const useMathGame = () => {
         setIsTimerPaused(true);
         setPausedTime(Date.now());
         setIsAnimating(false);
+        setShouldGoToRocketCompleteAfterVideo(false);
 
         const rocketOptions = generateRandomVideoOptions(
           rocketVideoList && rocketVideoList.length > 0
@@ -2027,6 +2044,7 @@ const useMathGame = () => {
       setPendingRocketPractice,
       setShouldGoToRocketIntroAfterVideo,
       setShouldGoToSurfCompleteAfterVideo,
+      setShouldGoToRocketCompleteAfterVideo,
       setVideoOptions,
       generateRandomVideoOptions,
       surfVideoList,
@@ -2525,6 +2543,8 @@ const useMathGame = () => {
     setShouldGoToRocketIntroAfterVideo,
     shouldGoToSurfCompleteAfterVideo,
     setShouldGoToSurfCompleteAfterVideo,
+    shouldGoToRocketCompleteAfterVideo,
+    setShouldGoToRocketCompleteAfterVideo,
     isRocketModeEnabled: ENABLE_ROCKET_MODE,
 
 
