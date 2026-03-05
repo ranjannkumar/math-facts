@@ -217,6 +217,8 @@ const App = () => {
           type={ctx.uiMessage.type}
           title={ctx.uiMessage.title}
           message={ctx.uiMessage.message}
+          enableAutoClose={ctx.uiMessage.type === 'error' || Boolean(ctx.uiMessage.navigateTo)}
+          autoCloseMs={5000}
           primaryLabel={
             ctx.uiMessage.primaryLabel || (ctx.uiMessage.navigateTo ? 'Back' : 'OK')
           }

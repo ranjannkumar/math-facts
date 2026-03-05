@@ -741,8 +741,8 @@ const useMathGame = () => {
         console.error('Quiz Start failed:', e.message);
         showUiMessage({
           type: 'error',
-          title: 'Quiz did not start',
-          message: 'We could not start the quiz. Please try again.',
+          title: 'Something went wrong',
+          message: 'Please try again.',
           details: e.message,
           navigateTo: '/belts',
           primaryLabel: 'Back to Belts',
@@ -889,7 +889,7 @@ const useMathGame = () => {
         if (!suppressStartError) {
           showUiMessage({
             type: 'error',
-            title: "We couldn't start this quiz right now",
+            title: "Something went wrong ",
             message: 'Please try again.',
           });
           navigate(fallbackRoute, { replace: true });
@@ -947,7 +947,7 @@ const useMathGame = () => {
         setCurrentQuestion(null);
         showUiMessage({
           type: 'error',
-          title: "We couldn't start this quiz right now",
+          title: "Something went wrong ",
           message: 'Please try again.',
         });
         navigate(fallbackRoute, { replace: true });
@@ -999,7 +999,7 @@ const useMathGame = () => {
         setCurrentQuestion(null);
         showUiMessage({
           type: 'error',
-          title: "We couldn't start this quiz right now",
+          title: "Something went wrong ",
           message: 'Please try again.',
         });
         navigate(fallbackRoute, { replace: true });
@@ -1125,8 +1125,8 @@ const useMathGame = () => {
         setIsPretestIntroVisible(false);
         showUiMessage({
           type: 'error',
-          title: 'Pretest did not start',
-          message: 'We could not start the pretest. Please try again.',
+          title: 'Something went wrong',
+          message: 'Please try again.',
           details: e.message || 'Unknown error',
           navigateTo: '/levels',
           primaryLabel: 'Back to Levels',
@@ -1212,8 +1212,8 @@ const useMathGame = () => {
         setIsInitialPrepLoading(false);
         showUiMessage({
           type: 'error',
-          title: 'Level not ready',
-          message: 'We could not prepare this level. Please try again.',
+          title: 'Something went wrong',
+          message: 'Please try again.',
           details: e.message || 'Unknown error',
           navigateTo: '/levels',
           primaryLabel: 'Back to Levels',
@@ -1261,8 +1261,8 @@ const useMathGame = () => {
           setIsInitialPrepLoading(false);
           showUiMessage({
             type: 'info',
-            title: 'Pretest required',
-            message: 'Please start the pretest from the Level screen to unlock this quiz.',
+            title: 'Something went wrong',
+            message: 'Please try again.',
             navigateTo: '/levels',
             primaryLabel: 'Go to Levels',
           });
@@ -1307,8 +1307,8 @@ const useMathGame = () => {
         console.error('Quiz Prepare failed:', e.message);
         showUiMessage({
           type: 'error',
-          title: 'Quiz not ready',
-          message: 'We could not prepare this quiz. Please try again.',
+          title: 'Something went wrong',
+          message: 'Please try again.',
           details: e.message,
           navigateTo: '/belts',
           primaryLabel: 'Back to Belts',
@@ -1816,7 +1816,7 @@ const useMathGame = () => {
     setCurrentQuestion(null);
     showUiMessage({
       type: 'error',
-      title: "We couldn't continue this quiz right now",
+      title: "Something went wrong ",
       message: 'Please try again.',
     });
     navigate(fallbackRoute, { replace: true });
@@ -2004,8 +2004,8 @@ const useMathGame = () => {
         setIsAnimating(false);
         showUiMessage({
           type: 'error',
-          title: 'Quiz interrupted',
-          message: 'Something went wrong while submitting your answer. Please try again.',
+          title: 'Something went wrong',
+          message: 'Please try again.',
           details: e.message || 'Unknown error',
           navigateTo: '/belts',
           primaryLabel: 'Back to Belts',
@@ -2339,7 +2339,7 @@ const useMathGame = () => {
         setIsAwaitingInactivityResponse(false);
         showUiMessage({
           type: 'error',
-          title: "We couldn't continue this quiz right now",
+          title: "Something went wrong",
           message: 'Please try again.',
         });
         navigate(fallbackRoute, { replace: true });
