@@ -165,7 +165,7 @@ useEffect(() => {
           <div className="relative h-4 sm:h-5 mb-1 sm:mb-2 flex flex-col justify-end">
             {isLightningMode && (
               <div className="flex justify-center items-center min-h-[2.5rem] sm:min-h-[3rem]">
-                <span className="text-4xl sm:text-5xl font-black text-yellow-400 drop-shadow-lg">
+                <span className="text-4xl sm:text-5xl font-black text-yellow-400 drop-shadow-lg inline-block scale-150" style={{ transformOrigin: 'center' }}>
                   {lightningDisplay}
                 </span>
               </div>
@@ -173,18 +173,18 @@ useEffect(() => {
           </div>
 
           {isSurfMode && surfCorrectStreak > 0 && (
-            <div className="flex justify-center items-center gap-2 mt-2 sm:mt-3 text-2xl sm:text-3xl">
+            <div className="flex justify-center items-center gap-8 mt-2 sm:mt-3 text-2xl sm:text-3xl">
               {Array.from({ length: surfCorrectStreak }).map((_, index) => (
-                <span key={`surf-emoji-${index}`} role="img" aria-label="surfboard rider">
+                <span key={`surf-emoji-${index}`} role="img" aria-label="surfboard rider" className="inline-block" style={{ transform: 'scale(2.5)', transformOrigin: 'center' }}>
                   🏄
                 </span>
               ))}
             </div>
           )}
           {isRocketMode && rocketEmojiCount > 0 && (
-            <div className="flex justify-center items-center gap-2 mt-2 sm:mt-3 text-2xl sm:text-3xl">
+            <div className="flex justify-center items-center gap-8 mt-2 sm:mt-3 text-2xl sm:text-3xl">
               {Array.from({ length: rocketEmojiCount }).map((_, index) => (
-                <span key={`rocket-emoji-${index}`} role="img" aria-label="rocket">
+                <span key={`rocket-emoji-${index}`} role="img" aria-label="rocket" className="inline-block" style={{ transform: 'scale(2.5)', transformOrigin: 'center' }}>
                   {String.fromCodePoint(0x1f680)}
                 </span>
               ))}
