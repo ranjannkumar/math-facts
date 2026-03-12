@@ -5,9 +5,10 @@ import { showShootingStars, clearShootingStars } from '../utils/mathGameLogic';
 import { MathGameContext } from '../App.jsx';
 import { useNavigate } from 'react-router-dom';
 import { quizComplete } from '../api/mathApi.js';
+import { getOperationMaxLevel, normalizeOperation } from '../config/modulesConfig.js';
 
 // Helper function to determine the correct destination after video/rating
-const calculateFinalRoute = (selectedDifficulty, isBlack, degree) => {
+const calculateFinalRoute = (selectedDifficulty, isBlack, degree, isLastLevelInOperation) => {
     
     if (selectedDifficulty === 'brown') {
         return '/black';
@@ -15,7 +16,7 @@ const calculateFinalRoute = (selectedDifficulty, isBlack, degree) => {
 
     if (isBlack) {
         if (degree === 7) {
-            return '/levels';
+            return isLastLevelInOperation ? '/operations' : '/levels';
         } 
         return '/black';
     }
@@ -39,13 +40,22 @@ const ResultsScreen = () => {
         childPin,
         setQuizRunId,
         setTempNextRoute, 
+        selectedOperation,
+        selectedTable,
+        operationsMeta,
     } = useContext(MathGameContext);
 
     // --- Quiz Info ---
     const isBlack = String(selectedDifficulty).startsWith('black');
     const degree = isBlack ? parseInt(String(selectedDifficulty).split('-')[1] || '1', 10) : null;
     const maxQuestions = isBlack ? 20 : 10;
-    const allCorrect = sessionCorrectCount === maxQuestions;  
+    const allCorrect = sessionCorrectCount === maxQuestions;
+    const op = normalizeOperation(selectedOperation);
+    const operationMaxLevel = operationsMeta?.[op]?.maxLevel || getOperationMaxLevel(op, 19);
+    const isLastLevelInOperation =
+      Number.isFinite(selectedTable) &&
+      Number.isFinite(operationMaxLevel) &&
+      selectedTable >= operationMaxLevel;
 
     // 1. Redirect if not perfect score
     useEffect(() => {
@@ -59,7 +69,7 @@ const ResultsScreen = () => {
         if (allCorrect && !leaving) {
             
             // a. Determine the final destination after the video/rating
-            const finalRoute = calculateFinalRoute(selectedDifficulty, isBlack, degree);
+            const finalRoute = calculateFinalRoute(selectedDifficulty, isBlack, degree, isLastLevelInOperation);
 
             // b. Mark completion on the backend and handle cleanup (non-critical)
             if (!completionSentRef.current && quizRunId) {
@@ -87,13 +97,13 @@ const ResultsScreen = () => {
                 clearShootingStars();
             };
         }
-    }, [allCorrect, leaving, isBlack, degree, selectedDifficulty, quizRunId, childPin, setQuizRunId, setTempNextRoute, navigate]);
+    }, [allCorrect, leaving, isBlack, degree, selectedDifficulty, isLastLevelInOperation, quizRunId, childPin, setQuizRunId, setTempNextRoute, navigate]);
 
 
     // 3. Manual navigation (Override to skip the delay)
     const handlePrimary = () => {
         // Calculate the destination immediately
-        const nextRoute = calculateFinalRoute(selectedDifficulty, isBlack, degree);
+        const nextRoute = calculateFinalRoute(selectedDifficulty, isBlack, degree, isLastLevelInOperation);
 
         if (allCorrect && !leaving) {
             setLeaving(true);
@@ -228,3 +238,6 @@ const ResultsScreen = () => {
 };
 
 export default ResultsScreen;
+
+
+

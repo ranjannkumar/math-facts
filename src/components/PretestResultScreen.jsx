@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useMemo } from 'react';
 import Confetti from 'react-confetti';
 import { useLocation } from 'react-router-dom';
 import { MathGameContext } from '../App.jsx';
+import { getOperationMaxLevel, normalizeOperation } from '../config/modulesConfig.js';
 
 const formatMs = (ms) => {
   if (!Number.isFinite(ms)) return '--:--';
@@ -14,7 +15,9 @@ const formatMs = (ms) => {
 const PretestResultScreen = () => {
   const {
     pretestResult,
+    selectedOperation,
     selectedTable,
+    operationsMeta,
     setPretestResult,
     setIsPretest,
     navigate,
@@ -38,14 +41,29 @@ const PretestResultScreen = () => {
       setPretestResult(null);
       setIsPretest(false);
       if (effectiveResult.passed === true) {
-        navigate('/levels', { replace: true });
+        const op = normalizeOperation(effectiveResult?.operation || selectedOperation);
+        const level = Number.isFinite(effectiveResult?.level) ? effectiveResult.level : selectedTable;
+        const opMaxLevel =
+          operationsMeta?.[op]?.maxLevel || getOperationMaxLevel(op, 19);
+        const isLastLevelInOperation =
+          Number.isFinite(level) && Number.isFinite(opMaxLevel) && level >= opMaxLevel;
+        navigate(isLastLevelInOperation ? '/operations' : '/levels', { replace: true });
       } else {
         navigate('/belts', { replace: true, state: { level: selectedTable } });
       }
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [effectiveResult, pretestResult, navigate, selectedTable, setPretestResult, setIsPretest]);
+  }, [
+    effectiveResult,
+    pretestResult,
+    navigate,
+    selectedOperation,
+    selectedTable,
+    operationsMeta,
+    setPretestResult,
+    setIsPretest,
+  ]);
 
   if (!effectiveResult) return null;
 

@@ -306,20 +306,38 @@ useEffect(() => {
                   >
                     0
                   </button>
-                  <button
-                    onClick={handleSubmitTyped}
-                    disabled={
-                      isAnimating ||
-                      isTimerPaused ||
-                      isAnswerSubmitted ||
-                      typedInput === '' ||
-                      typedInput === '-'
-                    }
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
-                  >
-                    Submit
-                  </button>
+                  {!isSubtractionQuestion && (
+                    <button
+                      onClick={handleSubmitTyped}
+                      disabled={
+                        isAnimating ||
+                        isTimerPaused ||
+                        isAnswerSubmitted ||
+                        typedInput === ''
+                      }
+                      className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
+                    >
+                      Submit
+                    </button>
+                  )}
                 </div>
+                {isSubtractionQuestion && (
+                  <div className="w-full max-w-sm mx-auto mt-3 flex justify-center">
+                    <button
+                      onClick={handleSubmitTyped}
+                      disabled={
+                        isAnimating ||
+                        isTimerPaused ||
+                        isAnswerSubmitted ||
+                        typedInput === '' ||
+                        typedInput === '-'
+                      }
+                      className="min-w-[140px] px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition text-center whitespace-nowrap"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
