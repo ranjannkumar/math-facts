@@ -101,7 +101,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<StartScreen />} />
         <Route path="/name" element={<NameForm />} />
-        <Route path="/operations" element={<OperationPicker />} />
+        
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/admin-settings" element={<AdminSettings />} />
         <Route path="/admin/user-stats/:pin/:name" element={<UserQuestionStats />} />
@@ -144,6 +144,7 @@ const App = () => {
           <Route path="/results" element={<ResultsScreen />} />
           <Route path="/theme" element={<ThemePicker />} />
           <Route path="/pretest" element={<PreTestScreen />} />
+          <Route path="/operations" element={<OperationPicker />} />
 
         </Route>
       </Routes>
