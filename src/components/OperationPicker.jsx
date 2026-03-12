@@ -129,7 +129,7 @@ const OperationPicker = () => {
                   {OPERATION_UI[operation]?.symbol || '?'}
                 </div>
                 <div
-                  className={`text-4xl font-black tracking-wide ${OPERATION_UI[operation]?.textClass || 'text-white'}`}
+                  className={`text-2xl font-black tracking-wide ${OPERATION_UI[operation]?.textClass || 'text-white'}`}
                   style={{ textShadow: '0 1px 0 rgba(0,0,0,0.2)' }}
                 >
                   {getOperationLabel(operation).toUpperCase()}
