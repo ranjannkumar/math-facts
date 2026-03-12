@@ -99,7 +99,6 @@ const TablePicker = () => {
   const {
     startLevelEntry,
     tableProgress,
-    childName,
     selectedTheme,
     selectedOperation,
     operationsMeta,
@@ -246,12 +245,8 @@ const TablePicker = () => {
 
       {/* <DailyStreakCounter /> */}
 
-      {/* Centered column: Welcome + Card controls */}
+      {/* Centered column: Card controls */}
       <div className="w-full max-w-5xl flex flex-col items-center justify-center min-h-[calc(100vh-4rem)]">
-        <h1 className="text-white text-3xl sm:text-4xl font-extrabold drop-shadow mb-6 text-center animate-fade-in">
-          Welcome, {childName || ''}!
-        </h1>
-
         {/* Part 7: Removed side buttons. Only the card wrapper remains. */}
         <div className="flex items-center justify-center gap-4">
           

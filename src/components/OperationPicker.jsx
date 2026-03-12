@@ -19,6 +19,7 @@ const OperationPicker = () => {
     flowMode,
     setSelectedOperation,
     refreshOperationAndProgress,
+    childName,
   } =
     useContext(MathGameContext);
 
@@ -62,7 +63,7 @@ const OperationPicker = () => {
 
   return (
     <div
-      className="min-h-screen w-full px-4 flex items-center justify-center"
+      className="relative min-h-screen w-full px-4"
       style={{
         backgroundImage: "url('/night_sky_landscape.jpg')",
         backgroundSize: 'cover',
@@ -83,8 +84,14 @@ const OperationPicker = () => {
         <FaArrowLeft size={24} />
       </button>
 
-      <div className="w-full max-w-3xl mx-auto flex items-center justify-center">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl place-items-center">
+      <h1 className="absolute left-1/2 top-[30%] z-10 -translate-x-1/2 -translate-y-full text-white text-3xl sm:text-4xl font-extrabold drop-shadow text-center animate-fade-in">
+        Welcome, {childName || ''}!
+      </h1>
+
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div
+          className={`grid grid-cols-1 ${visibleOperations.length > 1 ? 'sm:grid-cols-2' : 'sm:grid-cols-1'} gap-4 w-full max-w-xl place-items-center`}
+        >
           {visibleOperations.map((operation) => (
             <button
               key={operation}
