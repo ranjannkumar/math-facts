@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { MathGameContext } from '../App.jsx';
 import { themeConfigs } from '../utils/mathGameLogic.js';
+import { getOperationLabel, getOperationMaxLevel } from '../config/modulesConfig.js';
 // import UserInfoBadge from './ui/UserInfoBadge.jsx';
 // import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
 
-const TOTAL_LEVELS = 19; // only 12 levels as required
 const COLOR_BELTS = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
 const ALL_BELTS_FOR_DISPLAY = ['white', 'yellow', 'green', 'blue', 'red', 'brown', 'black'];
 
@@ -96,24 +96,38 @@ const getFactVideoPath = (level) => {
 /* ----------------- Component ----------------- */
 const TablePicker = () => {
   const navigate = useNavigate();
-  const { startLevelEntry, tableProgress, childName, selectedTheme,showDailyStreakAnimation,  playFactVideoAfterStreak,
-  setPlayFactVideoAfterStreak,setHideStatsUI, isInitialPrepLoading
-} = useContext(MathGameContext);
+  const {
+    startLevelEntry,
+    tableProgress,
+    childName,
+    selectedTheme,
+    selectedOperation,
+    operationsMeta,
+    showDailyStreakAnimation,
+    playFactVideoAfterStreak,
+    setPlayFactVideoAfterStreak,
+    setHideStatsUI,
+    isInitialPrepLoading,
+  } = useContext(MathGameContext);
 
   // Resolve theme
   const themeKey = resolveThemeKey(selectedTheme);
   const currentTheme = themeConfigs[themeKey] || {};
 
+  const totalLevels =
+    operationsMeta?.[selectedOperation]?.maxLevel || getOperationMaxLevel(selectedOperation, 19);
+  const operationLabel = getOperationLabel(selectedOperation);
+
 // 1. Generate a Memoized list of unlocked level NUMBERS (1, 2, 3...)
   const unlockedLevelsList = useMemo(() => {
     const list = [];
-    for (let lvl = 1; lvl <= TOTAL_LEVELS; lvl++) {
+    for (let lvl = 1; lvl <= totalLevels; lvl++) {
       if (lvl === 1 || isPreviousLevelCompleted(lvl, tableProgress)) {
         list.push(lvl);
       }
     }
     return list;
-  }, [tableProgress]);
+  }, [tableProgress, totalLevels]);
 
   // Part 7: Always focus on the highest unlocked level.
   const maxUnlockedIndex = unlockedLevelsList.length > 0 ? unlockedLevelsList.length - 1 : 0;
@@ -222,8 +236,8 @@ const TablePicker = () => {
           top: 'max(env(safe-area-inset-top), 0.5rem)',
           left: 'max(env(safe-area-inset-left), 0.5rem)',
         }}
-        onClick={() => navigate('/theme')}
-        aria-label="Back to theme"
+        onClick={() => navigate('/operations')}
+        aria-label="Back to operations"
       >
         <FaArrowLeft size={24} />
       </button>

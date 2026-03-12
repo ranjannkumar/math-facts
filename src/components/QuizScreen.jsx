@@ -30,6 +30,7 @@ const QuizScreen = () => {
   const lastClickRef = useRef({ qid: null, t: 0 });
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [typedInput, setTypedInput] = useState('');
+  const isSubtractionQuestion = currentQuestion?.operation === 'sub';
 
   const formatMs = (ms) => {
     if (!Number.isFinite(ms)) return '--:--';
@@ -89,7 +90,20 @@ const QuizScreen = () => {
 
   const handleDigitPress = (digit) => {
     if (isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion || isAwaitingInactivityResponse) return;
-    setTypedInput((prev) => (prev.length < 3 ? prev + String(digit) : prev));
+    setTypedInput((prev) => {
+      const raw = String(digit);
+      if (raw === '-') {
+        if (!isSubtractionQuestion) return prev;
+        if (prev === '') return '-';
+        if (prev.startsWith('-')) return prev.slice(1);
+        return `-${prev}`;
+      }
+
+      const digitCount = prev.startsWith('-') ? prev.length - 1 : prev.length;
+      if (digitCount >= 3) return prev;
+      if (prev === '-') return `-${raw}`;
+      return `${prev}${raw}`;
+    });
   };
 
   const handleClear = () => {
@@ -99,6 +113,7 @@ const QuizScreen = () => {
 
   const handleSubmitTyped = () => {
     if (!typedInput || isAnswerSubmitted || isAnimating || showResult || isTimerPaused || !currentQuestion || isAwaitingInactivityResponse) return;
+    if (typedInput === '-') return;
     const numericAnswer = Number(typedInput);
     if (!Number.isFinite(numericAnswer)) return;
     handleAnswerClick(numericAnswer);
@@ -252,7 +267,7 @@ const QuizScreen = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
+                <div className={`grid gap-3 w-full max-w-sm ${isSubtractionQuestion ? 'grid-cols-4' : 'grid-cols-3'}`}>
                   {[1,2,3,4,5,6,7,8,9].map((n) => (
                     <button
                       key={n}
@@ -270,6 +285,15 @@ const QuizScreen = () => {
                   >
                     Clear
                   </button>
+                  {isSubtractionQuestion && (
+                    <button
+                      onClick={() => handleDigitPress('-')}
+                      disabled={isAnimating || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
+                      className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
+                    >
+                      -
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDigitPress(0)}
                     disabled={isAnimating || showResult || isTimerPaused || isAnswerSubmitted || isAwaitingInactivityResponse}
@@ -285,7 +309,8 @@ const QuizScreen = () => {
                       isTimerPaused ||
                       isAnswerSubmitted ||
                       isAwaitingInactivityResponse ||
-                      typedInput === ''
+                      typedInput === '' ||
+                      typedInput === '-'
                     }
                     className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
                   >

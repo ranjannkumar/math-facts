@@ -114,6 +114,10 @@ export const userGetProgress = async (pin) => {
   return callApi('/user/progress', 'GET', null, pin);
 };
 
+export const userGetOperations = async (pin) => {
+  return callApi('/user/operations', 'GET', null, pin);
+};
+
 export const submitVideoRating = async (rating, level, beltOrDegree, pin) => {
   return callApi('/user/rate-video', 'POST', { rating, level, beltOrDegree }, pin);
 };
@@ -165,6 +169,24 @@ export function mapQuestionToFrontend(backendQuestion) {
       backendQuestion?.source === 'rocket' ||
       backendQuestion?.source === 'rocket-practice');
 
+  const operation =
+    typeof backendQuestion?.operation === 'string' ? backendQuestion.operation : 'add';
+
+  const computeByOperation = (left, right, op) => {
+    if (!Number.isFinite(left) || !Number.isFinite(right)) return undefined;
+    if (op === 'sub') return left - right;
+    if (op === 'mul') return left * right;
+    if (op === 'div') return right === 0 ? undefined : left / right;
+    return left + right;
+  };
+
+  const symbolByOperation = (op) => {
+    if (op === 'sub') return '-';
+    if (op === 'mul') return 'x';
+    if (op === 'div') return '/';
+    return '+';
+  };
+
   // 1) Build display string
   const a =
     backendQuestion?.params?.a ??
@@ -178,12 +200,11 @@ export function mapQuestionToFrontend(backendQuestion) {
 
   let questionString = backendQuestion.question;
   if (!questionString && Number.isFinite(a) && Number.isFinite(b)) {
-    // default to addition display — update if you add other ops here
-    questionString = `${a} + ${b}`;
+    questionString = `${a} ${symbolByOperation(operation)} ${b}`;
   }
 
   // 2) Correct answer
-  const computed = Number.isFinite(a) && Number.isFinite(b) ? a + b : undefined;
+  const computed = computeByOperation(a, b, operation);
   const rawCorrect =
     typeof backendQuestion.correctAnswer === 'number'
       ? backendQuestion.correctAnswer
@@ -249,6 +270,7 @@ export function mapQuestionToFrontend(backendQuestion) {
   return {
     id: backendQuestion._id || backendQuestion.id,
     question: questionString || String(backendQuestion.question || ''),
+    operation,
     correctAnswer: correct,
     answers,
     answerLabels: isRocketQuestion ? textChoices : null,

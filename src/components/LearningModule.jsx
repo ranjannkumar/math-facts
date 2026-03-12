@@ -193,6 +193,7 @@ const LearningModule = () => {
   const isPreQuizFlow = !isIntervention && preQuizPracticeItems?.length > 0;
   const isRocketInterventionPractice =
     isIntervention && isGameMode && isGameModePractice && gameModeType === 'rocket';
+  const isSubtractionQuestion = practiceQ?.operation === 'sub';
 
   const [isClosing, setIsClosing] = useState(false);
 
@@ -342,7 +343,20 @@ useEffect(() => {
     if (isSubmitting) return;
     setPracticeMsg('');
     setPracticeStatus(null);
-    setTypedInput((prev) => (prev.length < 4 ? prev + String(digit) : prev));
+    setTypedInput((prev) => {
+      const raw = String(digit);
+      if (raw === '-') {
+        if (!isSubtractionQuestion) return prev;
+        if (prev === '') return '-';
+        if (prev.startsWith('-')) return prev.slice(1);
+        return `-${prev}`;
+      }
+
+      const digitCount = prev.startsWith('-') ? prev.length - 1 : prev.length;
+      if (digitCount >= 4) return prev;
+      if (prev === '-') return `-${raw}`;
+      return `${prev}${raw}`;
+    });
   };
 
   const handleClear = () => {
@@ -354,6 +368,7 @@ useEffect(() => {
 
   const handleSubmitTypedAnswer = async () => {
     if (!practiceQ || typedInput.trim() === '' || isSubmitting) return;
+    if (typedInput === '-') return;
 
     const answerNumber = Number(typedInput);
     if (!Number.isFinite(answerNumber)) {
@@ -462,6 +477,7 @@ useEffect(() => {
           if (selectedDifficulty && selectedTable != null) {
             localStorage.setItem('game-mode-belt', selectedDifficulty);
             localStorage.setItem('game-mode-table', String(selectedTable));
+            localStorage.setItem('game-mode-operation', selectedOperation);
           } else {
             console.log('FAIL DEBUG missing selectedDifficulty/table at fail moment:', {
               selectedDifficulty,
@@ -706,7 +722,9 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 w-full max-w-sm mx-auto">
+            <div
+              className={`grid gap-3 w-full max-w-sm mx-auto ${isSubtractionQuestion ? 'grid-cols-4' : 'grid-cols-3'}`}
+            >
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
                 <button
                   key={n}
@@ -724,6 +742,15 @@ useEffect(() => {
               >
                 Clear
               </button>
+              {isSubtractionQuestion && (
+                <button
+                  onClick={() => handleDigitPress('-')}
+                  disabled={isSubmitting}
+                  className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
+                >
+                  -
+                </button>
+              )}
               <button
                 onClick={() => handleDigitPress(0)}
                 disabled={isSubmitting}
@@ -733,7 +760,7 @@ useEffect(() => {
               </button>
               <button
                 onClick={handleSubmitTypedAnswer}
-                disabled={isSubmitting || typedInput === ''}
+                disabled={isSubmitting || typedInput === '' || typedInput === '-'}
                 className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
               >
                 Submit

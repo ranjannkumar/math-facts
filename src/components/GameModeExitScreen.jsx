@@ -43,6 +43,7 @@ const GameModeExitScreen = () => {
       // Clean up stored game-mode info
       localStorage.removeItem('game-mode-belt');
       localStorage.removeItem('game-mode-table');
+      localStorage.removeItem('game-mode-operation');
 
       if (hardResetQuizState) {
         hardResetQuizState(); 

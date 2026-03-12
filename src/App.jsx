@@ -8,6 +8,7 @@ import SiblingCheckModal from './components/SiblingCheckModal.jsx';
 const StartScreen = lazy(() => import('./components/StartScreen.jsx'));
 const NameForm = lazy(() => import('./components/NameForm.jsx'));
 const ThemePicker = lazy(() => import('./components/ThemePicker.jsx'));
+const OperationPicker = lazy(() => import('./components/OperationPicker.jsx'));
 const TablePicker = lazy(() => import('./components/TablePicker.jsx'));
 const DifficultyPicker = lazy(() => import('./components/DifficultyPicker.jsx'));
 const BlackBeltPicker = lazy(() => import('./components/BlackBeltPicker.jsx')); 
@@ -100,6 +101,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<StartScreen />} />
         <Route path="/name" element={<NameForm />} />
+        <Route path="/operations" element={<OperationPicker />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/admin-settings" element={<AdminSettings />} />
         <Route path="/admin/user-stats/:pin/:name" element={<UserQuestionStats />} />

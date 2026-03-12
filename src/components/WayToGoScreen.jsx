@@ -7,6 +7,7 @@ const WayToGoScreen = () => {
     const navigate = useNavigate();
     const {
         selectedDifficulty,
+        selectedOperation,
         selectedTable,
         sessionCorrectCount, 
         correctCount, 
@@ -67,6 +68,7 @@ const WayToGoScreen = () => {
       }
       localStorage.setItem('game-mode-belt', selectedDifficulty);
       localStorage.setItem('game-mode-table', String(selectedTable));
+      localStorage.setItem('game-mode-operation', selectedOperation || 'add');
 
     //   startOrResumeGameModeRun({ navigateToGameMode: false });
       navigate('/game-mode-video', { replace: true });
@@ -90,6 +92,7 @@ const WayToGoScreen = () => {
   countdown,
   navigate,
   selectedDifficulty,
+  selectedOperation,
   selectedTable,
   startQuizWithDifficulty,
   showWayToGoAfterFailure,

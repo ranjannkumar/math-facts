@@ -13,10 +13,19 @@ import {
   quizPrepare,
   quizStart,
   quizSubmitAnswer,
+  userGetOperations,
   userGetProgress,
   userResetProgress,
   userUpdateTheme,
 } from '../api/mathApi.js';
+import {
+  DEFAULT_FLOW_MODE,
+  DEFAULT_OPERATION,
+  MODULE_META,
+  MODULE_SEQUENCE,
+  getDefaultEnabledOperations,
+  normalizeOperation,
+} from '../config/modulesConfig.js';
 
 // Auto-import all game mode videos and thumbnails from public/game-videos
 const videoModules = import.meta.glob('/public/game-videos/*.mp4', { as: 'url' });
@@ -61,6 +70,31 @@ const LIGHTNING_FAST_MS_STORAGE_KEY = 'math-lightning-fast-ms';
 const readStoredNumber = (key, fallback) => {
   const stored = Number.parseInt(localStorage.getItem(key), 10);
   return Number.isFinite(stored) ? stored : fallback;
+};
+
+const hasFlatLevelKeys = (obj) =>
+  !!obj && typeof obj === 'object' && Object.keys(obj).some((key) => /^L\d+$/i.test(key));
+
+const normalizeProgressTree = (payload, fallbackOperation = DEFAULT_OPERATION) => {
+  if (!payload || typeof payload !== 'object') return {};
+  const source = payload?.progress && typeof payload.progress === 'object' ? payload.progress : payload;
+
+  if (hasFlatLevelKeys(source)) {
+    return { [normalizeOperation(fallbackOperation)]: source };
+  }
+
+  const tree = {};
+  MODULE_SEQUENCE.forEach((op) => {
+    if (source?.[op] && typeof source[op] === 'object') {
+      tree[op] = source[op];
+    }
+  });
+  return tree;
+};
+
+const getOperationProgressSlice = (progressTree, operation) => {
+  const op = normalizeOperation(operation);
+  return progressTree?.[op] && typeof progressTree[op] === 'object' ? progressTree[op] : {};
 };
 
 const useMathGame = () => {
@@ -181,13 +215,81 @@ const useMathGame = () => {
     [quizStartTime, isTimerPaused, updateDailyTotalMs]
   );
 
+  const applyOperationMeta = useCallback((payload) => {
+    const operations =
+      payload?.operations && typeof payload.operations === 'object'
+        ? payload.operations
+        : payload && typeof payload === 'object'
+          ? payload
+          : null;
+    if (!operations || typeof operations !== 'object') return;
+
+    setOperationsMeta((prev) => {
+      const next = { ...(prev || {}) };
+      MODULE_SEQUENCE.forEach((op) => {
+        const fromApi = operations?.[op] || {};
+        next[op] = {
+          maxLevel: Number.isFinite(fromApi?.maxLevel)
+            ? fromApi.maxLevel
+            : next?.[op]?.maxLevel || MODULE_META[op]?.maxLevel || 19,
+          enabled:
+            typeof fromApi?.enabled === 'boolean'
+              ? fromApi.enabled
+              : next?.[op]?.enabled ?? MODULE_META[op]?.enabled ?? false,
+          unlocked:
+            typeof fromApi?.unlocked === 'boolean'
+              ? fromApi.unlocked
+              : next?.[op]?.unlocked ?? op === DEFAULT_OPERATION,
+          prerequisite:
+            fromApi?.prerequisite !== undefined
+              ? fromApi.prerequisite
+              : next?.[op]?.prerequisite ?? (op === DEFAULT_OPERATION ? null : DEFAULT_OPERATION),
+        };
+      });
+      return next;
+    });
+  }, []);
+
   // Identity and Progress
   const [selectedTheme, setSelectedTheme] = useState(null);
   const [userThemeKey, setUserThemeKey] = useState(null);
   const [childName, setChildName] = useState(() => localStorage.getItem('math-child-name') || '');
   const [childAge, setChildAge] = useState(() => localStorage.getItem('math-child-age') || '');
   const [childPin, setChildPin] = useState(() => localStorage.getItem('math-child-pin') || '');
+  const [selectedOperation, setSelectedOperation] = useState(() =>
+    normalizeOperation(localStorage.getItem('math-selected-operation') || DEFAULT_OPERATION)
+  );
   const [tableProgress, setTableProgress] = useState({});
+  const [progressByOperation, setProgressByOperation] = useState({});
+  const [operationsMeta, setOperationsMeta] = useState(() => {
+    const enabled = getDefaultEnabledOperations();
+    return MODULE_SEQUENCE.reduce((acc, op) => {
+      acc[op] = {
+        maxLevel: MODULE_META[op]?.maxLevel || 19,
+        enabled: MODULE_META[op]?.enabled ?? false,
+        unlocked: op === DEFAULT_OPERATION,
+        prerequisite: op === DEFAULT_OPERATION ? null : DEFAULT_OPERATION,
+      };
+      if (enabled.includes(op)) {
+        acc[op].enabled = true;
+      }
+      return acc;
+    }, {});
+  });
+  const [flowMode] = useState(DEFAULT_FLOW_MODE);
+
+  const applyProgressPayload = useCallback(
+    (payload, operation = selectedOperation) => {
+      const normalizedTree = normalizeProgressTree(payload, operation);
+      if (!normalizedTree || typeof normalizedTree !== 'object') return {};
+
+      setProgressByOperation(normalizedTree);
+      const scopedProgress = getOperationProgressSlice(normalizedTree, operation);
+      setTableProgress(scopedProgress);
+      return scopedProgress;
+    },
+    [selectedOperation]
+  );
 
   const [currentStreak, setCurrentStreak] = useState(0);
   const [showDailyStreakAnimation, setShowDailyStreakAnimation] = useState(false);
@@ -229,7 +331,6 @@ const useMathGame = () => {
   const [pretestTimeLimitMs, setPretestTimeLimitMs] = useState(DEFAULT_PRETEST_TIME_LIMIT_MS);
   const [pretestRemainingMs, setPretestRemainingMs] = useState(null);
   const [pretestResult, setPretestResult] = useState(null);
-  const [selectedOperation, setSelectedOperation] = useState('add');
   const [pretestTimerRunning, setPretestTimerRunning] = useState(false);
   const [isPretestIntroVisible, setIsPretestIntroVisible] = useState(false);
 
@@ -459,6 +560,12 @@ const useMathGame = () => {
     setStreakPosition(quizProgress);
   }, [quizProgress]);
 
+  useEffect(() => {
+    localStorage.setItem('math-selected-operation', selectedOperation);
+    const scopedProgress = getOperationProgressSlice(progressByOperation, selectedOperation);
+    setTableProgress(scopedProgress);
+  }, [selectedOperation, progressByOperation]);
+
   // --- FINAL step of login (unchanged) ---
   const processLoginFinal = useCallback(
     (loginResponse) => {
@@ -477,7 +584,16 @@ const useMathGame = () => {
       const progressResponse = loginResponse.user.progress || {};
       const stats = loginResponse.user.dailyStats || {};
 
-      setTableProgress(progressResponse);
+      applyProgressPayload(progressResponse, selectedOperation);
+      applyOperationMeta(loginResponse?.operationsMeta || loginResponse?.operations || {});
+
+      const unlockedOperations = Object.entries(loginResponse?.operationsMeta || loginResponse?.operations || {})
+        .filter(([, meta]) => meta?.unlocked !== false)
+        .map(([op]) => normalizeOperation(op));
+      if (unlockedOperations.length > 0 && !unlockedOperations.includes(selectedOperation)) {
+        setSelectedOperation(unlockedOperations[0]);
+      }
+
       applyDailyStatsTotalMs(stats?.totalActiveMs || 0, { force: true });
       setCorrectCount(stats?.correctCount || 0);
       setGrandTotalCorrect(stats?.grandTotal || 0);
@@ -491,12 +607,12 @@ const useMathGame = () => {
       }
 
       if (themeKeyFromBackend && themeKeyFromBackend.length > 0 && themeKeyFromBackend !== 'null') {
-        navigate('/levels');
+        navigate('/operations');
       } else {
         navigate('/theme');
       }
     },
-    [navigate, applyDailyStatsTotalMs]
+    [navigate, applyDailyStatsTotalMs, applyProgressPayload, applyOperationMeta, selectedOperation]
   );
 
   const handleDailyStreakNext = useCallback(() => {
@@ -604,6 +720,12 @@ const useMathGame = () => {
         setIsLoginLoading(true);
 
         const loginResponse = await authLogin(pinValue, nameValue.trim());
+        try {
+          const operationsPayload = await userGetOperations(pinValue);
+          loginResponse.operationsMeta = operationsPayload?.operations || {};
+        } catch (opsErr) {
+          console.warn('Failed to fetch operation availability:', opsErr?.message || opsErr);
+        }
 
         setLoginPendingName(loginResponse.user.name);
         setLoginPendingResponse(loginResponse);
@@ -625,14 +747,15 @@ const useMathGame = () => {
         const progressResponse = loginResponse.user.progress || {};
         const stats = loginResponse.user.dailyStats || {};
 
-        setTableProgress(progressResponse);
+        applyProgressPayload(progressResponse, selectedOperation);
+        applyOperationMeta(loginResponse?.operationsMeta || loginResponse?.operations || {});
         applyDailyStatsTotalMs(stats?.totalActiveMs || 0, { force: true });
         setCorrectCount(stats?.correctCount || 0);
         setGrandTotalCorrect(stats?.grandTotal || 0);
         setCurrentStreak(loginResponse.user.currentStreak || 0);
 
         if (themeKeyFromBackend && themeKeyFromBackend.length > 0 && themeKeyFromBackend !== 'null') {
-          navigate('/levels');
+          navigate('/operations');
         } else {
           navigate('/theme');
         }
@@ -644,7 +767,7 @@ const useMathGame = () => {
         throw new Error(e.message || 'Login failed.');
       }
     },
-    [navigate, applyDailyStatsTotalMs]
+    [navigate, applyDailyStatsTotalMs, applyProgressPayload, applyOperationMeta, selectedOperation]
   );
 
   const handleDemoLogin = useCallback(() => {
@@ -661,6 +784,29 @@ const useMathGame = () => {
     });
   }, [handlePinSubmit, showUiMessage]);
 
+  const refreshOperationAndProgress = useCallback(async () => {
+    if (!childPin) return;
+
+    try {
+      const [operationsPayload, latestProgress] = await Promise.all([
+        userGetOperations(childPin),
+        userGetProgress(childPin),
+      ]);
+
+      applyOperationMeta(operationsPayload || {});
+      applyProgressPayload(latestProgress || {}, selectedOperation);
+
+      const unlockedOperations = Object.entries(operationsPayload?.operations || {})
+        .filter(([, meta]) => meta?.unlocked !== false && meta?.enabled !== false)
+        .map(([op]) => normalizeOperation(op));
+      if (unlockedOperations.length > 0 && !unlockedOperations.includes(selectedOperation)) {
+        setSelectedOperation(unlockedOperations[0]);
+      }
+    } catch (e) {
+      console.warn('Failed to refresh operations/progress:', e?.message || e);
+    }
+  }, [childPin, applyOperationMeta, applyProgressPayload, selectedOperation]);
+
   // Persist theme
   const updateThemeAndNavigate = useCallback(
     async (themeObject) => {
@@ -671,11 +817,11 @@ const useMathGame = () => {
         await userUpdateTheme(themeKey, childPin);
         setUserThemeKey(themeKey);
         setSelectedTheme(themeObject);
-        navigate('/levels');
+        navigate('/operations');
       } catch (e) {
         console.error('Failed to save theme:', e.message);
         setSelectedTheme(themeObject);
-        navigate('/levels');
+        navigate('/operations');
       }
     },
     [childPin, navigate]
@@ -764,7 +910,7 @@ const useMathGame = () => {
     async ({
       level,
       beltOrDegree,
-      operation = 'add',
+      operation = selectedOperation,
       navigateToGameMode = false,
       navigateToIntro = false,
       gameModeType: requestedGameModeType = 'lightning',
@@ -786,6 +932,9 @@ const useMathGame = () => {
         beltOrDegree != null
           ? beltOrDegree
           : selectedDifficulty || localStorage.getItem('game-mode-belt') || null;
+      const reqOperation = normalizeOperation(
+        operation || localStorage.getItem('game-mode-operation') || selectedOperation
+      );
 
       if (!childPin || reqLevel == null || !reqBelt) {
         console.warn('[GameMode] Missing childPin/level/beltOrDegree – cannot start/resume.', {
@@ -818,6 +967,8 @@ const useMathGame = () => {
       // Persist settings so resume works after reload
       localStorage.setItem('game-mode-belt', reqBelt);
       localStorage.setItem('game-mode-table', String(reqLevel));
+      localStorage.setItem('game-mode-operation', reqOperation);
+      setSelectedOperation(reqOperation);
 
       try {
         const targetCorrect = null;
@@ -825,7 +976,7 @@ const useMathGame = () => {
           reqLevel,
           reqBelt,
           childPin,
-          operation,
+          reqOperation,
           true,
           targetCorrect,
           requestedGameModeType
@@ -901,6 +1052,7 @@ const useMathGame = () => {
       childPin,
       selectedTable,
       selectedDifficulty,
+      selectedOperation,
       navigate,
       applySurfState,
       applyRocketState,
@@ -1164,23 +1316,25 @@ const useMathGame = () => {
 
       try {
         const levelKey = `L${level}`;
+        const op = normalizeOperation(operation || selectedOperation);
         let progressSnapshot = tableProgress;
 
         try {
           const latestProgress = await userGetProgress(childPin);
           if (latestProgress && typeof latestProgress === 'object') {
-            const normalizedProgress =
-              latestProgress?.progress && typeof latestProgress.progress === 'object'
-                ? latestProgress.progress
-                : latestProgress;
-            setTableProgress(normalizedProgress);
-            progressSnapshot = normalizedProgress;
+            progressSnapshot = applyProgressPayload(latestProgress, op);
           }
         } catch (err) {
           console.warn('Could not refresh progress before pretest check:', err?.message || err);
         }
 
-        const pretestStatus = progressSnapshot?.[levelKey]?.pretest?.[operation];
+        const pretestNode = progressSnapshot?.[levelKey]?.pretest;
+        const pretestStatus =
+          pretestNode && typeof pretestNode === 'object' && !Array.isArray(pretestNode)
+            ? pretestNode?.[op] && typeof pretestNode?.[op] === 'object'
+              ? pretestNode[op]
+              : pretestNode
+            : null;
         const pretestAlreadyTaken = pretestStatus?.taken === true;
         const levelCompleted = !!progressSnapshot?.[levelKey]?.completed;
 
@@ -1194,10 +1348,10 @@ const useMathGame = () => {
           return;
         }
 
-        const prep = await quizPrepare(level, 'white', childPin, operation);
+        const prep = await quizPrepare(level, 'white', childPin, op);
 
         if (prep?.pretestMode || prep?.gameModeType === 'pretest') {
-          await startPretestRun({ prep, level, operation });
+          await startPretestRun({ prep, level, operation: op });
           return;
         }
 
@@ -1230,8 +1384,7 @@ const useMathGame = () => {
       startPretestRun,
       syncConfigFromStorage,
       tableProgress,
-      setTableProgress,
-      userGetProgress,
+      applyProgressPayload,
       showUiMessage,
     ]
   );
@@ -1447,7 +1600,7 @@ const useMathGame = () => {
         if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
         if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
       }
-      if (out?.updatedProgress) setTableProgress(out.updatedProgress);
+      if (out?.updatedProgress) applyProgressPayload(out.updatedProgress);
 
       const surfCompleted = !!out?.completed && (out?.beltAwarded || out?.passed);
       if (surfCompleted) {
@@ -1538,7 +1691,7 @@ const useMathGame = () => {
         if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
         if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
       }
-      if (out?.updatedProgress) setTableProgress(out.updatedProgress);
+      if (out?.updatedProgress) applyProgressPayload(out.updatedProgress);
 
       const rocketCompleted =
         !!out?.completed && (out?.beltAwarded || out?.passed || out?.levelAwarded);
@@ -1658,7 +1811,7 @@ const useMathGame = () => {
     // If backend completed the run, exit after optional final milestone video
     if (out?.completed) {
       if (out?.updatedProgress) {
-        setTableProgress(out.updatedProgress);
+        applyProgressPayload(out.updatedProgress);
       }
 
       if (out?.dailyStats) {
@@ -1926,7 +2079,7 @@ const useMathGame = () => {
             if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
             if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
           }
-          if (out.updatedProgress) setTableProgress(out.updatedProgress);
+          if (out.updatedProgress) applyProgressPayload(out.updatedProgress);
 
           const isBlackDegree7 = selectedDifficulty && String(selectedDifficulty).startsWith('black-7');
 
@@ -1962,6 +2115,7 @@ const useMathGame = () => {
             if (!isBlackDegree7 && selectedDifficulty && selectedTable != null) {
               localStorage.setItem('game-mode-belt', selectedDifficulty);
               localStorage.setItem('game-mode-table', String(selectedTable));
+              localStorage.setItem('game-mode-operation', selectedOperation);
             }
 
             setIsAnimating(false);
@@ -2055,6 +2209,7 @@ const useMathGame = () => {
       stopPretestTimer,
       pretestTimeLimitMs,
       selectedOperation,
+      applyProgressPayload,
       showUiMessage,
       getRecoveryRoute,
       logClientError,
@@ -2440,6 +2595,8 @@ const useMathGame = () => {
     setChildName('');
     setChildAge('');
     setTableProgress({});
+    setProgressByOperation({});
+    setSelectedOperation(DEFAULT_OPERATION);
     setShowResetModal(false);
     navigate('/', { replace: true });
   }, [navigate, hardResetQuizState, childPin]);
@@ -2647,6 +2804,10 @@ const useMathGame = () => {
     // Progression Data
     tableProgress,
     setTableProgress,
+    progressByOperation,
+    operationsMeta,
+    flowMode,
+    refreshOperationAndProgress,
 
     // Pre-test exports
     preTestSection,
