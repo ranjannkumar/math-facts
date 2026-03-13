@@ -18,26 +18,17 @@ const formatTime = (ms) => {
   return `${seconds}s`;
 };
 
-const getCurrentProgress = (progress) => {
-  if (!progress) return { level: 'N/A', belt: 'N/A' };
+const OPERATION_ORDER = ['add', 'sub', 'mul', 'div'];
 
-  const levels = Object.keys(progress)
-    .filter(k => k.startsWith('L'))
-    .map(k => ({ key: k, level: parseInt(k.substring(1), 10), data: progress[k] }))
-    .sort((a, b) => b.level - a.level);
-
-  if (levels.length === 0) return { level: 'N/A', belt: 'N/A' };
-
-  const currentLevelInfo = levels.find(l => l.data.unlocked) || levels[0];
-  const levelData = currentLevelInfo.data;
-  const levelNumber = currentLevelInfo.level;
-
+const getBeltLabel = (levelData = {}) => {
   const beltsOrder = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
   let currentBelt = 'White';
 
   if (levelData.black?.unlocked) {
-    const completedDegrees = levelData.black.completedDegrees || [];
-    const currentDegree = completedDegrees.length + 1;
+    const completedDegrees = Array.isArray(levelData.black?.completedDegrees)
+      ? levelData.black.completedDegrees
+      : [];
+    const currentDegree = Math.min(completedDegrees.length + 1, 7);
     currentBelt = `Black Degree ${currentDegree}`;
   } else {
     for (const belt of beltsOrder) {
@@ -48,10 +39,62 @@ const getCurrentProgress = (progress) => {
   }
 
   if (levelData.completed && !levelData.black?.unlocked) {
-    currentBelt = "Level Mastered";
+    return 'Level Mastered';
+  }
+  return currentBelt;
+};
+
+const parseLevelsFromNode = (node = {}) =>
+  Object.keys(node)
+    .filter((k) => k.startsWith('L'))
+    .map((k) => ({ key: k, level: parseInt(k.substring(1), 10), data: node[k] }))
+    .filter((x) => Number.isFinite(x.level))
+    .sort((a, b) => a.level - b.level);
+
+const pickCurrentLevelFromLevels = (levelsAsc = []) => {
+  if (!levelsAsc.length) return null;
+
+  const unlockedLevels = levelsAsc.filter((l) => !!l.data?.unlocked);
+  const highestUnlockedIncomplete = [...unlockedLevels]
+    .reverse()
+    .find((l) => !l.data?.completed);
+
+  return highestUnlockedIncomplete || unlockedLevels[unlockedLevels.length - 1] || levelsAsc[0];
+};
+
+const getCurrentProgress = (progress) => {
+  if (!progress) return { level: 'N/A', belt: 'N/A' };
+
+  // Backward-compatible: old flat format { L1, L2, ... }
+  const flatLevels = parseLevelsFromNode(progress);
+  if (flatLevels.length > 0) {
+    const currentLevelInfo = pickCurrentLevelFromLevels(flatLevels);
+    if (!currentLevelInfo) return { level: 'N/A', belt: 'N/A' };
+    return {
+      level: `L${currentLevelInfo.level}`,
+      belt: getBeltLabel(currentLevelInfo.data),
+    };
   }
 
-  return { level: `L${levelNumber}`, belt: currentBelt };
+  // New format: operation-scoped { add: {L1...}, sub: {L1...}, ... }
+  const opSnapshots = OPERATION_ORDER.map((operation) => {
+    const levels = parseLevelsFromNode(progress?.[operation] || {});
+    if (!levels.length) return null;
+    const current = pickCurrentLevelFromLevels(levels);
+    if (!current || !current.data?.unlocked) return null;
+    return { operation, current };
+  }).filter(Boolean);
+
+  if (!opSnapshots.length) return { level: 'N/A', belt: 'N/A' };
+
+  const firstIncompleteOp = opSnapshots.find((entry) => !entry.current.data?.completed);
+  const active = firstIncompleteOp || opSnapshots[opSnapshots.length - 1];
+  const opLabel = active.operation.toUpperCase();
+
+  return {
+    level: `${opLabel} L${active.current.level}`,
+    belt: getBeltLabel(active.current.data),
+  };
 };
 
 const AdminDashboard = () => {
