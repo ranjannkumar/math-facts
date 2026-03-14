@@ -115,7 +115,13 @@ const TablePicker = () => {
 
   const totalLevels =
     operationsMeta?.[selectedOperation]?.maxLevel || getOperationMaxLevel(selectedOperation, 19);
-  const operationLabel = getOperationLabel(selectedOperation);
+  const operationShortLabelMap = {
+    add: 'Add',
+    sub: 'Sub',
+    mul: 'Mul',
+    div: 'Div',
+  };
+  const operationShortLabel = operationShortLabelMap[selectedOperation] || getOperationLabel(selectedOperation);
 
 // 1. Generate a Memoized list of unlocked level NUMBERS (1, 2, 3...)
   const unlockedLevelsList = useMemo(() => {
@@ -275,7 +281,9 @@ const TablePicker = () => {
                 <div className="text-3xl font-extrabold drop-shadow-sm text-center">{nameForLevel}</div>
 
                 {/* Level line */}
-                <div className="text-lg font-semibold mt-1 text-center opacity-95">Level {levelNumber}</div>
+                <div className="text-lg font-semibold mt-1 text-center opacity-95">
+                  {operationShortLabel} Level {levelNumber}
+                </div>
 
                 {/* Stars */}
                 <div className="text-2xl mt-2 text-center">{starDisplay}</div>
