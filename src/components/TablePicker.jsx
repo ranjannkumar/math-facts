@@ -116,10 +116,10 @@ const TablePicker = () => {
   const totalLevels =
     operationsMeta?.[selectedOperation]?.maxLevel || getOperationMaxLevel(selectedOperation, 19);
   const operationShortLabelMap = {
-    add: 'Add',
-    sub: 'Sub',
-    mul: 'Mul',
-    div: 'Div',
+    add: 'Addition',
+    sub: 'Subtraction',
+    mul: 'Multiplication',
+    div: 'Division',
   };
   const operationShortLabel = operationShortLabelMap[selectedOperation] || getOperationLabel(selectedOperation);
 
