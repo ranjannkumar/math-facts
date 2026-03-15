@@ -1574,8 +1574,8 @@ const useMathGame = () => {
             ? { question: reverseQuestion, options: reverseOptions }
             : null
         );
-        setPendingRocketPractice(true);
-        navigate('/game-mode-rocket-video/lose', { replace: true });
+        setPendingRocketPractice(false);
+        navigate('/learning', { replace: true });
         return;
       }
       setRocketPracticeFact(null);
@@ -2428,8 +2428,8 @@ const useMathGame = () => {
                 ? { question: reverseQuestion, options: reverseOptions }
                 : null
             );
-            setPendingRocketPractice(true);
-            navigate('/game-mode-rocket-video/lose', { replace: true });
+            setPendingRocketPractice(false);
+            navigate('/learning', { replace: true });
             return;
           }
           setRocketPracticeFact(null);
