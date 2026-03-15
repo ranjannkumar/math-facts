@@ -30,7 +30,6 @@ const GameModeSurfCompleteScreen = lazy(() => import('./components/GameModeSurfC
 const GameModeLightningCompleteScreen = lazy(() => import('./components/GameModeLightningCompleteScreen.jsx'));
 const GameModeRocketVideoScreen = lazy(() => import('./components/GameModeRocketVideoScreen.jsx'));
 const GameModeRocketIntroScreen = lazy(() => import('./components/GameModeRocketIntroScreen.jsx'));
-const GameModeRocketCompleteScreen = lazy(() => import('./components/GameModeRocketCompleteScreen.jsx'));
 const UserQuestionStats = lazy(() => import('./components/UserQuestionStats.jsx'));
 const AnalyticsScreen = lazy(() => import('./components/AnalyticsScreen.jsx'));
 const AdminSettings = lazy(() => import('./components/AdminSettings.jsx'));
@@ -125,7 +124,6 @@ const App = () => {
         <Route path="/game-mode-surf-complete" element={<GameModeSurfCompleteScreen />} />
         <Route path="/game-mode-rocket-intro" element={<GameModeRocketIntroScreen />} />
         <Route path="/game-mode-rocket-video/:kind" element={<GameModeRocketVideoScreen />} />
-        <Route path="/game-mode-rocket-complete" element={<GameModeRocketCompleteScreen />} />
 
 
         <Route path="/game-mode-intro" element={<GameModeIntroScreen />} />

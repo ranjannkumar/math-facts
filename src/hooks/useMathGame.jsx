@@ -1714,7 +1714,7 @@ const useMathGame = () => {
           return;
         }
         setShouldGoToRocketCompleteAfterVideo(false);
-        navigate('/game-mode-rocket-complete', { replace: true });
+        navigate('/game-mode-exit', { replace: true });
         return;
       }
 
@@ -2478,7 +2478,7 @@ const useMathGame = () => {
           setIsAwaitingInactivityResponse(false);
           setIsGameMode(false);
           if (gameModeType === 'rocket') {
-            navigate('/game-mode-rocket-complete', { replace: true });
+            navigate('/game-mode-exit', { replace: true });
             return;
           }
           navigate('/game-mode-exit', { replace: true });

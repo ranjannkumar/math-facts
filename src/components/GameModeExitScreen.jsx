@@ -60,14 +60,10 @@ const GameModeExitScreen = () => {
   }, [navigate, setIsQuizStarting, hardResetQuizState]);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-green-900 flex flex-col items-center justify-center animate-fade-in-up">
-      <div className="text-center p-8 bg-white/90 rounded-3xl shadow-2xl border-4 border-green-500 transform scale-110">
-        <h1 className="text-6xl sm:text-7xl font-black text-green-700 mb-4 animate-bounce">
-           GAME MODE COMPLETE
-        </h1>
-        <p className="text-3xl text-gray-800 font-semibold">
-          Congratulations on finishing Game Mode
-        </p>
+    <div className="fixed inset-0 z-[100] bg-orange-950 flex flex-col items-center justify-center">
+      <div className="text-center p-8 bg-white/90 rounded-3xl shadow-2xl border-4 border-orange-500 transform scale-110">
+        <h1 className="text-6xl sm:text-7xl font-black text-orange-700 mb-4">ROCKET </h1>
+        <h1 className="text-6xl sm:text-7xl font-black text-orange-700 mb-4">GAME COMPLETED</h1>
       </div>
     </div>
   );
