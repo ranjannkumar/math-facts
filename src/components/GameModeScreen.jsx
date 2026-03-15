@@ -41,7 +41,6 @@ useEffect(() => {
   const lastClickRef = useRef({ qid: null, t: 0 });
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [typedInput, setTypedInput] = useState('');
-  const isSubtractionQuestion = currentQuestion?.operation === 'sub';
 
   useEffect(() => {
   if (currentQuestion) {
@@ -87,16 +86,8 @@ useEffect(() => {
     if (isAnswerSubmitted || isAnimating || isTimerPaused || !currentQuestion) return;
     setTypedInput((prev) => {
       const raw = String(digit);
-      if (raw === '-') {
-        if (!isSubtractionQuestion) return prev;
-        if (prev === '') return '-';
-        if (prev.startsWith('-')) return prev.slice(1);
-        return `-${prev}`;
-      }
-
-      const digitCount = prev.startsWith('-') ? prev.length - 1 : prev.length;
+      const digitCount = prev.length;
       if (digitCount >= 4) return prev;
-      if (prev === '-') return `-${raw}`;
       return `${prev}${raw}`;
     });
   };
@@ -108,7 +99,6 @@ useEffect(() => {
 
   const handleSubmitTyped = () => {
     if (!typedInput || isAnswerSubmitted || isAnimating || isTimerPaused || !currentQuestion) return;
-    if (typedInput === '-') return;
     const numericAnswer = Number(typedInput);
     if (!Number.isFinite(numericAnswer)) return;
     setIsAnswerSubmitted(true);
@@ -197,7 +187,7 @@ useEffect(() => {
             </div>
           )}
           {isRocketMode && rocketEmojiCount > 0 && (
-            <div className="flex justify-center items-center gap-8 mt-2 sm:mt-3 text-2xl sm:text-3xl">
+            <div className="flex justify-center items-center gap-8 mt-2 sm:mt-3 mb-4 sm:mb-5 text-2xl sm:text-3xl">
               {Array.from({ length: rocketEmojiCount }).map((_, index) => (
                 <span key={`rocket-emoji-${index}`} role="img" aria-label="rocket" className="inline-block" style={{ transform: 'scale(2.5)', transformOrigin: 'center' }}>
                   {String.fromCodePoint(0x1f680)}
@@ -270,9 +260,7 @@ useEffect(() => {
                   {typedInput === '' ? <span className="text-gray-400">Type answer</span> : typedInput}
                 </div>
 
-                <div
-                  className={`grid gap-3 w-full max-w-sm mx-auto ${isSubtractionQuestion ? 'grid-cols-4' : 'grid-cols-3'}`}
-                >
+                <div className="grid gap-3 w-full max-w-sm mx-auto grid-cols-3">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
                     <button
                       key={n}
@@ -290,15 +278,6 @@ useEffect(() => {
                   >
                     Clear
                   </button>
-                  {isSubtractionQuestion && (
-                    <button
-                      onClick={() => handleDigitPress('-')}
-                      disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
-                      className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
-                    >
-                      -
-                    </button>
-                  )}
                   <button
                     onClick={() => handleDigitPress(0)}
                     disabled={isAnimating || isTimerPaused || isAnswerSubmitted}
@@ -306,38 +285,19 @@ useEffect(() => {
                   >
                     0
                   </button>
-                  {!isSubtractionQuestion && (
-                    <button
-                      onClick={handleSubmitTyped}
-                      disabled={
-                        isAnimating ||
-                        isTimerPaused ||
-                        isAnswerSubmitted ||
-                        typedInput === ''
-                      }
-                      className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
-                    >
-                      Submit
-                    </button>
-                  )}
+                  <button
+                    onClick={handleSubmitTyped}
+                    disabled={
+                      isAnimating ||
+                      isTimerPaused ||
+                      isAnswerSubmitted ||
+                      typedInput === ''
+                    }
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
+                  >
+                    Submit
+                  </button>
                 </div>
-                {isSubtractionQuestion && (
-                  <div className="w-full max-w-sm mx-auto mt-3 flex justify-center">
-                    <button
-                      onClick={handleSubmitTyped}
-                      disabled={
-                        isAnimating ||
-                        isTimerPaused ||
-                        isAnswerSubmitted ||
-                        typedInput === '' ||
-                        typedInput === '-'
-                      }
-                      className="min-w-[140px] px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition text-center whitespace-nowrap"
-                    >
-                      Submit
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>
