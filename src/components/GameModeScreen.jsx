@@ -188,10 +188,10 @@ useEffect(() => {
           </div>
 
           {isSurfMode && surfCorrectStreak > 0 && (
-            <div className="flex justify-center items-center gap-8 mt-2 sm:mt-3 text-2xl sm:text-3xl">
+            <div className="flex justify-center items-center gap-8 mt-2 sm:mt-3 mb-4 sm:mb-5 text-2xl sm:text-3xl">
               {Array.from({ length: surfCorrectStreak }).map((_, index) => (
                 <span key={`surf-emoji-${index}`} role="img" aria-label="surfboard rider" className="inline-block" style={{ transform: 'scale(2.5)', transformOrigin: 'center' }}>
-                  🏄
+                  🏄🏽‍♂️
                 </span>
               ))}
             </div>
