@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext } from 'react';
+import React, { useEffect, useRef, useContext } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { MathGameContext } from '../App.jsx';
 
@@ -15,7 +15,6 @@ const GameModeSurfVideoScreen = () => {
   const videoRef = useRef(null);
   const surfVideoListRef = useRef([]);
   const endHandledRef = useRef(false);
-  const [hasAudio, setHasAudio] = useState(false);
 
   const {
     startSurfNextQuiz,
@@ -39,7 +38,6 @@ const GameModeSurfVideoScreen = () => {
   }, [surfVideoList]);
 
   useEffect(() => {
-    setHasAudio(false);
     endHandledRef.current = false;
   }, [kind]);
 
@@ -58,7 +56,7 @@ const GameModeSurfVideoScreen = () => {
       return { option1: shuffled[0], option2: shuffled[1] };
     };
 
-    v.muted = true;
+    v.muted = false;
     if (kind === 'win' || kind === 'lose') {
       v.playbackRate = 2;
     }
@@ -147,21 +145,6 @@ const GameModeSurfVideoScreen = () => {
         autoPlay
         className="w-full h-full object-contain"
       />
-
-      {!hasAudio && (
-        <button
-          className="absolute bottom-12 bg-white text-black px-6 py-3 rounded-xl shadow-xl text-lg font-semibold"
-          onClick={() => {
-            const v = videoRef.current;
-            if (!v) return;
-            v.muted = false;
-            v.play();
-            setHasAudio(true);
-          }}
-        >
-          Tap for sound
-        </button>
-      )}
     </div>
   );
 };

@@ -42,13 +42,11 @@ const VideoPlayerScreen = () => {
   const videoRef = useRef(null);
   const [rewardVideoList, setRewardVideoList] = useState([]);
 
-  const [hasAudio, setHasAudio] = useState(false);
-
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
 
-    v.muted = true;
+    v.muted = false;
     v.setAttribute("playsinline", "true");
     v.play().catch(() => { /* iOS may block until gesture */ });
   }, [selectedVideo]);
@@ -211,31 +209,16 @@ return (
     <video
       ref={videoRef}
       src={selectedVideo.url}
-      muted
       playsInline
       preload="auto"
       autoPlay
       onEnded={() => setVideoEnded(true)}
       className="w-full h-full object-contain pointer-events-none"
     />
-
-    {!hasAudio && (
-      <button
-        className="absolute bottom-12 bg-white text-black px-6 py-3 rounded-xl shadow-xl text-lg font-semibold"
-        onClick={() => {
-          const v = videoRef.current;
-          if (!v) return;
-          v.muted = false;
-          v.play();
-          setHasAudio(true);
-        }}
-      >
-        🔊 Tap for sound
-      </button>
-    )}
   </div>
-)
+);
 
 };
 
 export default VideoPlayerScreen;
+
