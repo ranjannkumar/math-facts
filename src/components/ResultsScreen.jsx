@@ -51,11 +51,12 @@ const ResultsScreen = () => {
     const maxQuestions = isBlack ? 20 : 10;
     const allCorrect = sessionCorrectCount === maxQuestions;
     const op = normalizeOperation(selectedOperation);
-    const operationMaxLevel = operationsMeta?.[op]?.maxLevel || getOperationMaxLevel(op, 19);
+    const operationMaxLevel = Number(operationsMeta?.[op]?.maxLevel || getOperationMaxLevel(op, 19));
+    const currentLevelNumber = Number(selectedTable);
     const isLastLevelInOperation =
-      Number.isFinite(selectedTable) &&
+      Number.isFinite(currentLevelNumber) &&
       Number.isFinite(operationMaxLevel) &&
-      selectedTable >= operationMaxLevel;
+      currentLevelNumber >= operationMaxLevel;
 
     // 1. Redirect if not perfect score
     useEffect(() => {

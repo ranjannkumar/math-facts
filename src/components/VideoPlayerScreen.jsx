@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useEffect, useState, useRef, useMemo } from 'react';
 import { MathGameContext } from '../App.jsx';
 import { useNavigate } from 'react-router-dom';
+import { getOperationMaxLevel, normalizeOperation } from '../config/modulesConfig.js';
 
 const rewardVideoModules = import.meta.glob('/public/reward-videos/**/*.mp4', { as: 'url' });
 const rewardThumbPngModules = import.meta.glob('/public/reward-videos/**/*.png', { as: 'url' });
@@ -33,7 +34,10 @@ const VideoPlayerScreen = () => {
     setQuizRunId, 
     tempNextRoute, 
     setTempNextRoute, 
-    selectedDifficulty
+    selectedDifficulty,
+    selectedOperation,
+    selectedTable,
+    operationsMeta,
   } = useContext(MathGameContext);
   
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -105,6 +109,17 @@ const VideoPlayerScreen = () => {
     return scoped.length ? scoped : rewardVideoList;
   }, [rewardVideoList, selectedDifficulty]);
 
+  const isLastLevelInOperation = useMemo(() => {
+    const op = normalizeOperation(selectedOperation);
+    const operationMaxLevel = Number(operationsMeta?.[op]?.maxLevel || getOperationMaxLevel(op, 19));
+    const currentLevelNumber = Number(selectedTable);
+    return (
+      Number.isFinite(currentLevelNumber) &&
+      Number.isFinite(operationMaxLevel) &&
+      currentLevelNumber >= operationMaxLevel
+    );
+  }, [selectedOperation, operationsMeta, selectedTable]);
+
   // 1. Generate two random options from the reward videos
   useEffect(() => {
     if (filteredRewardVideos && filteredRewardVideos.length > 0) {
@@ -128,7 +143,7 @@ const VideoPlayerScreen = () => {
       if (selectedDifficulty === 'brown' || (isBlack && degree >= 1 && degree <= 6)) {
         finalDestination = '/black';
       } else if (isBlack && degree === 7) {
-        finalDestination = '/levels';
+        finalDestination = isLastLevelInOperation ? '/operations' : '/levels';
       } else {
         finalDestination = '/belts'; 
       }
@@ -138,7 +153,7 @@ const VideoPlayerScreen = () => {
     setQuizRunId(null);
     setTempNextRoute(null);
     navigate(finalDestination, { replace: true });
-  }, [tempNextRoute, selectedDifficulty, setQuizRunId, setTempNextRoute, navigate]);
+  }, [tempNextRoute, selectedDifficulty, isLastLevelInOperation, setQuizRunId, setTempNextRoute, navigate]);
 
   // Navigate automatically when video ends
   useEffect(() => {

@@ -42,9 +42,11 @@ const PretestResultScreen = () => {
       setIsPretest(false);
       if (effectiveResult.passed === true) {
         const op = normalizeOperation(effectiveResult?.operation || selectedOperation);
-        const level = Number.isFinite(effectiveResult?.level) ? effectiveResult.level : selectedTable;
-        const opMaxLevel =
-          operationsMeta?.[op]?.maxLevel || getOperationMaxLevel(op, 19);
+        const levelFromResult = Number(effectiveResult?.level);
+        const level = Number.isFinite(levelFromResult) ? levelFromResult : Number(selectedTable);
+        const opMaxLevel = Number(
+          operationsMeta?.[op]?.maxLevel || getOperationMaxLevel(op, 19)
+        );
         const isLastLevelInOperation =
           Number.isFinite(level) && Number.isFinite(opMaxLevel) && level >= opMaxLevel;
         navigate(isLastLevelInOperation ? '/operations' : '/levels', { replace: true });
