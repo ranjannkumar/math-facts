@@ -720,7 +720,7 @@ useEffect(() => {
                   key={n}
                   onClick={() => handleDigitPress(n)}
                   disabled={isSubmitting}
-                  className="bg-gray-100 text-gray-900 font-bold text-2xl py-4 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
+                  className="bg-gray-100 text-gray-800 font-bold text-2xl py-2 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
                 >
                   {n}
                 </button>
@@ -728,21 +728,21 @@ useEffect(() => {
               <button
                 onClick={handleClear}
                 disabled={isSubmitting}
-                className="bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl shadow-md hover:bg-gray-300 active:scale-95 transition col-span-1 border border-gray-300"
+                className="bg-gray-200 text-gray-800 font-semibold py-2 rounded-xl shadow-md hover:bg-gray-300 active:scale-95 transition col-span-1 border border-gray-300"
               >
                 Clear
               </button>
               <button
                 onClick={() => handleDigitPress(0)}
                 disabled={isSubmitting}
-                className="bg-gray-100 text-gray-900 font-bold text-2xl py-4 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
+                className="bg-gray-100 text-gray-800 font-bold text-2xl py-2 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
               >
                 0
               </button>
               <button
                 onClick={handleSubmitTypedAnswer}
                 disabled={isSubmitting || typedInput === ''}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-2 rounded-xl shadow-md hover:from-green-600 hover:to-emerald-700 active:scale-95 transition col-span-1"
               >
                 Submit
               </button>
