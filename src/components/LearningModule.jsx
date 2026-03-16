@@ -720,7 +720,7 @@ useEffect(() => {
                   key={n}
                   onClick={() => handleDigitPress(n)}
                   disabled={isSubmitting}
-                  className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
+                  className="bg-gray-100 text-gray-900 font-bold text-2xl py-4 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200"
                 >
                   {n}
                 </button>
@@ -735,7 +735,7 @@ useEffect(() => {
               <button
                 onClick={() => handleDigitPress(0)}
                 disabled={isSubmitting}
-                className="bg-gray-100 text-gray-900 font-bold py-3 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
+                className="bg-gray-100 text-gray-900 font-bold text-2xl py-4 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition border border-gray-200"
               >
                 0
               </button>
