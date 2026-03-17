@@ -25,6 +25,7 @@ const DEFAULT_NUMBERS = {
   rocketQuestionsPerQuiz: 4,
   rocketQuizzesRequired: 5,
   inactivityTimer: 5,
+  pretestInactivityTimer: 3,
   pretestQuestionCount: 20,
   pretestDefaultTimer: 50,
 };
@@ -165,6 +166,17 @@ const mapConfigToValues = (config) => {
         ? Math.round(resolved.general.pretestTimeLimitMs / 1000)
         : DEFAULT_NUMBERS.pretestDefaultTimer
     ),
+    pretestInactivityTimer: String(
+      Number.isFinite(resolved?.pretestMode?.inactivityThresholdSeconds)
+        ? Math.round(resolved.pretestMode.inactivityThresholdSeconds)
+        : Number.isFinite(resolved?.pretestMode?.inactivityThresholdMs)
+        ? Math.round(resolved.pretestMode.inactivityThresholdMs / 1000)
+        : Number.isFinite(resolved?.general?.pretestInactivityThresholdMs)
+        ? Math.round(resolved.general.pretestInactivityThresholdMs / 1000)
+        : Number.isFinite(resolved?.pretestInactivityThresholdMs)
+        ? Math.round(resolved.pretestInactivityThresholdMs / 1000)
+        : DEFAULT_NUMBERS.pretestInactivityTimer
+    ),
     pretestTimersPerLevel: mapPretestLevelTimers(resolved),
   };
 };
@@ -189,6 +201,10 @@ const buildConfigPayload = (values) => {
     DEFAULT_NUMBERS.rocketQuizzesRequired
   );
   const inactivityTimer = toInt(values.inactivityTimer, DEFAULT_NUMBERS.inactivityTimer);
+  const pretestInactivityTimer = toInt(
+    values.pretestInactivityTimer,
+    DEFAULT_NUMBERS.pretestInactivityTimer
+  );
   const pretestQuestionCount = toInt(values.pretestQuestionCount, DEFAULT_NUMBERS.pretestQuestionCount);
 
   return {
@@ -199,6 +215,7 @@ const buildConfigPayload = (values) => {
     rocketQuestionsPerQuiz,
     rocketQuizzesRequired,
     inactivityThresholdMs: inactivityTimer * 1000,
+    pretestInactivityThresholdMs: pretestInactivityTimer * 1000,
     pretestQuestionCount,
     pretestMode: {
       questionCount: pretestQuestionCount,
@@ -244,6 +261,7 @@ const AdminSettings = () => {
     rocketQuestionsPerQuiz: String(DEFAULT_NUMBERS.rocketQuestionsPerQuiz),
     rocketQuizzesRequired: String(DEFAULT_NUMBERS.rocketQuizzesRequired),
     inactivityTimer: String(DEFAULT_NUMBERS.inactivityTimer),
+    pretestInactivityTimer: String(DEFAULT_NUMBERS.pretestInactivityTimer),
     pretestQuestionCount: String(DEFAULT_NUMBERS.pretestQuestionCount),
     pretestDefaultTimer: String(DEFAULT_NUMBERS.pretestDefaultTimer),
     pretestTimersPerLevel: buildEmptyPretestLevelTimers(),
@@ -263,6 +281,7 @@ const AdminSettings = () => {
     rocketQuestionsPerQuiz: String(DEFAULT_NUMBERS.rocketQuestionsPerQuiz),
     rocketQuizzesRequired: String(DEFAULT_NUMBERS.rocketQuizzesRequired),
     inactivityTimer: String(DEFAULT_NUMBERS.inactivityTimer),
+    pretestInactivityTimer: String(DEFAULT_NUMBERS.pretestInactivityTimer),
     pretestQuestionCount: String(DEFAULT_NUMBERS.pretestQuestionCount),
     pretestDefaultTimer: String(DEFAULT_NUMBERS.pretestDefaultTimer),
     pretestTimersPerLevel: buildEmptyPretestLevelTimers(),
@@ -351,6 +370,7 @@ const AdminSettings = () => {
         'rocketQuestionsPerQuiz',
         'rocketQuizzesRequired',
         'inactivityTimer',
+        'pretestInactivityTimer',
         'pretestQuestionCount',
       ];
       const hasGeneralChanges = generalKeys.some(
@@ -460,6 +480,12 @@ const AdminSettings = () => {
         if (Number.isFinite(inactivityThresholdMs)) {
           localStorage.setItem('math-inactivity-ms', String(inactivityThresholdMs));
         }
+      }
+      const pretestInactivityThresholdMs = Number(
+        refreshedConfig?.pretestMode?.inactivityThresholdMs
+      );
+      if (Number.isFinite(pretestInactivityThresholdMs)) {
+        localStorage.setItem('math-pretest-inactivity-ms', String(pretestInactivityThresholdMs));
       }
 
       if (hasGeneralChanges) {
@@ -766,6 +792,17 @@ const AdminSettings = () => {
                 className={inputClass}
                 value={values.pretestQuestionCount}
                 onChange={handleChange('pretestQuestionCount')}
+                disabled={isBusy}
+              />
+            </label>
+            <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
+              <span className="text-white/90">Pretest inactivity timer (sec)</span>
+              <input
+                type="number"
+                min="0"
+                className={inputClass}
+                value={values.pretestInactivityTimer}
+                onChange={handleChange('pretestInactivityTimer')}
                 disabled={isBusy}
               />
             </label>

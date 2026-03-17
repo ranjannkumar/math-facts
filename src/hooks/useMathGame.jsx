@@ -40,6 +40,7 @@ const rocketThumbPngModules = import.meta.glob('/public/rocket-videos/*.png', { 
 
 // Default config values used before backend config is loaded.
 const DEFAULT_INACTIVITY_TIMEOUT_MS = 5000;
+const DEFAULT_PRETEST_INACTIVITY_TIMEOUT_MS = 3000;
 const DEFAULT_LIGHTNING_TARGET = 100;
 const DEFAULT_LIGHTNING_FAST_MS = 2000;
 const DEFAULT_PRETEST_QUESTION_COUNT = 20;
@@ -64,6 +65,7 @@ const ENABLE_ROCKET_MODE =
   import.meta.env.VITE_ENABLE_ROCKET_MODE !== 'false' &&
   localStorage.getItem('math-enable-rocket-mode') !== '0';
 const INACTIVITY_TIMEOUT_STORAGE_KEY = 'math-inactivity-ms';
+const PRETEST_INACTIVITY_TIMEOUT_STORAGE_KEY = 'math-pretest-inactivity-ms';
 const LIGHTNING_TARGET_STORAGE_KEY = 'math-lightning-target';
 const LIGHTNING_FAST_MS_STORAGE_KEY = 'math-lightning-fast-ms';
 
@@ -74,6 +76,28 @@ const readStoredNumber = (key, fallback) => {
 
 const hasFlatLevelKeys = (obj) =>
   !!obj && typeof obj === 'object' && Object.keys(obj).some((key) => /^L\d+$/i.test(key));
+
+const resolvePretestInactivityThresholdMs = (...sources) => {
+  for (const source of sources) {
+    if (!source || typeof source !== 'object') continue;
+
+    const fromPretestModeMs = Number(source?.pretestMode?.inactivityThresholdMs);
+    if (Number.isFinite(fromPretestModeMs) && fromPretestModeMs >= 0) return fromPretestModeMs;
+
+    const fromPretestModeSeconds = Number(source?.pretestMode?.inactivityThresholdSeconds);
+    if (Number.isFinite(fromPretestModeSeconds) && fromPretestModeSeconds >= 0) {
+      return Math.round(fromPretestModeSeconds * 1000);
+    }
+
+    const fromTopLevelMs = Number(source?.pretestInactivityThresholdMs);
+    if (Number.isFinite(fromTopLevelMs) && fromTopLevelMs >= 0) return fromTopLevelMs;
+
+    const fromGeneralMs = Number(source?.general?.pretestInactivityThresholdMs);
+    if (Number.isFinite(fromGeneralMs) && fromGeneralMs >= 0) return fromGeneralMs;
+  }
+
+  return null;
+};
 
 const normalizeProgressTree = (payload, fallbackOperation = DEFAULT_OPERATION) => {
   if (!payload || typeof payload !== 'object') return {};
@@ -137,6 +161,12 @@ const useMathGame = () => {
   const [inactivityTimeoutMs, setInactivityTimeoutMs] = useState(() => {
     return readStoredNumber(INACTIVITY_TIMEOUT_STORAGE_KEY, DEFAULT_INACTIVITY_TIMEOUT_MS);
   });
+  const [pretestInactivityTimeoutMs, setPretestInactivityTimeoutMs] = useState(() =>
+    readStoredNumber(
+      PRETEST_INACTIVITY_TIMEOUT_STORAGE_KEY,
+      DEFAULT_PRETEST_INACTIVITY_TIMEOUT_MS
+    )
+  );
 
   // --- GAME MODE STATE ---
   const [isGameMode, setIsGameMode] = useState(false);
@@ -423,6 +453,12 @@ const useMathGame = () => {
     setInactivityTimeoutMs(
       readStoredNumber(INACTIVITY_TIMEOUT_STORAGE_KEY, DEFAULT_INACTIVITY_TIMEOUT_MS)
     );
+    setPretestInactivityTimeoutMs(
+      readStoredNumber(
+        PRETEST_INACTIVITY_TIMEOUT_STORAGE_KEY,
+        DEFAULT_PRETEST_INACTIVITY_TIMEOUT_MS
+      )
+    );
   }, []);
 
   const showUiMessage = useCallback((payload = {}) => {
@@ -486,6 +522,12 @@ const useMathGame = () => {
     stopPretestTimer();
     setIsPretest(false);
     setIsPretestIntroVisible(false);
+    setPretestInactivityTimeoutMs(
+      readStoredNumber(
+        PRETEST_INACTIVITY_TIMEOUT_STORAGE_KEY,
+        DEFAULT_PRETEST_INACTIVITY_TIMEOUT_MS
+      )
+    );
 
     setQuizQuestions([]);
     setQuizRunId(null);
@@ -1187,6 +1229,10 @@ const useMathGame = () => {
           : DEFAULT_PRETEST_QUESTION_COUNT;
       setPretestQuestionCount(countFromPrep);
       setMaxQuestions(countFromPrep);
+      const pretestInactivityFromPrep = resolvePretestInactivityThresholdMs(prep);
+      if (Number.isFinite(pretestInactivityFromPrep) && pretestInactivityFromPrep >= 0) {
+        setPretestInactivityTimeoutMs(pretestInactivityFromPrep);
+      }
 
       try {
         navigate('/pretest-intro', { replace: true });
@@ -1264,6 +1310,10 @@ const useMathGame = () => {
             ? started.timer.remainingMs
             : limitFromStart;
 
+        const pretestInactivityFromStart = resolvePretestInactivityThresholdMs(started, prep);
+        if (Number.isFinite(pretestInactivityFromStart) && pretestInactivityFromStart >= 0) {
+          setPretestInactivityTimeoutMs(pretestInactivityFromStart);
+        }
         startPretestTimer(limitFromStart, remainingFromStart);
 
         setIsInitialPrepLoading(false);
@@ -2329,6 +2379,7 @@ const useMathGame = () => {
   useEffect(() => {
     const trackedKeys = new Set([
       INACTIVITY_TIMEOUT_STORAGE_KEY,
+      PRETEST_INACTIVITY_TIMEOUT_STORAGE_KEY,
       LIGHTNING_TARGET_STORAGE_KEY,
       LIGHTNING_FAST_MS_STORAGE_KEY,
     ]);
@@ -2361,6 +2412,10 @@ const useMathGame = () => {
       }
       return;
     }
+
+    const effectiveInactivityTimeoutMs = isPretest
+      ? pretestInactivityTimeoutMs
+      : inactivityTimeoutMs;
 
     if (inactivityTimeoutId.current) clearTimeout(inactivityTimeoutId.current);
 
@@ -2499,7 +2554,7 @@ const useMathGame = () => {
         });
         navigate(fallbackRoute, { replace: true });
       }
-    }, inactivityTimeoutMs);
+    }, effectiveInactivityTimeoutMs);
 
     return () => {
       if (inactivityTimeoutId.current) {
@@ -2518,6 +2573,7 @@ const useMathGame = () => {
     gameModeType,
     currentQuestionIndex,
     inactivityTimeoutMs,
+    pretestInactivityTimeoutMs,
     isPretest,
     stopPretestTimer,
     pretestTimeLimitMs,
