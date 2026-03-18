@@ -197,7 +197,6 @@ const UserInfoBadge = () => {
             backdrop-blur-md
           "
         >
-          <div className="text-xs uppercase tracking-wider text-slate-300 mb-2">Your Stats</div>
           <div className="space-y-2 text-sm">
             <div className="flex items-center justify-between gap-3">
               <span className="text-slate-300">Total Score</span>
