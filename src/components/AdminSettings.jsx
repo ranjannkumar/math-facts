@@ -4,6 +4,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import {
   getAppConfig,
   reloadAppConfig,
+  restoreUserProgress,
   resetAppConfig,
   updateAdminPin,
   updateAppConfig,
@@ -30,6 +31,7 @@ const DEFAULT_NUMBERS = {
   pretestDefaultTimer: 50,
 };
 const PRETEST_LEVEL_COUNT = 19;
+const RESTORE_OPERATION_KEYS = ['add', 'sub', 'mul', 'div'];
 
 const toInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);
@@ -291,6 +293,16 @@ const AdminSettings = () => {
   const [status, setStatus] = useState(null);
   const [pinForm, setPinForm] = useState({ currentPin: '', newPin: '', confirmPin: '' });
   const [isPinSaving, setIsPinSaving] = useState(false);
+  const [restoreForm, setRestoreForm] = useState({
+    pin: '',
+    add: '0',
+    sub: '0',
+    mul: '0',
+    div: '0',
+    grandTotalCorrect: '',
+    currentStreak: '',
+  });
+  const [isRestoringUser, setIsRestoringUser] = useState(false);
 
   const getStoredAdminPin = () => localStorage.getItem('math-admin-pin') || '';
 
@@ -566,6 +578,86 @@ const AdminSettings = () => {
     setPinForm((prev) => ({ ...prev, [key]: e.target.value }));
   };
 
+  const handleRestoreFieldChange = (key) => (e) => {
+    setRestoreForm((prev) => ({ ...prev, [key]: e.target.value }));
+  };
+
+  const handleRestoreUserSubmit = async () => {
+    const storedPin = getStoredAdminPin();
+    if (storedPin && storedPin !== adminPin) {
+      setAdminPin(storedPin);
+    }
+    if (!storedPin) return;
+
+    const targetPin = restoreForm.pin.trim();
+    if (!targetPin) {
+      setStatus({ type: 'error', message: 'User PIN is required for restore.' });
+      return;
+    }
+
+    const operations = {};
+    for (const op of RESTORE_OPERATION_KEYS) {
+      const raw = String(restoreForm[op] ?? '').trim();
+      const parsed = raw === '' ? 0 : Number.parseInt(raw, 10);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        setStatus({
+          type: 'error',
+          message: `Operation level count for "${op}" must be 0 or greater.`,
+        });
+        return;
+      }
+      operations[op] = parsed;
+    }
+
+    const payload = {
+      pin: targetPin,
+      operations,
+    };
+
+    const grandTotalRaw = String(restoreForm.grandTotalCorrect ?? '').trim();
+    if (grandTotalRaw !== '') {
+      const grandTotalCorrect = Number.parseInt(grandTotalRaw, 10);
+      if (!Number.isFinite(grandTotalCorrect) || grandTotalCorrect < 0) {
+        setStatus({
+          type: 'error',
+          message: 'Grand total correct must be 0 or greater.',
+        });
+        return;
+      }
+      payload.grandTotalCorrect = grandTotalCorrect;
+    }
+
+    const streakRaw = String(restoreForm.currentStreak ?? '').trim();
+    if (streakRaw !== '') {
+      const currentStreak = Number.parseInt(streakRaw, 10);
+      if (!Number.isFinite(currentStreak) || currentStreak < 0) {
+        setStatus({
+          type: 'error',
+          message: 'Current streak must be 0 or greater.',
+        });
+        return;
+      }
+      payload.currentStreak = currentStreak;
+    }
+
+    setIsRestoringUser(true);
+    setStatus(null);
+    try {
+      const out = await restoreUserProgress(storedPin, payload);
+      const restoredUserName = out?.user ? ` (${out.user})` : '';
+      setStatus({
+        type: 'success',
+        message: out?.message
+          ? `${out.message}${restoredUserName}`
+          : `User progress restored${restoredUserName}.`,
+      });
+    } catch (e) {
+      setStatus({ type: 'error', message: e.message || 'Failed to restore user progress.' });
+    } finally {
+      setIsRestoringUser(false);
+    }
+  };
+
   const handleAdminPinSubmit = async (e) => {
     e.preventDefault();
     const storedPin = getStoredAdminPin();
@@ -610,7 +702,7 @@ const AdminSettings = () => {
     'w-32 bg-white/10 rounded-lg pl-3 pr-8 py-2 text-left text-white border border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed';
   const cardClass = 'rounded-2xl bg-white/10 border border-white/10 shadow-xl backdrop-blur-sm';
   const sectionTitleClass = 'text-white text-lg font-bold';
-  const isBusy = isLoading || isSaving;
+  const isBusy = isLoading || isSaving || isRestoringUser;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8" style={dashboardStyle}>
@@ -884,6 +976,83 @@ const AdminSettings = () => {
               disabled={isBusy || isPinSaving}
             >
               {isPinSaving ? 'Updating...' : 'Update PIN'}
+            </button>
+          </div>
+        </div>
+
+        <div className={`${cardClass} p-5 sm:p-6`}>
+          <div className={sectionTitleClass}>Restore User Progress</div>
+          <p className="text-white/70 text-sm mb-4">
+            Recover a user if progress was reset by mistake.
+          </p>
+
+          <div className="space-y-3">
+            <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
+              <span className="text-white/90">User PIN</span>
+              <input
+                type="text"
+                className={inputClass}
+                value={restoreForm.pin}
+                onChange={handleRestoreFieldChange('pin')}
+                disabled={isBusy}
+                autoComplete="off"
+                inputMode="numeric"
+              />
+            </label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              {RESTORE_OPERATION_KEYS.map((op) => (
+                <label
+                  key={`restore-op-${op}`}
+                  className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3"
+                >
+                  <span className="text-white/90">{op.toUpperCase()} levels</span>
+                  <input
+                    type="number"
+                    min="0"
+                    className={inputClass}
+                    value={restoreForm[op]}
+                    onChange={handleRestoreFieldChange(op)}
+                    disabled={isBusy}
+                  />
+                </label>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
+                <span className="text-white/90">Grand total correct </span>
+                <input
+                  type="number"
+                  min="0"
+                  className={inputClass}
+                  value={restoreForm.grandTotalCorrect}
+                  onChange={handleRestoreFieldChange('grandTotalCorrect')}
+                  disabled={isBusy}
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
+                <span className="text-white/90">Current streak</span>
+                <input
+                  type="number"
+                  min="0"
+                  className={inputClass}
+                  value={restoreForm.currentStreak}
+                  onChange={handleRestoreFieldChange('currentStreak')}
+                  disabled={isBusy}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end mt-4">
+            <button
+              type="button"
+              onClick={handleRestoreUserSubmit}
+              className="bg-fuchsia-600/90 hover:bg-fuchsia-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={isBusy}
+            >
+              {isRestoringUser ? 'Restoring...' : 'Restore User'}
             </button>
           </div>
         </div>

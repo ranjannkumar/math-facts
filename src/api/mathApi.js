@@ -367,6 +367,10 @@ export const getAppConfig = async (adminPin) => {
   return callApi('/config', 'GET', null, adminPin);
 };
 
+export const restoreUserProgress = async (adminPin, payload) => {
+  return callApi('/admin/restore-user', 'POST', payload, adminPin);
+};
+
 export const updateAppConfig = async (adminPin, payload) => {
   return callApi('/config', 'PUT', payload, adminPin);
 };
