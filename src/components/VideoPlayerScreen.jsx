@@ -166,17 +166,17 @@ const VideoPlayerScreen = () => {
     <button
       type="button"
       onClick={() => setSelectedVideo(option)}
-      className="flex-1 rounded-3xl overflow-hidden shadow-xl border-2 border-white/20 bg-slate-800/80 hover:bg-slate-700/90 transition-transform duration-150 hover:scale-[1.02] text-white"
+      className="w-full max-w-[560px] sm:flex-1 rounded-3xl overflow-hidden shadow-xl border-2 border-white/20 bg-slate-800/80 hover:bg-slate-700/90 transition-transform duration-150 hover:scale-[1.02] text-white"
     >
-      <div className="w-full aspect-video bg-slate-900 overflow-hidden">
+      <div className="w-full aspect-[16/10] bg-slate-900 overflow-hidden">
         {option.thumbnailUrl ? (
           <img src={option.thumbnailUrl} alt={option.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">No thumbnail</div>
         )}
       </div>
-      <div className="px-4 py-3 text-center">
-        <div className="text-lg sm:text-xl font-extrabold tracking-wide uppercase">
+      <div className="px-5 py-4 text-center">
+        <div className="text-xl sm:text-2xl font-extrabold tracking-wide uppercase leading-tight">
           {option.name.length <= 16 ? option.name : option.name.slice(0, 14) + "..."}
         </div>
       </div>
@@ -204,7 +204,7 @@ const VideoPlayerScreen = () => {
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-10 text-yellow-300 drop-shadow-lg text-center">
           Congrats 🎉 Belt Earned !
         </h2>
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full max-w-3xl">
+        <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-8 w-full max-w-5xl">
           {videoOptions ? (
             <>
               {renderCard(videoOptions.option1)}

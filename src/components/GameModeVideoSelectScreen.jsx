@@ -63,9 +63,9 @@ const GameModeVideoSelectScreen = () => {
       <button
         type="button"
         onClick={() => handleVideoSelection(option)}
-        className={`flex-1 rounded-3xl overflow-hidden shadow-xl border-2 border-white/20 bg-slate-800/80 hover:bg-slate-700/90 transition-transform duration-150 ${accentClass}`}
+        className={`w-full max-w-[560px] sm:flex-1 rounded-3xl overflow-hidden shadow-xl border-2 border-white/20 bg-slate-800/80 hover:bg-slate-700/90 transition-transform duration-150 ${accentClass}`}
       >
-        <div className="w-full aspect-video bg-slate-900 overflow-hidden">
+        <div className="w-full aspect-[16/10] bg-slate-900 overflow-hidden">
           {option.thumbnailUrl ? (
             <img
               src={option.thumbnailUrl}
@@ -78,8 +78,8 @@ const GameModeVideoSelectScreen = () => {
             </div>
           )}
         </div>
-        <div className="px-4 py-3 text-center">
-          <div className="text-lg sm:text-xl font-extrabold tracking-wide">
+        <div className="px-5 py-4 text-center">
+          <div className="text-xl sm:text-2xl font-extrabold tracking-wide leading-tight">
             {displayName}
           </div>
         </div>
@@ -92,7 +92,7 @@ const GameModeVideoSelectScreen = () => {
       <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-10 text-yellow-300 drop-shadow-lg text-center">
         {headingText}
       </h2>
-      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full max-w-3xl">
+      <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-8 w-full max-w-5xl">
         {renderCard(videoOptions.option1, "hover:scale-[1.02]")}
         {renderCard(videoOptions.option2, "hover:scale-[1.02]")}
       </div>
