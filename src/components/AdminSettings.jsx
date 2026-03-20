@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import {
   getAppConfig,
   reloadAppConfig,
@@ -32,6 +32,7 @@ const DEFAULT_NUMBERS = {
 };
 const PRETEST_LEVEL_COUNT = 19;
 const RESTORE_OPERATION_KEYS = ['add', 'sub', 'mul', 'div'];
+const TOAST_DURATION_MS = 1500;
 
 const toInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);
@@ -303,6 +304,14 @@ const AdminSettings = () => {
     currentStreak: '',
   });
   const [isRestoringUser, setIsRestoringUser] = useState(false);
+
+  useEffect(() => {
+    if (!status) return undefined;
+    const timeoutId = window.setTimeout(() => {
+      setStatus(null);
+    }, TOAST_DURATION_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [status]);
 
   const getStoredAdminPin = () => localStorage.getItem('math-admin-pin') || '';
 
@@ -706,6 +715,36 @@ const AdminSettings = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8" style={dashboardStyle}>
+      {status && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md pointer-events-none">
+          <div
+            className={`w-full rounded-2xl px-4 py-3 text-sm shadow-2xl backdrop-blur-xl border ${
+              status.type === 'error'
+                ? 'bg-[#3a1f24]/95 text-[#ffe3e7] border-[#ff7a8a]/45'
+                : 'bg-[#153a34]/95 text-[#dffcf3] border-[#3dd6ac]/45'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className="pt-0.5">
+                {status.type === 'error' ? (
+                  <FaExclamationCircle className="text-[#ff8c99]" size={16} />
+                ) : (
+                  <FaCheckCircle className="text-[#5ce2be]" size={16} />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold leading-5">
+                  {status.type === 'error' ? 'Action failed' : 'Success'}
+                </p>
+                <p className="mt-0.5 text-[13px] leading-5 opacity-95 break-words">
+                  {status.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <button
@@ -972,7 +1011,7 @@ const AdminSettings = () => {
             <button
               type="button"
               onClick={handleAdminPinSubmit}
-              className="bg-blue-600/90 hover:bg-blue-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-blue-600/90 hover:bg-blue-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60 "
               disabled={isBusy || isPinSaving}
             >
               {isPinSaving ? 'Updating...' : 'Update PIN'}
@@ -983,7 +1022,7 @@ const AdminSettings = () => {
         <div className={`${cardClass} p-5 sm:p-6`}>
           <div className={sectionTitleClass}>Restore User Progress</div>
           <p className="text-white/70 text-sm mb-4">
-            Recover a user if progress was reset by mistake.
+            Unlock any level for user
           </p>
 
           <div className="space-y-3">
@@ -1049,7 +1088,7 @@ const AdminSettings = () => {
             <button
               type="button"
               onClick={handleRestoreUserSubmit}
-              className="bg-fuchsia-600/90 hover:bg-fuchsia-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-blue-600/90 hover:bg-blue-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60"
               disabled={isBusy}
             >
               {isRestoringUser ? 'Restoring...' : 'Restore User'}
@@ -1058,28 +1097,12 @@ const AdminSettings = () => {
         </div>
 
         <div className="sticky bottom-4 z-10 flex flex-col gap-3">
-          {status && (
-            <div
-              className={`rounded-xl px-4 py-2 text-sm ${
-                status.type === 'error'
-                  ? 'bg-red-500/20 text-red-200 border border-red-500/30'
-                  : 'bg-emerald-500/20 text-emerald-100 border border-emerald-500/30'
-              }`}
-            >
-              {status.message}
-              {status.type === 'error' && /admin access required/i.test(status.message) ? (
-                <span className="block text-white/70 mt-1">
-                  Re-enter the admin PIN (top-left admin login) and try again.
-                </span>
-              ) : null}
-            </div>
-          )}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={handleReset}
-                className="bg-amber-600/90 hover:bg-amber-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="bg-amber-600/90 hover:bg-amber-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60 "
                 disabled={isBusy}
               >
                 Reset Defaults
@@ -1087,7 +1110,7 @@ const AdminSettings = () => {
               <button
                 type="button"
                 onClick={handleReload}
-                className="bg-indigo-600/90 hover:bg-indigo-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="bg-indigo-600/90 hover:bg-indigo-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60 "
                 disabled={isBusy}
               >
                 Reload Config
@@ -1095,7 +1118,7 @@ const AdminSettings = () => {
             </div>
             <button
               type="submit"
-              className="bg-emerald-600/90 hover:bg-emerald-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-emerald-600/90 hover:bg-emerald-700/90 text-white font-semibold py-2 px-6 rounded-xl shadow transition disabled:opacity-60"
               disabled={isBusy}
             >
               {isSaving ? 'Saving...' : 'Save Settings'}
