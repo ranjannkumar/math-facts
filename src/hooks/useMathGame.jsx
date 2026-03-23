@@ -1598,8 +1598,8 @@ const useMathGame = () => {
       if (isGameMode && practiceMode === 'surf') {
         setRocketPracticeFact(null);
         setRocketPracticeReverse(null);
-        setPendingSurfPractice(true);
-        navigate('/game-mode-surf-video/lose', { replace: true });
+        setPendingSurfPractice(false);
+        navigate('/learning', { replace: true });
         return;
       }
       if (isGameMode && practiceMode === 'rocket') {
@@ -2457,8 +2457,8 @@ const useMathGame = () => {
           if (isGameMode && gameModeType === 'surf') {
             setRocketPracticeFact(null);
             setRocketPracticeReverse(null);
-            setPendingSurfPractice(true);
-            navigate('/game-mode-surf-video/lose', { replace: true });
+            setPendingSurfPractice(false);
+            navigate('/learning', { replace: true });
             return;
           }
           if (isGameMode && gameModeType === 'rocket') {
