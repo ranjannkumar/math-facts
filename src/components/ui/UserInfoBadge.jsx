@@ -4,6 +4,19 @@ import { userGetDailyStats, userGetProgress } from '../../api/mathApi.js';
 import { normalizeOperation } from '../../config/modulesConfig.js';
 
 const OPERATION_ORDER = ['add', 'sub', 'mul', 'div'];
+const MS_PER_SEC = 1000;
+
+const formatTime = (ms) => {
+  if (ms < MS_PER_SEC) return '0s';
+  const totalSeconds = Math.round(ms / MS_PER_SEC);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+};
 
 const getBeltLabel = (levelData = {}) => {
   const beltsOrder = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
@@ -125,6 +138,14 @@ const UserInfoBadge = () => {
     return Number(grandTotalCorrect) || 0;
   }, [remoteDaily, grandTotalCorrect]);
 
+  const totalTime = useMemo(() => {
+    const backendTotalMs = Number(remoteDaily?.grandTotalActiveMs);
+    if (Number.isFinite(backendTotalMs) && backendTotalMs >= 0) {
+      return formatTime(backendTotalMs);
+    }
+    return '0s';
+  }, [remoteDaily]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -201,6 +222,10 @@ const UserInfoBadge = () => {
             <div className="flex items-center justify-between gap-3">
               <span className="text-slate-300">Total Score</span>
               <span className="font-extrabold tabular-nums">{totalScore}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-300">Total Time</span>
+              <span className="font-extrabold tabular-nums">{totalTime}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-slate-300">Level</span>
