@@ -57,7 +57,7 @@ const GameModeSurfVideoScreen = () => {
     };
 
     v.muted = false;
-    if (kind === 'win' || kind === 'lose') {
+    if (kind === 'intro' || kind === 'win' || kind === 'lose') {
       v.playbackRate = 2;
     }
     v.setAttribute('playsinline', 'true');
@@ -117,8 +117,18 @@ const GameModeSurfVideoScreen = () => {
       navigate('/game-mode', { replace: true });
     };
 
+    const handleError = () => {
+      if (endHandledRef.current) return;
+      // Continue the same flow as a normal completion to avoid intro crashes.
+      Promise.resolve(handleEnded());
+    };
+
     v.addEventListener('ended', handleEnded);
-    return () => v.removeEventListener('ended', handleEnded);
+    v.addEventListener('error', handleError);
+    return () => {
+      v.removeEventListener('ended', handleEnded);
+      v.removeEventListener('error', handleError);
+    };
   }, [
     kind,
     toRocketFlow,

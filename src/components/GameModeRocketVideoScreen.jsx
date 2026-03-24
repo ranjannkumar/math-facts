@@ -60,6 +60,9 @@ const GameModeRocketVideoScreen = () => {
     };
 
     videoEl.muted = false;
+    if (kind === 'intro') {
+      videoEl.playbackRate = 2;
+    }
     videoEl.setAttribute('playsinline', 'true');
     videoEl.play().catch(() => {});
     videoEl.addEventListener('ended', onEnded);
