@@ -3,6 +3,7 @@ import React, { useContext, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { MathGameContext } from '../App.jsx';
+import { getOperationLabel } from '../config/modulesConfig.js';
 // import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
 
 const COLOR_BELTS = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
@@ -32,9 +33,12 @@ const DifficultyPicker = () => {
   const navigate = useNavigate();
   const {
     selectedTable,
+    selectedOperation,
     tableProgress,
     startQuizWithDifficulty,
   } = useContext(MathGameContext);
+
+  const operationLabel = getOperationLabel(selectedOperation);
 
   useEffect(() => {
     if (!selectedTable) {
@@ -193,7 +197,7 @@ const DifficultyPicker = () => {
       {/* Centered content (title + grid) */}
       <div className="w-full max-w-5xl mx-auto flex flex-col items-center">
         <h1 className="text-white text-3xl font-extrabold drop-shadow mb-3 text-center">
-          Level {selectedTable}
+          {operationLabel} Level {selectedTable}
         </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-0  place-items-center justify-items-center">
