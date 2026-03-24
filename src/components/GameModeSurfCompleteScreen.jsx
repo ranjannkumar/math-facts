@@ -11,7 +11,7 @@ const GameModeSurfCompleteScreen = () => {
     setPausedTime(Date.now());
     const timer = setTimeout(() => {
       navigate('/game-mode-rocket-video/intro', { replace: true });
-    }, 5000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [navigate, setIsTimerPaused, setPausedTime]);

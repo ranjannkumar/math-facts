@@ -7,7 +7,7 @@ const GameModeLightningCompleteScreen = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate('/game-mode-surf-video/intro', { replace: true });
-    }, 5000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [navigate]);
