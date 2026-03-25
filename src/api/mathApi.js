@@ -305,8 +305,57 @@ export const getUserQuestionStats = async (adminPin, userPin) => {
   return mockStats;
 };
 
-export const getAdminStats = async (adminPin, limit = 10, offset = 0) => {
-  return callApi(`/admin/today-stats?limit=${limit}&offset=${offset}`, 'GET', null, adminPin);
+export const getAdminStats = async (
+  adminPin,
+  limit = 10,
+  offset = 0,
+  sort = 'grandTotalCorrect:desc'
+) => {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (adminPin) {
+    headers['x-pin'] = adminPin;
+  }
+
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  params.set('offset', String(offset));
+  if (sort) params.set('sort', String(sort));
+
+  const response = await fetch(`${API_BASE_URL}/admin/today-stats?${params.toString()}`, {
+    method: 'GET',
+    headers,
+  });
+
+  const data = response.status !== 204 ? await response.json() : [];
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error?.message || data?.error || `API call failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const parseNum = (raw) => {
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
+  const parseBool = (raw) => {
+    if (typeof raw !== 'string') return null;
+    if (raw.toLowerCase() === 'true') return true;
+    if (raw.toLowerCase() === 'false') return false;
+    return null;
+  };
+
+  return {
+    data: Array.isArray(data) ? data : [],
+    pagination: {
+      totalCount: parseNum(response.headers.get('X-Total-Count')),
+      offset: parseNum(response.headers.get('X-Offset')),
+      limit: parseNum(response.headers.get('X-Limit')),
+      hasMore: parseBool(response.headers.get('X-Has-More')),
+    },
+  };
 };
 
 

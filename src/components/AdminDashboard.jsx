@@ -7,8 +7,9 @@ const MS_PER_SEC = 1000;
 // const MS_PER_MIN = 60000;
 
 const formatTime = (ms) => {
-  if (ms < MS_PER_SEC) return '0s';
-  const totalSeconds = Math.round(ms / MS_PER_SEC);
+  const safeMs = Number(ms);
+  if (!Number.isFinite(safeMs) || safeMs < MS_PER_SEC) return '0s';
+  const totalSeconds = Math.round(safeMs / MS_PER_SEC);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
@@ -138,11 +139,17 @@ const AdminDashboard = () => {
       setLoading(true);
 
       // NEW: paginated backend request
-      const initialData = await getAdminStats(storedPin, limit, offset);
-
-      if (initialData.length < limit) {
-        setHasMore(false);
-      }
+      const statsResponse = await getAdminStats(storedPin, limit, offset);
+      const initialData = Array.isArray(statsResponse)
+        ? statsResponse
+        : Array.isArray(statsResponse?.data)
+          ? statsResponse.data
+          : [];
+      const hasMoreFromHeader =
+        typeof statsResponse?.pagination?.hasMore === 'boolean'
+          ? statsResponse.pagination.hasMore
+          : null;
+      setHasMore(hasMoreFromHeader ?? initialData.length >= limit);
 
       const statsWithProgressPromises = initialData.map(async (student) => {
         let currentLevel = 'N/A';
@@ -173,7 +180,7 @@ const AdminDashboard = () => {
       if (offset === 0) {
         setStats(finalStats);
       } else {
-        setStats(prev => [...prev, ...finalStats]);
+        setStats((prev) => [...prev, ...finalStats]);
       }
 
       setError(null);
@@ -208,10 +215,6 @@ const AdminDashboard = () => {
   navigate(`/admin/students/${pin}/analytics`);
 };
 
-
-  const sortedStats = [...stats].sort((a, b) => {
-    return b.grandTotalCorrect - a.grandTotalCorrect;
-  });
 
   const dashboardStyle = {
     backgroundImage: "url('/night_sky_landscape.jpg')",
@@ -313,8 +316,8 @@ const AdminDashboard = () => {
               </thead>
 
               <tbody className="divide-y divide-gray-700 text-white">
-                {sortedStats.map((student) => (
-                  <tr key={student._id} className="hover:bg-gray-700/50 transition-colors">
+                {stats.map((student) => (
+                  <tr key={student.id || student._id || student.pin} className="hover:bg-gray-700/50 transition-colors">
                     <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-semibold">
                       {/* WRAP NAME AND PIN IN A BUTTON FOR CLICKABILITY */}
                       <button 
