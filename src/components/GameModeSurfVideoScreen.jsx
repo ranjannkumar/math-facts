@@ -61,7 +61,6 @@ const GameModeSurfVideoScreen = () => {
       v.playbackRate = 2;
     }
     v.setAttribute('playsinline', 'true');
-    v.play().catch(() => {});
 
     const handleEnded = async () => {
       // Guard against double-fire in React StrictMode/dev.
@@ -118,13 +117,16 @@ const GameModeSurfVideoScreen = () => {
     };
 
     const handleError = () => {
-      if (endHandledRef.current) return;
       // Continue the same flow as a normal completion to avoid intro crashes.
       Promise.resolve(handleEnded());
     };
 
     v.addEventListener('ended', handleEnded);
     v.addEventListener('error', handleError);
+    v.play().catch(() => {
+      // iOS Safari can block autoplay for unmuted video; continue flow safely.
+      setTimeout(() => Promise.resolve(handleEnded()), 800);
+    });
     return () => {
       v.removeEventListener('ended', handleEnded);
       v.removeEventListener('error', handleError);

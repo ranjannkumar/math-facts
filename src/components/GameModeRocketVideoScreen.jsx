@@ -64,7 +64,10 @@ const GameModeRocketVideoScreen = () => {
       videoEl.playbackRate = 2;
     }
     videoEl.setAttribute('playsinline', 'true');
-    videoEl.play().catch(() => {});
+    videoEl.play().catch(() => {
+      // iOS Safari can block autoplay for unmuted intro videos.
+      setTimeout(finish, 800);
+    });
     videoEl.addEventListener('ended', onEnded);
     videoEl.addEventListener('error', onError);
 
