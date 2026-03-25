@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSignOutAlt, FaCog } from 'react-icons/fa';
 import { getAdminStats, userGetProgress } from '../api/mathApi.js';
@@ -108,6 +108,8 @@ const AdminDashboard = () => {
   const [offset, setOffset] = useState(0);
   const limit = 10;
   const [hasMore, setHasMore] = useState(true);
+  const loadMoreSentinelRef = useRef(null);
+  const requestingNextPageRef = useRef(false);
 
   const [adminPin, setAdminPin] = useState(() => localStorage.getItem('math-admin-pin'));
 
@@ -196,6 +198,35 @@ const AdminDashboard = () => {
     fetchStats();
   }, [fetchStats]);
 
+  useEffect(() => {
+    if (!loading) {
+      requestingNextPageRef.current = false;
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (loading || requestingNextPageRef.current || !hasMore) return;
+        requestingNextPageRef.current = true;
+        setOffset((prev) => prev + limit);
+      },
+      {
+        root: null,
+        rootMargin: '240px 0px 240px 0px',
+        threshold: 0.05,
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loading, limit]);
+
   const handleLogout = () => {
     localStorage.removeItem('math-admin-pin');
     navigate('/name', { replace: true });
@@ -205,10 +236,6 @@ const AdminDashboard = () => {
     setStats([]);
     setOffset(0);
     setHasMore(true);
-  };
-
-  const handleLoadMore = () => {
-    setOffset(prev => prev + limit);
   };
 
   const handleViewStats = (pin) => {
@@ -355,22 +382,22 @@ const AdminDashboard = () => {
             </table>
           </div>
 
-          {/* LOAD MORE BUTTON */}
-          {hasMore && (
-            <div className="flex justify-center mt-4">
-              <button
-                onClick={handleLoadMore}
-                className="bg-green-600/90 hover:bg-green-700/90 text-white font-semibold py-2 px-4 rounded-xl shadow transition"
-              >
-                Load More
-              </button>
-            </div>
-          )}
-
-          {/* LOADING MORE INDICATOR */}
-          {loading && offset > 0 && (
-            <p className="text-center text-white mt-4 animate-pulse">Loading...</p>
-          )}
+          <div className="flex flex-col items-center mt-5 pb-2">
+            <div ref={loadMoreSentinelRef} className="h-1 w-full" aria-hidden="true" />
+            {hasMore && (
+              <div className="mt-3 inline-flex items-center gap-3 px-4 py-2 rounded-full bg-green-600/90 ring-1 ring-green-300/40 shadow-lg backdrop-blur-sm text-white">
+                <span className="h-4 w-4 rounded-full border-2 border-white/35 border-t-white animate-spin" aria-hidden="true" />
+                <span className="text-sm font-medium">
+                  {loading && offset > 0 ? 'Loading more students...' : 'Scroll down to load more'}
+                </span>
+              </div>
+            )}
+            {!hasMore && stats.length > 0 && (
+              <div className="mt-3 text-xs sm:text-sm text-white/70">
+                All students loaded
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>
