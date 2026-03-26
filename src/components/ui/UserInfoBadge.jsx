@@ -33,7 +33,7 @@ const getBeltLabel = (levelData = {}) => {
       ? levelData.black.completedDegrees
       : [];
     const currentDegree = Math.min(completedDegrees.length + 1, 7);
-    currentBelt = `Black Degree ${currentDegree}`;
+    currentBelt = `Black Belt Degree ${currentDegree}`;
   }
 
   if (levelData.completed && !levelData.black?.unlocked) {
@@ -87,9 +87,15 @@ const getCurrentProgressFromBackend = (progress, selectedOperation) => {
   const opLabel = opLabelMap[normalizedOp] || normalizedOp;
 
   return {
-    level: `${opLabel} L${currentLevelInfo.level}`,
+    level: `${opLabel} Level ${currentLevelInfo.level}`,
     belt: getBeltLabel(currentLevelInfo.data),
   };
+};
+
+const formatBeltDisplay = (belt) => {
+  if (!belt || belt === '--' || belt === 'Level Mastered') return belt;
+  if (String(belt).startsWith('Black Belt Degree')) return belt;
+  return `${belt} Belt`;
 };
 
 const UserInfoBadge = () => {
@@ -233,7 +239,7 @@ const UserInfoBadge = () => {
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-slate-300">Belt</span>
-              <span className="font-bold">{progressInfo.belt}</span>
+              <span className="font-bold">{formatBeltDisplay(progressInfo.belt)}</span>
             </div>
           </div>
         </div>
