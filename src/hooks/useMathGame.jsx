@@ -384,6 +384,7 @@ const useMathGame = () => {
   const pretestTimerInitialRef = useRef(null);
   const inactivityTimeoutId = useRef(null);
   const isQuittingRef = useRef(false);
+  const startQuizLockRef = useRef(false);
 
   // --- CLIENT-SIDE HELPERS ---
   const determineMaxQuestions = useCallback((difficulty) => {
@@ -872,15 +873,17 @@ const useMathGame = () => {
   // ---------------- NORMAL QUIZ START ----------------
   const startActualQuiz = useCallback(
     async (runId) => {
-      const idToUse = runId || quizRunId;
-      if (!idToUse) {
-        console.error('Cannot start quiz: quizRunId is missing.');
-        setIsQuizStarting(false);
-        navigate('/belts');
-        return;
-      }
-
+      if (startQuizLockRef.current) return;
+      startQuizLockRef.current = true;
       try {
+        const idToUse = runId || quizRunId;
+        if (!idToUse) {
+          console.error('Cannot start quiz: quizRunId is missing.');
+          setIsQuizStarting(false);
+          navigate('/belts');
+          return;
+        }
+
         const { questions: backendQuestions, resumed = false, currentIndex, mainFlowCorrect, wrong } =
           await quizStart(idToUse, childPin);
 
@@ -937,9 +940,19 @@ const useMathGame = () => {
         });
         setIsQuizStarting(false);
         navigate('/belts');
+      } finally {
+        startQuizLockRef.current = false;
       }
     },
-    [navigate, childPin, quizRunId, maxQuestions, selectedDifficulty, determineMaxQuestions, showUiMessage]
+    [
+      navigate,
+      childPin,
+      quizRunId,
+      maxQuestions,
+      selectedDifficulty,
+      determineMaxQuestions,
+      showUiMessage,
+    ]
   );
 
   /**

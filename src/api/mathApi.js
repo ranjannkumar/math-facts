@@ -25,13 +25,29 @@ async function callApi(endpoint, method = 'GET', body = null, pin = null) {
   };
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-
-  const data = response.status !== 204 ? await response.json() : {};
+  let data = {};
+  let rawText = '';
+  if (response.status !== 204) {
+    rawText = await response.text();
+    if (rawText) {
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        if (response.ok) {
+          throw new Error(`Invalid JSON response from ${endpoint}`);
+        }
+      }
+    }
+  }
 
   if (!response.ok) {
+    const fallbackMessage =
+      rawText && rawText.trim().length > 0
+        ? rawText
+        : `API call failed: ${response.status} ${response.statusText}`;
     throw new Error(
-  data?.error?.message || data?.error || `API call failed: ${response.status} ${response.statusText}`
-);
+      data?.error?.message || data?.error || fallbackMessage
+    );
 
   }
 
