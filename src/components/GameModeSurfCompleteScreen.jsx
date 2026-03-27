@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect,useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MathGameContext } from '../App.jsx';
 
@@ -6,15 +6,25 @@ const GameModeSurfCompleteScreen = () => {
   const navigate = useNavigate();
   const { setIsTimerPaused, setPausedTime } = useContext(MathGameContext);
 
-  useEffect(() => {
+  const didNavigateRef = useRef(false);
+
+  const goNext = () => {
+    if (didNavigateRef.current) return;
+    didNavigateRef.current = true;
+    navigate('/game-mode-rocket-video/intro', { replace: true });
+  };
+
+ useEffect(() => {
     setIsTimerPaused(true);
     setPausedTime(Date.now());
-    const timer = setTimeout(() => {
-      navigate('/game-mode-rocket-video/intro', { replace: true });
-    }, 2000);
+  }, [setIsTimerPaused, setPausedTime]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      goNext();
+    }, 5000);
     return () => clearTimeout(timer);
-  }, [navigate, setIsTimerPaused, setPausedTime]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[100] bg-teal-950 flex flex-col items-center justify-center">
@@ -22,6 +32,13 @@ const GameModeSurfCompleteScreen = () => {
         <h1 className="text-6xl sm:text-7xl font-black text-teal-700 mb-4">SURF MODE</h1>
         <h1 className="text-6xl sm:text-7xl font-black text-teal-700 mb-4">GAME COMPLETED</h1>
       </div>
+       <button
+        type="button"
+        onClick={goNext}
+        className="mt-10 px-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold shadow-lg transition"
+      >
+        Next
+      </button>
     </div>
   );
 };

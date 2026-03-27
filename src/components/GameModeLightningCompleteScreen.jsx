@@ -1,16 +1,24 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const GameModeLightningCompleteScreen = () => {
   const navigate = useNavigate();
 
+  const didNavigateRef = useRef(false);
+
+  const goNext = () => {
+    if (didNavigateRef.current) return;
+    didNavigateRef.current = true;
+    navigate('/game-mode-surf-video/intro', { replace: true });
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate('/game-mode-surf-video/intro', { replace: true });
-    }, 2000);
+      goNext();
+    }, 5000);
 
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[100] bg-green-900 flex flex-col items-center justify-center">
@@ -22,6 +30,13 @@ const GameModeLightningCompleteScreen = () => {
            GAME COMPLETED
         </h1>
       </div>
+      <button
+        type="button"
+        onClick={goNext}
+        className="mt-10 px-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold shadow-lg transition"
+      >
+        Next
+      </button>
     </div>
   );
 };

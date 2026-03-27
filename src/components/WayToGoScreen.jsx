@@ -47,8 +47,9 @@ const WayToGoScreen = () => {
     // Using seconds format as per previous context to fit tiles better on mobile
     const sessionTimeLabel = `${sessionTimeSecs}s`; 
 
-   useEffect(() => {
+    useEffect(() => {
   if (!selectedTable || !selectedDifficulty) return;
+  if (showWayToGoAfterFailure && !isBlackDegree7) return;
 
   let intervalId;
 
@@ -96,8 +97,31 @@ const WayToGoScreen = () => {
   selectedTable,
   startQuizWithDifficulty,
   showWayToGoAfterFailure,
+    isBlackDegree7,
 ]);
 
+
+  useEffect(() => {
+  if (!showWayToGoAfterFailure || isBlackDegree7) return;
+  const timer = setTimeout(() => {
+    if (hasRestarted.current) return;
+    hasRestarted.current = true;
+
+    localStorage.setItem('game-mode-belt', selectedDifficulty);
+    localStorage.setItem('game-mode-table', String(selectedTable));
+    localStorage.setItem('game-mode-operation', selectedOperation || 'add');
+    navigate('/game-mode-video', { replace: true });
+  }, 5000);
+
+  return () => clearTimeout(timer);
+}, [
+  showWayToGoAfterFailure,
+  isBlackDegree7,
+  selectedDifficulty,
+  selectedOperation,
+  selectedTable,
+  navigate,
+]);
     
     const handleBackToBelts = () => {
         hasRestarted.current = true;
@@ -110,6 +134,19 @@ const WayToGoScreen = () => {
             navigate('/belts'); 
         }
     }
+
+    const handleContinueToGameModeIntro = () => {
+        if (hasRestarted.current) return;
+        hasRestarted.current = true;
+        if (isBlackDegree7) {
+            navigate('/black', { replace: true });
+            return;
+        }
+        localStorage.setItem('game-mode-belt', selectedDifficulty);
+        localStorage.setItem('game-mode-table', String(selectedTable));
+        localStorage.setItem('game-mode-operation', selectedOperation || 'add');
+        navigate('/game-mode-video', { replace: true });
+    };
 
     const beltName = String(selectedDifficulty).startsWith('black') 
         ? `Black (Degree ${selectedDifficulty.split('-')[1]})` 
@@ -192,11 +229,23 @@ const WayToGoScreen = () => {
                     </button>
                 </div>
                 
-                 <p className="text-gray-600 mb-4 sm:mb-6 text-xl sm:text-2xl font-bold">
+                 {showWayToGoAfterFailure && !isBlackDegree7 ? (
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={handleContinueToGameModeIntro}
+                      className="px-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold shadow-lg transition"
+                    >
+                      Continue to Game Mode
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-gray-600 mb-4 sm:mb-6 text-xl sm:text-2xl font-bold">
                     {showWayToGoAfterFailure && isBlackDegree7
                       ? <>Retry in <span className="font-extrabold text-red-600">{countdown}</span> seconds...</>
                       : <>Game Mode In <span className="font-extrabold text-red-600">{countdown}</span> seconds...</>}
                 </p>
+                )}
             </div>
         </div>
     );
