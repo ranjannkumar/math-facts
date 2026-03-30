@@ -2097,17 +2097,16 @@ const useMathGame = () => {
       setQuizProgress(newProgress);
 
       let uiAdvancedOptimistically = false;
-
       if (isCorrect && nextIndex < quizQuestions.length) {
-        setCurrentQuestion(quizQuestions[nextIndex]);
+        // Fast UI: show next local question immediately, then reconcile with backend response below.
         setCurrentQuestionIndex(nextIndex);
+        setCurrentQuestion(quizQuestions[nextIndex]);
         questionStartTimestamp.current = Date.now();
-        setTransientStreakMessage(triggerStreakMessage);
         uiAdvancedOptimistically = true;
-      } else {
-        setTransientStreakMessage(triggerStreakMessage);
-        if (triggerStreakMessage) setTimeout(() => setTransientStreakMessage(null), 500);
       }
+
+      setTransientStreakMessage(triggerStreakMessage);
+      if (triggerStreakMessage) setTimeout(() => setTransientStreakMessage(null), 500);
 
       try {
         const answerOptions = isPretest
@@ -2200,21 +2199,96 @@ const useMathGame = () => {
           setShowLearningModule(true);
           navigate('/learning');
           setIsAnimating(false);
-        } else if (uiAdvancedOptimistically) {
+        } else {
           if (out.dailyStats) {
             setCorrectCount(out.dailyStats.correctCount);
             applyDailyStatsTotalMs(out.dailyStats.totalActiveMs);
             if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
             if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
           }
-          setIsAnimating(false);
-        } else {
-          console.warn('Quiz is in an unexpected non-terminal, non-advancing state.');
+
+          const backendNextIndexKnown = typeof out?.nextIndex === 'number';
+          const fallbackNextIndex = isCorrect ? currentQuestionIndex + 1 : currentQuestionIndex;
+          const resolvedNextIndex = backendNextIndexKnown ? out.nextIndex : fallbackNextIndex;
+
+          if (out?.next) {
+            const mappedNext = mapQuestionToFrontend(out.next);
+            if (mappedNext) {
+              setCurrentQuestion(mappedNext);
+              if (backendNextIndexKnown) {
+                setCurrentQuestionIndex(Math.max(0, resolvedNextIndex));
+              } else {
+                setCurrentQuestionIndex(Math.max(0, fallbackNextIndex));
+              }
+              questionStartTimestamp.current = Date.now();
+              setIsAnimating(false);
+              return;
+            }
+          }
+
+          if (
+            Array.isArray(quizQuestions) &&
+            quizQuestions.length > 0 &&
+            resolvedNextIndex >= 0 &&
+            resolvedNextIndex < quizQuestions.length
+          ) {
+            const targetIndex = Math.max(0, resolvedNextIndex);
+            // Avoid unnecessary state churn when optimistic UI already shows same target.
+            if (!uiAdvancedOptimistically || targetIndex !== nextIndex) {
+              setCurrentQuestionIndex(targetIndex);
+              setCurrentQuestion(quizQuestions[targetIndex]);
+              questionStartTimestamp.current = Date.now();
+            }
+            setIsAnimating(false);
+            return;
+          }
+
+          // If local cache does not match backend pointer, resync from backend.
+          if (quizRunId && childPin) {
+            const restarted = await quizStart(quizRunId, childPin);
+            const backendQuestions = restarted?.questions || restarted?.run?.questions || [];
+            if (backendQuestions.length > 0) {
+              const mapped = backendQuestions.map(mapQuestionToFrontend);
+              const startIndex =
+                typeof restarted?.currentIndex === 'number'
+                  ? restarted.currentIndex
+                  : typeof restarted?.run?.currentIndex === 'number'
+                    ? restarted.run.currentIndex
+                    : Math.max(0, Math.min(resolvedNextIndex, mapped.length - 1));
+              const safeIndex = Math.min(Math.max(startIndex, 0), mapped.length - 1);
+              setQuizQuestions(mapped);
+              setCurrentQuestionIndex(safeIndex);
+              setCurrentQuestion(mapped[safeIndex]);
+              questionStartTimestamp.current = Date.now();
+            }
+          }
           setIsAnimating(false);
         }
       } catch (e) {
         console.error('Quiz Answer/State update failed:', e.message);
         if (String(e.message || '').toLowerCase().includes('not the current question')) {
+          try {
+            if (quizRunId && childPin) {
+              const restarted = await quizStart(quizRunId, childPin);
+              const backendQuestions = restarted?.questions || restarted?.run?.questions || [];
+              if (backendQuestions.length > 0) {
+                const mapped = backendQuestions.map(mapQuestionToFrontend);
+                const startIndex =
+                  typeof restarted?.currentIndex === 'number'
+                    ? restarted.currentIndex
+                    : typeof restarted?.run?.currentIndex === 'number'
+                      ? restarted.run.currentIndex
+                      : 0;
+                const safeIndex = Math.min(Math.max(startIndex, 0), mapped.length - 1);
+                setQuizQuestions(mapped);
+                setCurrentQuestionIndex(safeIndex);
+                setCurrentQuestion(mapped[safeIndex]);
+                questionStartTimestamp.current = Date.now();
+              }
+            }
+          } catch (syncError) {
+            console.error('Failed to resync after stale-question submit:', syncError?.message || syncError);
+          }
           setIsAnimating(false);
           return;
         }
