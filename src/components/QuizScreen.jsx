@@ -137,7 +137,7 @@ const QuizScreen = () => {
           <div className="relative h-20 mb-4">
             {/* Answer Symbols (shifted slightly up) */}
             <div className="flex justify-center items-center absolute w-full top-0 space-x-1">
-              {answerSymbols.map((answer, index) => (
+              {!isPretest && answerSymbols.map((answer, index) => (
                 <span
                   key={`answer-${index}`}
                   className={`text-2xl font-bold ${

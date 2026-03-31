@@ -2077,7 +2077,7 @@ const useMathGame = () => {
 
       if (isCorrect) {
         newQuizStreak += 1;
-        const isStreakMilestoneHit = streakMilestones.includes(newQuizStreak);
+        const isStreakMilestoneHit = !isPretest && streakMilestones.includes(newQuizStreak);
 
         if (timeTaken <= 2.0) {
           symbol = '⚡';
@@ -2106,7 +2106,9 @@ const useMathGame = () => {
         }
 
         setCurrentQuizStreak(newQuizStreak);
-        setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
+        if (!isPretest) {
+          setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: true, timeTaken }]);
+        }
         setSessionCorrectCount((s) => s + 1);
       } else {
         newQuizStreak = 0;
@@ -2114,7 +2116,9 @@ const useMathGame = () => {
         symbol = '';
         audioManager.playWrongSound();
         setWrongCount((w) => w + 1);
-        setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
+        if (!isPretest) {
+          setAnswerSymbols((prev) => [...prev, { symbol, isCorrect: false, timeTaken }]);
+        }
         setTransientStreakMessage(null);
       }
 
