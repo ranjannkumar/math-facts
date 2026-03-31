@@ -45,6 +45,7 @@ const DEFAULT_LIGHTNING_TARGET = 100;
 const DEFAULT_LIGHTNING_FAST_MS = 2000;
 const DEFAULT_PRETEST_QUESTION_COUNT = 20;
 const DEFAULT_PRETEST_TIME_LIMIT_MS = 50000;
+const GAME_MODE_PRE_REWARD_PREVIEW_MS = 250;
 const ROCKET_VIDEO_FALLBACKS = [
   {
     name: 'Jetpack',
@@ -1666,12 +1667,21 @@ const useMathGame = () => {
       if (out?.updatedProgress) applyProgressPayload(out.updatedProgress);
 
       const surfCompleted = !!out?.completed && (out?.beltAwarded || out?.passed);
+      const expectedSurfStreak = isCorrect
+        ? Math.min(
+            Number.isFinite(questionsPerQuiz) ? questionsPerQuiz : 10,
+            (Number.isFinite(surfCorrectStreak) ? surfCorrectStreak : 0) + 1
+          )
+        : Number.isFinite(surfCorrectStreak)
+          ? surfCorrectStreak
+          : 0;
       if (surfCompleted) {
-        setIsGameMode(false);
-        setIsAnimating(false);
-
+        setSurfCorrectStreak((prev) => Math.max(prev, expectedSurfStreak));
         setIsTimerPaused(true);
         setPausedTime(Date.now());
+        await new Promise((resolve) => setTimeout(resolve, GAME_MODE_PRE_REWARD_PREVIEW_MS));
+        setIsGameMode(false);
+        setIsAnimating(false);
         if (ENABLE_ROCKET_MODE) {
           const surfOptions = generateRandomVideoOptions(surfVideoList);
           setSurfResumeAfterVideo(false);
@@ -1704,8 +1714,10 @@ const useMathGame = () => {
 
       const surfPassed = !!out?.surfQuizPassed;
       if (surfPassed) {
+        setSurfCorrectStreak((prev) => Math.max(prev, expectedSurfStreak));
         setIsTimerPaused(true);
         setPausedTime(Date.now());
+        await new Promise((resolve) => setTimeout(resolve, GAME_MODE_PRE_REWARD_PREVIEW_MS));
         setIsAnimating(false);
 
         const surfOptions = generateRandomVideoOptions(surfVideoList);
@@ -1758,11 +1770,21 @@ const useMathGame = () => {
 
       const rocketCompleted =
         !!out?.completed && (out?.beltAwarded || out?.passed || out?.levelAwarded);
+      const expectedRocketStreak = isCorrect
+        ? Math.min(
+            Number.isFinite(rocketQuestionsPerQuiz) ? rocketQuestionsPerQuiz : 10,
+            (Number.isFinite(rocketCorrectStreak) ? rocketCorrectStreak : 0) + 1
+          )
+        : Number.isFinite(rocketCorrectStreak)
+          ? rocketCorrectStreak
+          : 0;
       if (rocketCompleted) {
-        setIsGameMode(false);
-        setIsAnimating(false);
+        setRocketCorrectStreak((prev) => Math.max(prev, expectedRocketStreak));
         setIsTimerPaused(true);
         setPausedTime(Date.now());
+        await new Promise((resolve) => setTimeout(resolve, GAME_MODE_PRE_REWARD_PREVIEW_MS));
+        setIsGameMode(false);
+        setIsAnimating(false);
         const rocketOptions = generateRandomVideoOptions(
           rocketVideoList && rocketVideoList.length > 0
             ? rocketVideoList
@@ -1783,8 +1805,10 @@ const useMathGame = () => {
 
       const rocketPassed = !!out?.rocketQuizPassed;
       if (rocketPassed) {
+        setRocketCorrectStreak((prev) => Math.max(prev, expectedRocketStreak));
         setIsTimerPaused(true);
         setPausedTime(Date.now());
+        await new Promise((resolve) => setTimeout(resolve, GAME_MODE_PRE_REWARD_PREVIEW_MS));
         setIsAnimating(false);
         setShouldGoToRocketCompleteAfterVideo(false);
 
