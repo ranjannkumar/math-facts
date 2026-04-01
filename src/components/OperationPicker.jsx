@@ -45,6 +45,7 @@ const OperationPicker = () => {
     childName,
   } =
     useContext(MathGameContext);
+  const childNameDisplay = (childName || '').toUpperCase();
 
   useEffect(() => {
     refreshOperationAndProgress?.();
@@ -108,7 +109,7 @@ const OperationPicker = () => {
       </button>
 
       <h1 className="absolute left-1/2 top-[30%] z-10 -translate-x-1/2 -translate-y-full text-white text-3xl sm:text-4xl font-extrabold drop-shadow text-center animate-fade-in">
-        Welcome, {childName || ''}!
+        WELCOME, {childNameDisplay}
       </h1>
 
       <div className="absolute inset-0 flex items-center justify-center">

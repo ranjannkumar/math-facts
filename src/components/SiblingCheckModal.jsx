@@ -14,6 +14,7 @@ const SiblingCheckModal = () => {
     }
     
     const userName = loginPendingName || 'this user';
+    const userNameDisplay = userName.toUpperCase();
     
     const handleYes = () => handleSiblingCheck(true);
     const handleNo = () => handleSiblingCheck(false);
@@ -29,7 +30,7 @@ const SiblingCheckModal = () => {
                 }}
             >
                 <h2 className="text-3xl font-extrabold text-white mb-6">
-                    Are you <span className="font-extrabold text-yellow-300">{userName}</span> ?
+                    Are you <span className="font-extrabold text-yellow-300">{userNameDisplay}</span> ?
                 </h2>
                 {/* <h2 className="text-3xl font-bold mb-4">Confirm To Quit ?</h2> */}
                 {/* --- Button Group --- */}
