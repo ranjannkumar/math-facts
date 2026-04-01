@@ -344,16 +344,27 @@ const AdminDashboard = () => {
 
               <tbody className="divide-y divide-gray-700 text-white">
                 {stats.map((student) => (
-                  <tr key={student.id || student._id || student.pin} className="hover:bg-gray-700/50 transition-colors">
+                  <tr
+                    key={student.id || student._id || student.pin}
+                    className="cursor-pointer transition duration-200 ease-out hover:bg-gray-700/55 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70"
+                    onClick={() => handleViewStats(student.pin)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleViewStats(student.pin);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View question stats for ${student.name}`}
+                  >
                     <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-semibold">
-                      {/* WRAP NAME AND PIN IN A BUTTON FOR CLICKABILITY */}
-                      <button 
-                        onClick={() => handleViewStats(student.pin)} // [!code ++]
-                        className="text-blue-300 hover:text-blue-500 transition duration-150 ease-in-out underline text-left" // [!code ++]
-                        title={`View question stats for ${student.name}`} 
+                      <span
+                        className="text-blue-300 hover:text-blue-500 transition duration-150 ease-in-out underline text-left"
+                        title={`View question stats for ${student.name}`}
                       >
                         {student.name} (<span className="tabular-nums">#{student.pin}</span>)
-                      </button>
+                      </span>
                     </td>
                     <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm">
                       {student.loggedInToday ? '✅ Yes' : '❌ No'}
