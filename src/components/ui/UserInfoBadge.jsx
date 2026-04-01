@@ -194,10 +194,10 @@ const UserInfoBadge = () => {
         aria-label="Open user stats"
         className="
           rounded-2xl px-3.5 py-2.5
-          bg-gradient-to-br from-slate-800/85 to-slate-700/70
+          bg-gradient-to-br from-slate-900/82 to-slate-800/72
           backdrop-blur-md
-          ring-1 ring-white/15 shadow-lg
-          hover:from-slate-800/95 hover:to-slate-700/90
+          ring-1 ring-white/20 shadow-lg
+          hover:from-slate-900/94 hover:to-slate-800/86
           transition-all duration-300 group
           flex items-center
         "
@@ -215,29 +215,34 @@ const UserInfoBadge = () => {
       </button>
 
       {isOpen && (
-        <div
-          className="
-            absolute right-0 mt-2 w-[240px]
-            rounded-2xl p-3
-            bg-slate-900/95 text-white
-            ring-1 ring-white/15 shadow-2xl
-            backdrop-blur-md
-          "
-        >
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-300">Total Score</span>
-              <span className="font-extrabold tabular-nums">{totalScore}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-300">Total Time</span>
-              <span className="font-extrabold tabular-nums">{totalTime}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="font-bold">{progressInfo.level}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="font-bold">{formatBeltDisplay(progressInfo.belt)}</span>
+        <div className="absolute right-0 mt-2 w-[248px]">
+          <div className="rounded-2xl bg-gradient-to-br from-emerald-300/65 via-cyan-300/50 to-lime-200/58 p-[1.5px] shadow-[0_14px_34px_rgba(4,12,10,0.52)]">
+            <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-slate-950/82 text-white backdrop-blur-md">
+              <div className="pointer-events-none absolute -top-14 -right-12 h-28 w-28 rounded-full bg-emerald-400/16 blur-2xl" />
+              <div className="pointer-events-none absolute -bottom-16 -left-12 h-32 w-32 rounded-full bg-cyan-400/12 blur-2xl" />
+              <span className="pointer-events-none absolute top-2.5 left-3 text-[12px] font-black text-emerald-100/45">+</span>
+              <span className="pointer-events-none absolute top-2.5 right-3 text-[12px] font-black text-cyan-100/45">-</span>
+
+              <div className="relative space-y-2 p-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-slate-300">Total Score</span>
+                  <span className="font-extrabold tabular-nums">{totalScore}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-slate-300">Total Time</span>
+                  <span className="font-extrabold tabular-nums">{totalTime}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-bold">{progressInfo.level}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-bold">{formatBeltDisplay(progressInfo.belt)}</span>
+                </div>
+                {isLoadingStats && (
+                  <div className="pt-1 text-xs text-emerald-100/70">Updating...</div>
+                )}
+              </div>
+              <div className="h-[2px] w-full bg-gradient-to-r from-emerald-300/65 via-cyan-300/60 to-lime-200/68" />
             </div>
           </div>
         </div>
