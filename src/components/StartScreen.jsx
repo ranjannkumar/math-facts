@@ -1,8 +1,20 @@
 import React, { useContext } from 'react';
 import { MathGameContext } from '../App.jsx';
 
+const APP_VERSION = '6.1';
+const APP_RELEASE_DATE_BY_VERSION = {
+    '6.1': '2026-04-01',
+};
+
 const StartScreen = () => {
     const { navigate } = useContext(MathGameContext);
+    const releaseDateIso = APP_RELEASE_DATE_BY_VERSION[APP_VERSION] || '2026-04-01';
+    const releaseDateDisplay = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Los_Angeles',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+    }).format(new Date(`${releaseDateIso}T12:00:00Z`));
   
     const handleStartClick = () => {
         navigate('/name');
@@ -57,8 +69,18 @@ const StartScreen = () => {
                             inputMode="none"
                             tabIndex="-1"
                         >
-                            Version 6.1
+                            Version {APP_VERSION}
                         </button>
+                        <p
+                            className="mt-1 text-center text-white/85"
+                            style={{
+                                fontFamily: 'Arial, sans-serif',
+                                fontSize: 'clamp(0.68rem, 2.2vw, 0.8rem)',
+                                letterSpacing: '0.03em',
+                            }}
+                        >
+                            {releaseDateDisplay}
+                        </p>
                     </div>
           
                     <div className="px-2 sm:px-4">
