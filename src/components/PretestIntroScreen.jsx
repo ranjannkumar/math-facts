@@ -35,7 +35,7 @@ const PretestIntroScreen = () => {
         <div className="absolute bottom-[16%] right-[30%] h-1.5 w-1.5 rounded-full bg-white/45 animate-pulse" />
       </div>
 
-      <div className="relative w-full max-w-[420px]">
+      <div className="relative w-full max-w-[560px]">
         <div className="absolute -top-10 -right-8 h-28 w-28 rounded-full bg-emerald-300/30 blur-2xl" />
         <div className="absolute -bottom-12 -left-10 h-32 w-32 rounded-full bg-cyan-300/20 blur-2xl" />
 
@@ -55,7 +55,7 @@ const PretestIntroScreen = () => {
                   className="mx-auto w-full text-center font-extrabold tracking-tight text-white whitespace-normal break-words leading-tight text-[clamp(1.05rem,4vw,1.72rem)] sm:text-[clamp(1.3rem,2.9vw,1.95rem)]"
                   style={{ fontFamily: 'Baloo 2, Comic Neue, cursive' }}
                 >
-                  <span className="block text-[clamp(1.35rem,4.8vw,2.1rem)] sm:text-[clamp(1.65rem,3.3vw,2.35rem)] leading-[1.1]">
+                  <span className="block whitespace-nowrap text-[clamp(1.4rem,5vw,2.45rem)] sm:text-[clamp(1.8rem,3.4vw,2.7rem)] leading-[1.1]">
                     {`LEVEL ${levelLabel} PREVIEW`}
                   </span>
                   <span className="mt-1 block whitespace-nowrap text-[clamp(0.82rem,2.8vw,1.4rem)] sm:text-[clamp(0.95rem,2vw,1.5rem)] leading-[1.15]">
