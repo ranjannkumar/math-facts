@@ -234,11 +234,9 @@ const UserInfoBadge = () => {
               <span className="font-extrabold tabular-nums">{totalTime}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-300">Level</span>
               <span className="font-bold">{progressInfo.level}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-300">Belt</span>
               <span className="font-bold">{formatBeltDisplay(progressInfo.belt)}</span>
             </div>
           </div>
