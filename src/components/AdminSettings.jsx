@@ -710,7 +710,7 @@ const AdminSettings = () => {
   const inputClass =
     'w-32 bg-white/10 rounded-lg pl-3 pr-8 py-2 text-left text-white border border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed';
   const cardClass = 'rounded-2xl bg-white/10 border border-white/10 shadow-xl backdrop-blur-sm';
-  const sectionTitleClass = 'text-white text-lg font-bold';
+  const sectionTitleClass = 'text-white text-lg font-bold mb-4';
   const isBusy = isLoading || isSaving || isRestoringUser;
 
   return (
@@ -749,10 +749,12 @@ const AdminSettings = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/admin-dashboard')}
-            className="bg-white/10 hover:bg-white/20 text-white rounded-full p-2 shadow transition"
+            className="relative w-10 h-10 shrink-0 rounded-full bg-white/10 hover:bg-white/20 text-white shadow transition"
             aria-label="Back to admin dashboard"
           >
-            <FaArrowLeft size={16} />
+            <span className="absolute inset-0 flex items-center justify-center">
+              <FaArrowLeft size={15} className="block" />
+            </span>
           </button>
           <h1 className="text-white text-3xl sm:text-4xl font-extrabold drop-shadow">
             App Configuration
@@ -766,12 +768,7 @@ const AdminSettings = () => {
 
       <form onSubmit={handleSubmit} autoComplete="off" className="max-w-5xl mx-auto space-y-6">
         <div className={`${cardClass} p-5 sm:p-6`}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className={sectionTitleClass}>Black Belt Timers</div>
-              <p className="text-white/70 text-sm">Seconds per degree (1-7).</p>
-            </div>
-          </div>
+          <div className={sectionTitleClass}>Black Belt Timers</div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {[
@@ -803,8 +800,7 @@ const AdminSettings = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className={`${cardClass} p-5 sm:p-6`}>
-            <div className={sectionTitleClass}>Game Mode 1 (Speed)</div>
-            <p className="text-white/70 text-sm mb-4">Lightning bolt rules and pacing.</p>
+            <div className={sectionTitleClass}>Game Mode 1 (Lightning Bolts)</div>
 
             <div className="space-y-3">
               <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
@@ -833,8 +829,7 @@ const AdminSettings = () => {
           </div>
 
           <div className={`${cardClass} p-5 sm:p-6`}>
-            <div className={sectionTitleClass}>Game Mode 2 (Accuracy)</div>
-            <p className="text-white/70 text-sm mb-4">Streaks and surf wins required.</p>
+            <div className={sectionTitleClass}>Game Mode 2 (Surfboard)</div>
 
             <div className="space-y-3">
               <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
@@ -849,7 +844,7 @@ const AdminSettings = () => {
                 />
               </label>
               <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
-                <span className="text-white/90">Surf quizzes required</span>
+                <span className="text-white/90">Number of Surf quizzes</span>
                 <input
                   type="number"
                   min="0"
@@ -864,7 +859,6 @@ const AdminSettings = () => {
 
           <div className={`${cardClass} p-5 sm:p-6`}>
             <div className={sectionTitleClass}>Game Mode 3 (Rocket)</div>
-            <p className="text-white/70 text-sm mb-4">Reverse quiz size and wins required.</p>
 
             <div className="space-y-3">
               <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
@@ -879,7 +873,7 @@ const AdminSettings = () => {
                 />
               </label>
               <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
-                <span className="text-white/90">Rocket quizzes required</span>
+                <span className="text-white/90">Number of Rocket quizzes</span>
                 <input
                   type="number"
                   min="1"
@@ -895,7 +889,6 @@ const AdminSettings = () => {
 
         <div className={`${cardClass} p-5 sm:p-6`}>
           <div className={sectionTitleClass}>Global Timers</div>
-          <p className="text-white/70 text-sm mb-4">Applies to quizzes and both game modes.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
               <span className="text-white/90">Inactivity timer (sec)</span>
@@ -913,10 +906,9 @@ const AdminSettings = () => {
 
         <div className={`${cardClass} p-5 sm:p-6`}>
           <div className={sectionTitleClass}>Pretest Settings</div>
-          <p className="text-white/70 text-sm mb-4">Pretest length and time limit.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
-              <span className="text-white/90">Pretest questions</span>
+              <span className="text-white/90"> Number of Pretest questions</span>
               <input
                 type="number"
                 min="1"
@@ -939,9 +931,7 @@ const AdminSettings = () => {
             </label>
           </div>
           <div className="mt-4">
-            <p className="text-white/70 text-sm mb-3">
-              Per-level Pretest timer (sec).
-            </p>
+            <p className="text-white/70 text-sm mb-3">Per-Level Pretest timer (s)</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {Array.from({ length: PRETEST_LEVEL_COUNT }, (_, idx) => idx + 1).map((level) => (
                 <label
@@ -968,7 +958,6 @@ const AdminSettings = () => {
 
         <div className={`${cardClass} p-5 sm:p-6`}>
           <div className={sectionTitleClass}>Admin PIN</div>
-          <p className="text-white/70 text-sm mb-4">Update the admin PIN used for access.</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
               <span className="text-white/90">Current PIN</span>
@@ -1021,9 +1010,6 @@ const AdminSettings = () => {
 
         <div className={`${cardClass} p-5 sm:p-6`}>
           <div className={sectionTitleClass}>Restore User Progress</div>
-          <p className="text-white/70 text-sm mb-4">
-            Unlock any level for user
-          </p>
 
           <div className="space-y-3">
             <label className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
