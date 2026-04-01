@@ -109,6 +109,10 @@ const QuizScreen = () => {
     handleAnswerClick(numericAnswer);
   };
 
+  const visibleAnswerSymbols = answerSymbols.filter(
+    (answer) => typeof answer?.symbol === 'string' && answer.symbol.trim() !== ''
+  );
+
   return (
     <div
       className="App min-h-screen w-full relative landscape-optimized portrait-optimized ios-notch"
@@ -137,7 +141,7 @@ const QuizScreen = () => {
           <div className="relative h-20 mb-4">
             {/* Answer Symbols (shifted slightly up) */}
             <div className="flex justify-center items-center absolute w-full top-0 space-x-1">
-              {!isPretest && answerSymbols.map((answer, index) => (
+              {!isPretest && visibleAnswerSymbols.map((answer, index) => (
                 <span
                   key={`answer-${index}`}
                   className={`text-2xl font-bold ${
@@ -145,12 +149,9 @@ const QuizScreen = () => {
                       ? 'text-yellow-400'
                       : answer.symbol === '✓'
                       ? 'text-green-500'
-                      : answer.symbol.trim() === ''
-                      ? 'text-transparent'
                       : 'text-red-500'
                   }`}
                   title={`${answer.timeTaken.toFixed(1)}s - ${answer.isCorrect ? 'Correct' : 'Wrong'}`}
-                  style={{ minWidth: answer.symbol.trim() === '' ? '0' : 'auto' }}
                 >
                   {answer.symbol}
                 </span>
