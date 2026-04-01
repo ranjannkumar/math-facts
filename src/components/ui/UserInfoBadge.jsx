@@ -180,12 +180,7 @@ const UserInfoBadge = () => {
   return (
     <div
       ref={wrapperRef}
-      className="fixed z-50 select-none"
-      style={{
-        top: 'max(env(safe-area-inset-top), 1.8rem)',
-        right: 'max(env(safe-area-inset-right), 6.75rem)',
-        transform: 'translateY(-2px)',
-      }}
+      className="relative z-50 select-none"
     >
       <button
         type="button"
@@ -193,7 +188,8 @@ const UserInfoBadge = () => {
         aria-expanded={isOpen}
         aria-label="Open user stats"
         className="
-          rounded-2xl px-3.5 py-2.5
+          w-[7.4rem] sm:w-[9.6rem] md:w-[11.2rem]
+          rounded-2xl px-2.5 sm:px-3.5 py-2 sm:py-2.5
           bg-gradient-to-br from-slate-900/82 to-slate-800/72
           backdrop-blur-md
           ring-1 ring-white/20 shadow-lg
@@ -202,15 +198,15 @@ const UserInfoBadge = () => {
           flex items-center
         "
       >
-        <span className="flex flex-col items-start text-left leading-snug text-white drop-shadow-sm">
+        <span className="flex w-full flex-col items-start text-left leading-snug text-white drop-shadow-sm">
           <span
-            className="text-base font-bold tracking-normal max-w-[11rem] sm:max-w-[12rem] truncate"
+            className="text-sm sm:text-base font-bold tracking-normal w-full truncate"
             title={childName}
           >
             {childName}
           </span>
 
-          <span className="mt-0.5 text-[17px] font-bold tabular-nums opacity-90">#{childPin}</span>
+          <span className="mt-0.5 text-[15px] sm:text-[17px] font-bold tabular-nums opacity-90">#{childPin}</span>
         </span>
       </button>
 

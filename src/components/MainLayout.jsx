@@ -45,7 +45,7 @@ const MainLayout = ({ hideStats }) => {
     >
       {!hideSettingsButton && (
         <button
-          className="fixed top-4 right-4 z-50 bg-white/80 hover:bg-gray-200 text-gray-700 rounded-full p-3 shadow-lg border-4 border-gray-400 focus:outline-none transition-all duration-300 transform hover:scale-110 active:scale-95"
+          className="fixed top-4 right-4 z-[60] bg-white/80 hover:bg-gray-200 text-gray-700 rounded-full p-3 shadow-lg border-4 border-gray-400 focus:outline-none transition-all duration-300 transform hover:scale-110 active:scale-95"
           style={{ fontSize: '2rem', borderWidth: '4px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
           onClick={() => setShowSettings(true)}
           aria-label="Settings"
@@ -54,8 +54,17 @@ const MainLayout = ({ hideStats }) => {
         </button>
       )}
 
-      <UserInfoBadge />
-      <DailyStreakCounter />
+      <div
+        className="fixed z-50 flex items-start gap-2 sm:gap-3 select-none"
+        style={{
+          top: 'max(env(safe-area-inset-top), 1.8rem)',
+          right: 'max(env(safe-area-inset-right), clamp(5.25rem, 7vw, 7rem))',
+          transform: 'translateY(-2px)',
+        }}
+      >
+        <DailyStreakCounter />
+        <UserInfoBadge />
+      </div>
 
       {/* Routed pages */}
       <div className="w-full min-h-screen flex flex-col">
