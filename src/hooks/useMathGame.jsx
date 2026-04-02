@@ -1617,27 +1617,8 @@ const useMathGame = () => {
         return;
       }
       if (isGameMode && practiceMode === 'rocket') {
-        const reverseFact =
-          currentQuestion?.question != null && typeof out?.correctExpression === 'string'
-            ? `${currentQuestion.question} = ${out.correctExpression}`
-            : null;
-        const reverseQuestion =
-          currentQuestion?.question != null ? String(currentQuestion.question) : null;
-        const reverseOptions =
-          Array.isArray(currentQuestion?.answers) &&
-          Array.isArray(currentQuestion?.answerLabels) &&
-          currentQuestion.answerLabels.length > 0
-            ? currentQuestion.answers.map((answer) => ({
-                value: answer,
-                label: currentQuestion.answerLabels[answer] ?? String(answer),
-              }))
-            : null;
-        setRocketPracticeFact(reverseFact);
-        setRocketPracticeReverse(
-          reverseQuestion && reverseOptions && reverseOptions.length > 0
-            ? { question: reverseQuestion, options: reverseOptions }
-            : null
-        );
+        setRocketPracticeFact(null);
+        setRocketPracticeReverse(null);
         setPendingRocketPractice(false);
         navigate('/learning', { replace: true });
         return;
@@ -2577,27 +2558,8 @@ const useMathGame = () => {
             return;
           }
           if (isGameMode && gameModeType === 'rocket') {
-            const reverseFact =
-              currentQuestion?.question != null && typeof out?.correctExpression === 'string'
-                ? `${currentQuestion.question} = ${out.correctExpression}`
-                : null;
-            const reverseQuestion =
-              currentQuestion?.question != null ? String(currentQuestion.question) : null;
-            const reverseOptions =
-              Array.isArray(currentQuestion?.answers) &&
-              Array.isArray(currentQuestion?.answerLabels) &&
-              currentQuestion.answerLabels.length > 0
-                ? currentQuestion.answers.map((answer) => ({
-                    value: answer,
-                    label: currentQuestion.answerLabels[answer] ?? String(answer),
-                  }))
-                : null;
-            setRocketPracticeFact(reverseFact);
-            setRocketPracticeReverse(
-              reverseQuestion && reverseOptions && reverseOptions.length > 0
-                ? { question: reverseQuestion, options: reverseOptions }
-                : null
-            );
+            setRocketPracticeFact(null);
+            setRocketPracticeReverse(null);
             setPendingRocketPractice(false);
             navigate('/learning', { replace: true });
             return;

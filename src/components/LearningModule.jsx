@@ -170,9 +170,7 @@ const LearningModule = () => {
     currentQuestionIndex,
     pretestQuestionCount,
     hardResetQuizState,
-    rocketPracticeFact,
     setRocketPracticeFact,
-    rocketPracticeReverse,
     setRocketPracticeReverse,
   } = useContext(MathGameContext);
 
@@ -196,6 +194,15 @@ const LearningModule = () => {
 
   const [isClosing, setIsClosing] = useState(false);
 
+  const ensureFrontendQuestion = (rawQuestion) => {
+    if (!rawQuestion) return null;
+    const alreadyMapped =
+      Array.isArray(rawQuestion?.answers) &&
+      Object.prototype.hasOwnProperty.call(rawQuestion, 'correctAnswer') &&
+      typeof rawQuestion?.question === 'string';
+    return alreadyMapped ? rawQuestion : mapQuestionToFrontend(rawQuestion);
+  };
+
   // Warm up voices once so the first spoken fact uses the pleasant voice
 useEffect(() => {
   (async () => {
@@ -213,7 +220,7 @@ useEffect(() => {
     // Helper to map and set practice question details
     if (isClosing) return;
     const initializePractice = (rawQuestion) => {
-        const mappedQ = mapQuestionToFrontend(rawQuestion);
+        const mappedQ = ensureFrontendQuestion(rawQuestion);
         // console.log('Initialized Practice Question:', mappedQ);
         setPracticeQ(mappedQ);
         setSelectedAnswer(null); 
@@ -231,7 +238,7 @@ useEffect(() => {
     } else if (isPreQuizFlow) {
       if (preQuizPracticeItems.length > 0) {
         // Pre-quiz starts with the Fact Screen for the first item
-        const mappedItems = preQuizPracticeItems.map(mapQuestionToFrontend);
+        const mappedItems = preQuizPracticeItems.map(ensureFrontendQuestion);
         setPracticeQ(mappedItems[0]);
         setCurrentPracticeIndex(0);
         setIsShowingFact(true);
@@ -299,6 +306,16 @@ useEffect(() => {
   
   const extractFactDisplay = (q) => {
       if (!q) return '—';
+      if (isRocketInterventionPractice) {
+        const questionPart = extractQuestion(q);
+        const labels = Array.isArray(q?.answerLabels) ? q.answerLabels : [];
+        const correctIndex = Number.isInteger(q?.correctAnswer) ? q.correctAnswer : null;
+        const expression =
+          correctIndex != null && correctIndex >= 0 && correctIndex < labels.length
+            ? labels[correctIndex]
+            : null;
+        return expression ? `${questionPart} = ${expression}` : questionPart;
+      }
       const questionPart = extractQuestion(q);
       return `${questionPart} = ${q.correctAnswer}`;
   }
@@ -323,7 +340,7 @@ useEffect(() => {
     const nextIndex = currentPracticeIndex + 1;
     if (nextIndex < preQuizPracticeItems.length) {
         // Map the next raw question from the list
-        const mappedQ = mapQuestionToFrontend(preQuizPracticeItems[nextIndex]);
+        const mappedQ = ensureFrontendQuestion(preQuizPracticeItems[nextIndex]);
         
         setCurrentPracticeIndex(nextIndex);
         setPracticeQ(mappedQ);
@@ -425,7 +442,7 @@ useEffect(() => {
         } else {
           setShowAdvanceButton(false);
 
-          const mappedQ = mapQuestionToFrontend(preQuizPracticeItems[nextIndex]);
+          const mappedQ = ensureFrontendQuestion(preQuizPracticeItems[nextIndex]);
 
           setCurrentPracticeIndex(nextIndex);
           setPracticeQ(mappedQ);
@@ -526,32 +543,13 @@ useEffect(() => {
     }
   };
 
-  const evaluateExpression = (expr) => {
-    if (typeof expr !== 'string') return null;
-    const cleaned = expr.replace(/\s+/g, '');
-    const match = cleaned.match(/^(-?\d+)([+\-xX*\/])(-?\d+)$/);
-    if (!match) return null;
-    const left = Number(match[1]);
-    const op = match[2];
-    const right = Number(match[3]);
-    if (!Number.isFinite(left) || !Number.isFinite(right)) return null;
-    if (op === '+') return left + right;
-    if (op === '-') return left - right;
-    if (op === 'x' || op === 'X' || op === '*') return left * right;
-    if (op === '/') return right === 0 ? null : left / right;
-    return null;
-  };
-
-  const handleInterventionChoice = async (answer, label = null) => {
+  const handleInterventionChoice = async (answer) => {
     if (!practiceQ || isSubmitting) return;
     setIsSubmitting(true);
     setPracticeMsg('');
     setPracticeStatus(null);
 
-    const answerToSubmit =
-      isRocketInterventionPractice && typeof label === 'string'
-        ? evaluateExpression(label)
-        : answer;
+    const answerToSubmit = answer;
     const isCorrect = answerToSubmit === practiceQ.correctAnswer;
     if (!isCorrect) {
       audioManager.playWrongSound?.();
@@ -616,7 +614,7 @@ useEffect(() => {
         }
       } else {
         setShowAdvanceButton(false);
-        const mappedQ = mapQuestionToFrontend(preQuizPracticeItems[nextIndex]);
+        const mappedQ = ensureFrontendQuestion(preQuizPracticeItems[nextIndex]);
         setCurrentPracticeIndex(nextIndex);
         setPracticeQ(mappedQ);
         setIsShowingFact(true); // back to fact view for the next item
@@ -651,9 +649,7 @@ useEffect(() => {
         return (
           <>
             <div className="text-8xl sm:text-10xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
-              {isRocketInterventionPractice && rocketPracticeFact
-                ? rocketPracticeFact
-                : extractFactDisplay(practiceQ)}
+              {extractFactDisplay(practiceQ)}
             </div>
             <div className="flex justify-center">
               <button
@@ -667,11 +663,11 @@ useEffect(() => {
         );
       } else {
         if (isRocketInterventionPractice) {
-          const reverseQuestion = rocketPracticeReverse?.question || extractQuestion(practiceQ);
-          const reverseOptions =
-            Array.isArray(rocketPracticeReverse?.options) && rocketPracticeReverse.options.length > 0
-              ? rocketPracticeReverse.options
-              : (practiceQ.answers || []).map((ans) => ({ value: ans, label: String(ans) }));
+          const reverseQuestion = extractQuestion(practiceQ);
+          const reverseOptions = (practiceQ.answers || []).map((ans) => ({
+            value: ans,
+            label: practiceQ?.answerLabels?.[ans] ?? String(ans),
+          }));
           return (
             <>
               <div className="text-6xl sm:text-7xl font-extrabold text-green-500 text-center mb-6 whitespace-pre-line drop-shadow">
@@ -681,7 +677,7 @@ useEffect(() => {
                 {reverseOptions.map((option, idx) => (
                   <button
                     key={idx}
-                    onClick={() => handleInterventionChoice(option.value, option.label)}
+                    onClick={() => handleInterventionChoice(option.value)}
                     disabled={isSubmitting}
                     className="w-full bg-gray-100 text-gray-700 font-bold py-4 sm:py-5 rounded-xl shadow-md hover:bg-gray-200 active:scale-95 transition select-none border border-gray-200 text-2xl"
                   >
