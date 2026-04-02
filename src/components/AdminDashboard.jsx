@@ -21,6 +21,12 @@ const formatTime = (ms) => {
 
 const OPERATION_ORDER = ['add', 'sub', 'mul', 'div'];
 
+const formatStudentNameForDashboard = (name = '') => {
+  const safeName = String(name).trim();
+  if (!safeName) return '';
+  return safeName.charAt(0).toUpperCase() + safeName.slice(1).toLowerCase();
+};
+
 const getBeltLabel = (levelData = {}) => {
   const beltsOrder = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
   let currentBelt = 'White';
@@ -252,6 +258,10 @@ const AdminDashboard = () => {
     paddingTop: 'max(env(safe-area-inset-top), 1rem)',
     paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)',
   };
+  const tableHeaderStyle = {
+    background: 'rgba(84, 187, 213, 0.86)',
+    borderBottom: '1px solid rgba(179, 244, 255, 0.5)',
+  };
 
   if (loading && offset === 0) {
     return (
@@ -313,30 +323,33 @@ const AdminDashboard = () => {
         <>
           <div className="overflow-x-auto rounded-xl shadow-2xl bg-white/10 backdrop-blur-sm">
             <table className="min-w-full divide-y divide-gray-700">
-              <thead className="bg-gray-800/80 text-white">
+              <thead
+                className="text-white backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
+                style={tableHeaderStyle}
+              >
                 <tr>
-                  <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
                     Name (#PIN)
                   </th>
-                  <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
                     Logged In Today
                   </th>
-                  <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
                     Level
                   </th>
-                  <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
                     Belt
                   </th>
-                  <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
                     Today Time
                   </th>
-                  <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
                     Today Score
                   </th>
-                  <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
                     Total Time
                   </th>
-                  <th className="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
                     Total Score
                   </th>
                 </tr>
@@ -363,7 +376,7 @@ const AdminDashboard = () => {
                         className="text-white transition duration-150 ease-in-out text-left"
                         title={`View question stats for ${student.name}`}
                       >
-                        {student.name} (<span className="tabular-nums">#{student.pin}</span>)
+                        {formatStudentNameForDashboard(student.name)} (<span className="tabular-nums">#{student.pin}</span>)
                       </span>
                     </td>
                     <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:bg-emerald-400/60">
