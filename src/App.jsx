@@ -84,13 +84,6 @@ const App = () => {
     }
   }, [location.pathname]);
 
-  const MODAL_STYLE = {
-    background: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-    border: '4px solid white',
-    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(255, 255, 255, 0.2) inset'
-  };
-
-
   const providerValue = useMemo(() => ({ ...ctx, navigate }), [ctx, navigate]);
 
   return (
@@ -177,38 +170,99 @@ const App = () => {
 
       {/* Optional overlays kept here if you use them */}
       {ctx.showQuitModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fade-in">
-          <div 
-          className="bg-white rounded-2xl p-8 shadow-2xl max-w-lg w-full flex flex-col items-center animate-pop-in"
-          style={MODAL_STYLE}>
-            <h2 className="text-3xl font-bold mb-4">Confirm To Quit ?</h2>
-            <div className="flex justify-between text-center w-80 space-x-10">
-                <button className="kid-btn bg-yellow-500 hover:bg-yellow-600 text-white flex-1" onClick={ctx.handleConfirmQuit}>
-                    Yes
-                </button>
-                <button className="kid-btn bg-blue-400 hover:bg-blue-500 text-white flex-1" onClick={ctx.handleCancelQuit}>
-                    No
-                </button>
+        <div className="fixed inset-0 z-50 p-4 animate-fade-in">
+          <div
+            className="absolute inset-0 bg-black"
+            style={{
+              backgroundImage: "url('/night_sky_landscape.jpg')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          />
+          <div className="absolute inset-0 bg-black/30" />
+          <div className="relative flex h-full items-center justify-center">
+          <div className="relative w-full max-w-[520px] animate-pop-in">
+            <div className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-cyan-300/30 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-sky-300/20 blur-2xl" />
+            <div className="rounded-[28px] bg-gradient-to-br from-cyan-300/70 via-teal-300/56 to-sky-300/62 p-[1.5px] shadow-[0_18px_48px_rgba(4,12,20,0.6)]">
+              <div className="relative overflow-hidden rounded-[26px] border border-white/15 bg-slate-900/62 backdrop-blur-md">
+                <div className="pointer-events-none absolute -top-14 -right-12 h-28 w-28 rounded-full bg-cyan-300/18 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-16 -left-12 h-32 w-32 rounded-full bg-sky-300/12 blur-2xl" />
+                <div className="relative p-5 sm:p-6">
+                  <div className="mx-auto mb-5 w-full rounded-2xl border border-cyan-100/15 bg-slate-950/48 px-4 py-4 text-center shadow-[inset_0_0_24px_rgba(34,211,238,0.12)]">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-white" style={{ fontFamily: 'Baloo 2, Comic Neue, cursive' }}>
+                      Confirm To Quit ?
+                    </h2>
+                  </div>
+                  <div className="flex w-full gap-3 sm:gap-4">
+                    <button
+                      className="h-14 flex-1 rounded-xl border border-emerald-100/35 bg-gradient-to-r from-emerald-500 to-teal-500 text-base sm:text-lg font-black tracking-wide text-white shadow-lg shadow-emerald-900/30 transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-400 hover:to-teal-400 active:translate-y-0"
+                      onClick={ctx.handleConfirmQuit}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      className="h-14 flex-1 rounded-xl border border-white/25 bg-slate-100 text-base sm:text-lg font-black tracking-wide text-slate-700 shadow-lg shadow-slate-900/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
+                      onClick={ctx.handleCancelQuit}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+                <div className="h-[2px] w-full bg-gradient-to-r from-cyan-300/72 via-teal-300/66 to-sky-300/72" />
+              </div>
             </div>
+          </div>
           </div>
         </div>
       )}
 
       {ctx.showResetModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fade-in">
-          <div 
-          className="bg-white rounded-2xl p-8 shadow-2xl max-w-lg w-full flex flex-col items-center animate-pop-in"
-          style={MODAL_STYLE}>
-            <h2 className="text-3xl font-bold mb-4">Confirm Reset Progress ?</h2>
-            {/* --- HORIZONTAL BUTTON WRAPPER --- */}
-            <div className="flex justify-between w-80 space-x-4">
-                <button className="kid-btn bg-red-600 hover:bg-red-700 text-white flex-1" onClick={ctx.handleConfirmReset}>
-                    Yes
-                </button>
-                <button className="kid-btn bg-blue-400 hover:bg-blue-500 text-white flex-1" onClick={ctx.handleCancelReset}>
-                    No
-                </button>
+        <div className="fixed inset-0 z-50 p-4 animate-fade-in">
+          <div
+            className="absolute inset-0 bg-black"
+            style={{
+              backgroundImage: "url('/night_sky_landscape.jpg')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          />
+          <div className="absolute inset-0 bg-black/30" />
+          <div className="relative flex h-full items-center justify-center">
+          <div className="relative w-full max-w-[520px] animate-pop-in">
+            <div className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-cyan-300/30 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-sky-300/20 blur-2xl" />
+            <div className="rounded-[28px] bg-gradient-to-br from-cyan-300/70 via-teal-300/56 to-sky-300/62 p-[1.5px] shadow-[0_18px_48px_rgba(4,12,20,0.6)]">
+              <div className="relative overflow-hidden rounded-[26px] border border-white/15 bg-slate-900/62 backdrop-blur-md">
+                <div className="pointer-events-none absolute -top-14 -right-12 h-28 w-28 rounded-full bg-cyan-300/18 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-16 -left-12 h-32 w-32 rounded-full bg-sky-300/12 blur-2xl" />
+                <div className="relative p-5 sm:p-6">
+                  <div className="mx-auto mb-5 w-full rounded-2xl border border-cyan-100/15 bg-slate-950/48 px-4 py-4 text-center shadow-[inset_0_0_24px_rgba(34,211,238,0.12)]">
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-white" style={{ fontFamily: 'Baloo 2, Comic Neue, cursive' }}>
+                      Confirm Reset Progress ?
+                    </h2>
+                  </div>
+                  <div className="flex w-full gap-3 sm:gap-4">
+                    <button
+                      className="h-14 flex-1 rounded-xl border border-red-200/45 bg-red-600 text-base sm:text-lg font-black tracking-wide text-white shadow-lg shadow-red-900/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-500 active:translate-y-0"
+                      onClick={ctx.handleConfirmReset}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      className="h-14 flex-1 rounded-xl border border-white/25 bg-slate-100 text-base sm:text-lg font-black tracking-wide text-slate-700 shadow-lg shadow-slate-900/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
+                      onClick={ctx.handleCancelReset}
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+                <div className="h-[2px] w-full bg-gradient-to-r from-cyan-300/72 via-teal-300/66 to-sky-300/72" />
+              </div>
             </div>
+          </div>
           </div>
         </div>
       )}
