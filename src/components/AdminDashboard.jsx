@@ -346,7 +346,7 @@ const AdminDashboard = () => {
                 {stats.map((student) => (
                   <tr
                     key={student.id || student._id || student.pin}
-                    className="cursor-pointer transition duration-200 ease-out hover:bg-gray-700/55 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70"
+                    className="group cursor-pointer transition duration-200 ease-out hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/75"
                     onClick={() => handleViewStats(student.pin)}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' || event.key === ' ') {
@@ -358,33 +358,33 @@ const AdminDashboard = () => {
                     tabIndex={0}
                     aria-label={`View question stats for ${student.name}`}
                   >
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-semibold">
+                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-semibold transition-colors duration-200 group-hover:bg-emerald-400/60">
                       <span
-                        className="text-blue-300 hover:text-blue-500 transition duration-150 ease-in-out underline text-left"
+                        className="text-white transition duration-150 ease-in-out text-left"
                         title={`View question stats for ${student.name}`}
                       >
                         {student.name} (<span className="tabular-nums">#{student.pin}</span>)
                       </span>
                     </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm">
+                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:bg-emerald-400/60">
                       {student.loggedInToday ? '✅ Yes' : '❌ No'}
                     </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm">
+                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:bg-emerald-400/60">
                       {student.currentLevel}
                     </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-medium transition-colors duration-200 group-hover:bg-emerald-400/60">
                       {student.currentBelt}
                     </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm tabular-nums">
+                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm tabular-nums transition-colors duration-200 group-hover:bg-emerald-400/60">
                       {formatTime(student.todayActiveMs)}
                     </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm tabular-nums">
+                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm tabular-nums transition-colors duration-200 group-hover:bg-emerald-400/60">
                       {student.todayCorrect}
                     </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm tabular-nums">
+                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm tabular-nums transition-colors duration-200 group-hover:bg-emerald-400/60">
                       {formatTime(student.grandTotalActiveMs)}
                     </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-bold tabular-nums">
+                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-bold tabular-nums transition-colors duration-200 group-hover:bg-emerald-400/60">
                       {student.grandTotalCorrect}
                     </td>
                   </tr>
