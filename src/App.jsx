@@ -200,13 +200,13 @@ const App = () => {
                       className="h-14 flex-1 rounded-xl border border-emerald-100/35 bg-gradient-to-r from-emerald-500 to-teal-500 text-base sm:text-lg font-black tracking-wide text-white shadow-lg shadow-emerald-900/30 transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-400 hover:to-teal-400 active:translate-y-0"
                       onClick={ctx.handleConfirmQuit}
                     >
-                      Yes
+                      YES
                     </button>
                     <button
                       className="h-14 flex-1 rounded-xl border border-white/25 bg-slate-100 text-base sm:text-lg font-black tracking-wide text-slate-700 shadow-lg shadow-slate-900/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
                       onClick={ctx.handleCancelQuit}
                     >
-                      No
+                      NO
                     </button>
                   </div>
                 </div>
