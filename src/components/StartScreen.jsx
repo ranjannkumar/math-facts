@@ -1,9 +1,9 @@
 import React, { useContext } from 'react';
 import { MathGameContext } from '../App.jsx';
 
-const APP_VERSION = '6.1';
+const APP_VERSION = '6.2';
 const APP_RELEASE_DATE_BY_VERSION = {
-    '6.1': '2026-04-01',
+    '6.2': '2026-04-02',
 };
 
 const StartScreen = () => {
