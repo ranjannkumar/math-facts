@@ -1595,6 +1595,11 @@ const useMathGame = () => {
       }
     );
 
+    const playGameModeAnswerFeedback = () => {
+      if (isCorrect) audioManager.playCompleteSound();
+      else audioManager.playWrongSound();
+    };
+
     // practice (backend decides) -> go learning
     if (out?.practice) {
       // reset streak on interruption (matches quiz feel)
@@ -1657,6 +1662,7 @@ const useMathGame = () => {
           ? surfCorrectStreak
           : 0;
       if (surfCompleted) {
+        playGameModeAnswerFeedback();
         setSurfCorrectStreak((prev) => Math.max(prev, expectedSurfStreak));
         setIsTimerPaused(true);
         setPausedTime(Date.now());
@@ -1695,6 +1701,7 @@ const useMathGame = () => {
 
       const surfPassed = !!out?.surfQuizPassed;
       if (surfPassed) {
+        playGameModeAnswerFeedback();
         setSurfCorrectStreak((prev) => Math.max(prev, expectedSurfStreak));
         setIsTimerPaused(true);
         setPausedTime(Date.now());
@@ -1760,6 +1767,7 @@ const useMathGame = () => {
           ? rocketCorrectStreak
           : 0;
       if (rocketCompleted) {
+        playGameModeAnswerFeedback();
         setRocketCorrectStreak((prev) => Math.max(prev, expectedRocketStreak));
         setIsTimerPaused(true);
         setPausedTime(Date.now());
@@ -1786,6 +1794,7 @@ const useMathGame = () => {
 
       const rocketPassed = !!out?.rocketQuizPassed;
       if (rocketPassed) {
+        playGameModeAnswerFeedback();
         setRocketCorrectStreak((prev) => Math.max(prev, expectedRocketStreak));
         setIsTimerPaused(true);
         setPausedTime(Date.now());
