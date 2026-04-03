@@ -2049,7 +2049,10 @@ const useMathGame = () => {
       // ------------ NORMAL QUIZ BRANCH (mostly unchanged) ------------
       const timeTaken = responseMs / 1000;
       const nextIndex = currentQuestionIndex + 1;
-      const newProgress = Math.min(nextIndex * (100 / maxQuestions), 100);
+      const totalForProgress = isPretest
+        ? pretestQuestionCount || 20
+        : maxQuestions;
+      const progressStep = totalForProgress > 0 ? 100 / totalForProgress : 0;
 
       const streakMilestones = [3, 5, 10, 15, 20];
       let newQuizStreak = currentQuizStreak;
@@ -2103,7 +2106,9 @@ const useMathGame = () => {
         setTransientStreakMessage(null);
       }
 
-      setQuizProgress(newProgress);
+      if (progressStep > 0) {
+        setQuizProgress((prev) => Math.min(prev + progressStep, 100));
+      }
 
       let uiAdvancedOptimistically = false;
       if (isCorrect && nextIndex < quizQuestions.length) {
@@ -2217,8 +2222,12 @@ const useMathGame = () => {
           }
 
           const backendNextIndexKnown = typeof out?.nextIndex === 'number';
-          const fallbackNextIndex = isCorrect ? currentQuestionIndex + 1 : currentQuestionIndex;
+          const fallbackNextIndex = currentQuestionIndex + 1;
           const resolvedNextIndex = backendNextIndexKnown ? out.nextIndex : fallbackNextIndex;
+          if (totalForProgress > 0) {
+            const backendProgress = Math.min((Math.max(0, resolvedNextIndex) * 100) / totalForProgress, 100);
+            setQuizProgress((prev) => Math.max(prev, backendProgress));
+          }
 
           if (out?.next) {
             const mappedNext = mapQuestionToFrontend(out.next);
@@ -2352,6 +2361,7 @@ const useMathGame = () => {
       setIsTimerPaused,
       setPausedTime,
       isPretest,
+      pretestQuestionCount,
       stopPretestTimer,
       pretestTimeLimitMs,
       selectedOperation,
@@ -2499,7 +2509,12 @@ const useMathGame = () => {
       return;
     }
 
-    const isActiveScreen = !!quizRunId && !!currentQuestion && !isTimerPaused && !showResult;
+    const isActiveScreen =
+      !!quizRunId &&
+      !!currentQuestion &&
+      !isTimerPaused &&
+      !showResult &&
+      !isAwaitingInactivityResponse;
 
     if (!isActiveScreen) {
       if (inactivityTimeoutId.current) {
@@ -2522,6 +2537,12 @@ const useMathGame = () => {
       if (inactivityTimeoutId.current) {
         clearTimeout(inactivityTimeoutId.current);
         inactivityTimeoutId.current = null;
+      }
+
+      const totalForProgress = isPretest ? pretestQuestionCount || 20 : maxQuestions;
+      if (totalForProgress > 0) {
+        const step = 100 / totalForProgress;
+        setQuizProgress((prev) => Math.min(prev + step, 100));
       }
 
       setIsAwaitingInactivityResponse(true);
@@ -2643,12 +2664,15 @@ const useMathGame = () => {
     currentQuestion,
     isTimerPaused,
     showResult,
+    isAwaitingInactivityResponse,
     quizRunId,
     childPin,
     navigate,
     isGameMode,
     gameModeType,
     currentQuestionIndex,
+    maxQuestions,
+    pretestQuestionCount,
     inactivityTimeoutMs,
     pretestInactivityTimeoutMs,
     isPretest,
