@@ -51,14 +51,14 @@ const SettingsModal = () => {
                                         handleCloseSettings();
                                     }}
                                 >
-                                    Quit
+                                    QUIT
                                 </button>
 
                                 <button
-                                    className="h-12  w-[78%] rounded-xl border border-emerald-100/35 bg-gradient-to-r from-emerald-500 to-teal-500 text-sm sm:h-13 sm:text-base font-black tracking-wide text-white shadow-lg shadow-emerald-900/30 transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-400 hover:to-teal-400 active:translate-y-0"
+                                    className="h-12  w-[78%] rounded-xl border border-emerald-100/35 bg-white text-sm sm:h-13 sm:text-base font-black tracking-wide text-slate-700 shadow-lg shadow-emerald-900/30 transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-400 hover:to-teal-400 active:translate-y-0"
                                     onClick={handleCloseSettings}
                                 >
-                                    Back to Game
+                                    BACK TO GAME
                                 </button>
                             </div>
                         </div>

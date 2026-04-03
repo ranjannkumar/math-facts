@@ -55,7 +55,6 @@ const SiblingCheckModal = () => {
                                 </button>
                             </div>
                         </div>
-                        <div className="h-[2px] w-full bg-gradient-to-r from-emerald-300/75 via-cyan-300/70 to-lime-200/75" />
                     </div>
                 </div>
             </div>
