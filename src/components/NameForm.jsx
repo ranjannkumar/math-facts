@@ -142,6 +142,8 @@ const NameForm = () => {
   const {
     childPin,
     childName, 
+    setChildName,
+    setChildPin,
     handleNameChange,
     handlePinChange,
     handlePinSubmit,
@@ -151,6 +153,8 @@ const NameForm = () => {
   } = useMathGamePick((ctx) => ({
     childPin: ctx.childPin || '',
     childName: ctx.childName || '',
+    setChildName: ctx.setChildName || NOOP,
+    setChildPin: ctx.setChildPin || NOOP,
     handleNameChange: ctx.handleNameChange || NOOP,
     handlePinChange: ctx.handlePinChange || NOOP,
     handlePinSubmit: ctx.handlePinSubmit || LOGIN_UNAVAILABLE,
@@ -163,6 +167,10 @@ const NameForm = () => {
   const [showAdminPinModal, setShowAdminPinModal] = useState(false);
   const wasAdminPinModalOpenRef = useRef(false);
 
+  useEffect(() => {
+    setChildName('');
+    setChildPin('');
+  }, [setChildName, setChildPin]);
 
   useEffect(() => {
     const wasOpen = wasAdminPinModalOpenRef.current;

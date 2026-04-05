@@ -78,6 +78,9 @@ const PRETEST_INACTIVITY_TIMEOUT_STORAGE_KEY = 'math-pretest-inactivity-ms';
 const LIGHTNING_TARGET_STORAGE_KEY = 'math-lightning-target';
 const LIGHTNING_FAST_MS_STORAGE_KEY = 'math-lightning-fast-ms';
 
+const shouldStartWithEmptyIdentity = () =>
+  typeof window !== 'undefined' && window.location.pathname === '/name';
+
 const useMathGame = () => {
   const navigate = useNavigate();
 
@@ -205,9 +208,15 @@ const useMathGame = () => {
   // Identity and Progress
   const [selectedTheme, setSelectedTheme] = useState(null);
   const [userThemeKey, setUserThemeKey] = useState(null);
-  const [childName, setChildName] = useState(() => localStorage.getItem('math-child-name') || '');
+  const [childName, setChildName] = useState(() => {
+    if (shouldStartWithEmptyIdentity()) return '';
+    return localStorage.getItem('math-child-name') || '';
+  });
   const [childAge, setChildAge] = useState(() => localStorage.getItem('math-child-age') || '');
-  const [childPin, setChildPin] = useState(() => localStorage.getItem('math-child-pin') || '');
+  const [childPin, setChildPin] = useState(() => {
+    if (shouldStartWithEmptyIdentity()) return '';
+    return localStorage.getItem('math-child-pin') || '';
+  });
   const {
     selectedOperation,
     setSelectedOperation,
