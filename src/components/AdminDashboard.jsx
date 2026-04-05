@@ -20,6 +20,7 @@ const formatTime = (ms) => {
 };
 
 const OPERATION_ORDER = ['add', 'sub', 'mul', 'div'];
+const PROGRESS_PLACEHOLDER = 'Loading...';
 
 const formatStudentNameForDashboard = (name = '') => {
   const safeName = String(name).trim();
@@ -58,6 +59,11 @@ const parseLevelsFromNode = (node = {}) =>
     .filter((x) => Number.isFinite(x.level))
     .sort((a, b) => a.level - b.level);
 
+const hasFlatLevelKeys = (node) =>
+  !!node &&
+  typeof node === 'object' &&
+  Object.keys(node).some((key) => /^L\d+$/i.test(key));
+
 const pickCurrentLevelFromLevels = (levelsAsc = []) => {
   if (!levelsAsc.length) return null;
 
@@ -72,15 +78,22 @@ const pickCurrentLevelFromLevels = (levelsAsc = []) => {
 const getCurrentProgress = (progress) => {
   if (!progress) return { level: 'N/A', belt: 'N/A' };
 
-  // Backward-compatible: old flat format { L1, L2, ... }
-  const flatLevels = parseLevelsFromNode(progress);
-  if (flatLevels.length > 0) {
-    const currentLevelInfo = pickCurrentLevelFromLevels(flatLevels);
-    if (!currentLevelInfo) return { level: 'N/A', belt: 'N/A' };
-    return {
-      level: `L${currentLevelInfo.level}`,
-      belt: getBeltLabel(currentLevelInfo.data),
-    };
+  const hasScopedOps = OPERATION_ORDER.some(
+    (op) => progress?.[op] && typeof progress[op] === 'object'
+  );
+
+  // Backward-compatible: old flat format { L1, L2, ... }.
+  // Only use it when operation-scoped nodes are not present.
+  if (!hasScopedOps && hasFlatLevelKeys(progress)) {
+    const flatLevels = parseLevelsFromNode(progress);
+    if (flatLevels.length > 0) {
+      const currentLevelInfo = pickCurrentLevelFromLevels(flatLevels);
+      if (!currentLevelInfo) return { level: 'N/A', belt: 'N/A' };
+      return {
+        level: `L${currentLevelInfo.level}`,
+        belt: getBeltLabel(currentLevelInfo.data),
+      };
+    }
   }
 
   // New format: operation-scoped { add: {L1...}, sub: {L1...}, ... }
@@ -94,8 +107,11 @@ const getCurrentProgress = (progress) => {
 
   if (!opSnapshots.length) return { level: 'N/A', belt: 'N/A' };
 
-  const firstIncompleteOp = opSnapshots.find((entry) => !entry.current.data?.completed);
-  const active = firstIncompleteOp || opSnapshots[opSnapshots.length - 1];
+  // Match operation picker behavior: highest unlocked incomplete operation.
+  const highestUnlockedIncompleteOp = [...opSnapshots]
+    .reverse()
+    .find((entry) => !entry.current.data?.completed);
+  const active = highestUnlockedIncompleteOp || opSnapshots[opSnapshots.length - 1];
   const opLabel = active.operation.toUpperCase();
 
   return {
@@ -159,39 +175,54 @@ const AdminDashboard = () => {
           : null;
       setHasMore(hasMoreFromHeader ?? initialData.length >= limit);
 
-      const statsWithProgressPromises = initialData.map(async (student) => {
-        let currentLevel = 'N/A';
-        let currentBelt = 'N/A';
-
-        try {
-          const progressResponse = await userGetProgress(student.pin);
-          const progress = progressResponse.progress;
-          const progressInfo = getCurrentProgress(progress);
-          currentLevel = progressInfo.level;
-          currentBelt = progressInfo.belt;
-        } catch (e) {
-          console.warn(`Failed to fetch progress for ${student.name} (${student.pin}):`, e);
-          currentLevel = 'Error';
-          currentBelt = 'Error';
-        }
-
-        return {
+      const initialRows = initialData.map((student) => ({
           ...student,
-          currentLevel,
-          currentBelt,
-        };
-      });
-
-      const finalStats = await Promise.all(statsWithProgressPromises);
+          currentLevel: PROGRESS_PLACEHOLDER,
+          currentBelt: PROGRESS_PLACEHOLDER,
+      }));
 
       // NEW: append pages
       if (offset === 0) {
-        setStats(finalStats);
+        setStats(initialRows);
       } else {
-        setStats((prev) => [...prev, ...finalStats]);
+        setStats((prev) => [...prev, ...initialRows]);
       }
 
       setError(null);
+
+      initialData.forEach((student) => {
+        userGetProgress(student.pin)
+          .then((progressResponse) => {
+            const progress = progressResponse?.progress;
+            const progressInfo = getCurrentProgress(progress);
+
+            setStats((prev) =>
+              prev.map((existing) =>
+                existing.pin === student.pin
+                  ? {
+                      ...existing,
+                      currentLevel: progressInfo.level,
+                      currentBelt: progressInfo.belt,
+                    }
+                  : existing
+              )
+            );
+          })
+          .catch((e) => {
+            console.warn(`Failed to fetch progress for ${student.name} (${student.pin}):`, e);
+            setStats((prev) =>
+              prev.map((existing) =>
+                existing.pin === student.pin
+                  ? {
+                      ...existing,
+                      currentLevel: 'Error',
+                      currentBelt: 'Error',
+                    }
+                  : existing
+              )
+            );
+          });
+      });
     } catch (e) {
       console.error('Failed to fetch admin stats or progress:', e);
       setError(e.message || 'Failed to fetch dashboard data.');
@@ -263,7 +294,7 @@ const AdminDashboard = () => {
     borderBottom: '1px solid rgba(179, 244, 255, 0.5)',
   };
 
-  if (loading && offset === 0) {
+  if (loading && offset === 0 && stats.length === 0) {
     return (
       <div className="flex items-center justify-center" style={dashboardStyle}>
         <p className="text-white text-2xl animate-pulse">Loading Admin Dashboard...</p>

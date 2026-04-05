@@ -63,32 +63,64 @@ const pickCurrentLevelFromLevels = (levelsAsc = []) => {
   return highestUnlockedIncomplete || unlockedLevels[unlockedLevels.length - 1] || levelsAsc[0];
 };
 
+const getOperationLabel = (operation) => {
+  const opLabelMap = {
+    add: 'Addition',
+    sub: 'Subtraction',
+    mul: 'Multiplication',
+    div: 'Division',
+  };
+  return opLabelMap[operation] || operation;
+};
+
+const buildOperationProgressViews = (progress, selectedOperation) => {
+  const views = {};
+
+  OPERATION_ORDER.forEach((op) => {
+    if (progress?.[op] && typeof progress[op] === 'object') {
+      views[op] = progress[op];
+    }
+  });
+
+  const fallbackOp = normalizeOperation(selectedOperation || 'add');
+  const hasAnyScopedOp = Object.keys(views).length > 0;
+
+  if (hasFlatLevelKeys(progress)) {
+    const fallbackLevels = parseLevelsFromNode(views[fallbackOp] || {});
+    if (!fallbackLevels.length) {
+      views[fallbackOp] = progress;
+    }
+  } else if (!hasAnyScopedOp) {
+    views[fallbackOp] = {};
+  }
+
+  return views;
+};
+
 const getCurrentProgressFromBackend = (progress, selectedOperation) => {
   if (!progress || typeof progress !== 'object') return { level: '--', belt: '--' };
 
-  let scoped = progress;
-  if (!hasFlatLevelKeys(progress)) {
-    const normalizedOp = normalizeOperation(selectedOperation || 'add');
-    if (progress?.[normalizedOp] && typeof progress[normalizedOp] === 'object') {
-      scoped = progress[normalizedOp];
-    } else {
-      const fallbackOp = OPERATION_ORDER.find((op) => progress?.[op] && typeof progress[op] === 'object');
-      scoped = fallbackOp ? progress[fallbackOp] : {};
-    }
-  }
+  const opViews = buildOperationProgressViews(progress, selectedOperation);
+  const snapshots = OPERATION_ORDER.map((operation) => {
+    const levels = parseLevelsFromNode(opViews[operation] || {});
+    if (!levels.length) return null;
+    const current = pickCurrentLevelFromLevels(levels);
+    if (!current || !current.data?.unlocked) return null;
+    return { operation, current };
+  }).filter(Boolean);
 
-  const levels = parseLevelsFromNode(scoped);
-  if (!levels.length) return { level: '--', belt: '--' };
-  const currentLevelInfo = pickCurrentLevelFromLevels(levels);
-  if (!currentLevelInfo) return { level: '--', belt: '--' };
+  if (!snapshots.length) return { level: '--', belt: '--' };
 
-  const opLabelMap = { add: 'Addition', sub: 'Subtraction', mul: 'Multiplication', div: 'Division' };
-  const normalizedOp = normalizeOperation(selectedOperation || 'add');
-  const opLabel = opLabelMap[normalizedOp] || normalizedOp;
+  // Match operation picker behavior: show the highest unlocked incomplete operation.
+  const highestUnlockedIncompleteOp = [...snapshots]
+    .reverse()
+    .find((entry) => !entry.current.data?.completed);
+  const active = highestUnlockedIncompleteOp || snapshots[snapshots.length - 1];
+  const opLabel = getOperationLabel(active.operation);
 
   return {
-    level: `${opLabel} Level ${currentLevelInfo.level}`,
-    belt: getBeltLabel(currentLevelInfo.data),
+    level: `${opLabel} Level ${active.current.level}`,
+    belt: getBeltLabel(active.current.data),
   };
 };
 
