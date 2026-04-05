@@ -223,8 +223,11 @@ const LearningModule = () => {
   const isPreQuizFlow = !isIntervention && preQuizPracticeItems?.length > 0;
   const isRocketInterventionPractice =
     isIntervention && isGameMode && isGameModePractice && gameModeType === 'rocket';
+  const isFactView = (isIntervention || isPreQuizFlow) && isShowingFact;
 
   const [isClosing, setIsClosing] = useState(false);
+  const factLineClass =
+    'font-bold text-green-600 mb-4 text-center whitespace-nowrap leading-none text-[clamp(2.15rem,9vw,5.4rem)]';
 
   const ensureFrontendQuestion = (rawQuestion) => {
     if (!rawQuestion) return null;
@@ -680,7 +683,7 @@ useEffect(() => {
          if (isClosing) return null;
         return (
           <>
-            <div className="text-8xl sm:text-10xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
+            <div className={factLineClass}>
               {extractFactDisplay(practiceQ)}
             </div>
             <div className="flex justify-center">
@@ -787,7 +790,7 @@ useEffect(() => {
       if (isShowingFact) {
         return (
           <>
-            <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-green-600 mb-4 whitespace-pre-line text-center">
+            <div className={factLineClass}>
               {extractFactDisplay(practiceQ)}
             </div>
             <div className="flex justify-center">
@@ -844,7 +847,13 @@ useEffect(() => {
         }}
       />
       {/* Modal/Popup Container */}
-      <div className="bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm sm:max-w-md w-full mx-2 sm:mx-4 border border-blue-200/30 popup-zoom-in">
+      <div
+        className={`bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 rounded-2xl sm:rounded-3xl shadow-2xl border border-blue-200/30 popup-zoom-in ${
+          isFactView
+            ? 'p-6 sm:p-8 lg:p-10 w-[min(92vw,44rem)]'
+            : 'p-6 sm:p-8 max-w-sm sm:max-w-md w-full mx-2 sm:mx-4'
+        }`}
+      >
         {renderBody()}
       </div>
     </div>
