@@ -4,10 +4,11 @@ import { useMathGameSelector } from '../store/mathGameBridgeStore.js';
 const NOOP_NAVIGATE = () => {};
 
 
-const APP_VERSION = '6.3';
+const APP_VERSION = '6.5';
 const APP_RELEASE_DATE_BY_VERSION = {
     '6.2': '2026-04-02',
     '6.3': '2026-04-03',
+    '6.5': '2026-04-05'
 };
 
 const StartScreen = () => {
