@@ -153,6 +153,7 @@ const TablePicker = () => {
   const unlocked = !!levelNumber; 
 
   const [showFactVideo, setShowFactVideo] = useState(false);
+  const [loadingDots, setLoadingDots] = useState(1);
   useEffect(() => {
   if (playFactVideoAfterStreak && !showDailyStreakAnimation) {
     setShowFactVideo(true);
@@ -160,6 +161,19 @@ const TablePicker = () => {
     setPlayFactVideoAfterStreak(false); 
   }
 }, [playFactVideoAfterStreak, showDailyStreakAnimation]);
+
+  useEffect(() => {
+    if (!isInitialPrepLoading) {
+      setLoadingDots(1);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setLoadingDots((prev) => (prev >= 3 ? 1 : prev + 1));
+    }, 450);
+
+    return () => clearInterval(timer);
+  }, [isInitialPrepLoading]);
 
   
   // The rest of the state and handlers for navigation (goPrev/goNext) are removed.
@@ -185,6 +199,7 @@ const TablePicker = () => {
   const nameClass = 'text-3xl lg:text-4xl xl:text-5xl';
   const levelLineClass = 'text-lg lg:text-2xl xl:text-[1.65rem]';
   const starsClass = 'text-2xl lg:text-3xl xl:text-4xl mt-2 lg:mt-3';
+  const loadingText = `Loading${'.'.repeat(loadingDots)}`;
 
   const handleSelect = () => {
     if (!unlocked || isInitialPrepLoading) return; // Safeguard
@@ -313,6 +328,43 @@ const TablePicker = () => {
           </div>
         </div>
       </div>
+
+      {isInitialPrepLoading && (
+        <div
+          className="fixed inset-0 z-[100200] flex items-center justify-center px-4"
+          style={{
+            backgroundImage: "url('/night_sky_landscape.jpg')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundColor: 'rgba(2, 6, 23, 0.72)',
+            backdropFilter: 'blur(2px)',
+          }}
+        >
+          <div className="w-[92vw] max-w-[22rem] sm:max-w-[28rem] lg:max-w-[36rem] rounded-[1.6rem] sm:rounded-[1.9rem] border border-cyan-200/35 bg-slate-950/72 p-5 sm:p-7 lg:p-9 text-white shadow-2xl">
+            <div className="mx-auto w-fit">
+              <div
+                className={`relative rounded-2xl ${cardPaddingClass} ${cardBgCls} text-white shadow-xl ${cardSizeClass} ring-4 ${ringCls} animate-pulse`}
+              >
+                <div className={`${emojiWrapClass} bg-black/10 rounded-full shadow-md flex items-center justify-center select-none mx-auto`}>
+                  <span aria-hidden="true" className="leading-none">
+                    {emojiForLevel}
+                  </span>
+                </div>
+                <div className={`${nameClass} font-extrabold drop-shadow-sm text-center`}>{nameForLevel}</div>
+                <div className={`${levelLineClass} font-semibold mt-1 lg:mt-2 text-center opacity-95`}>
+                  {operationShortLabel} Level {levelNumber}
+                </div>
+                <div className={`${starsClass} text-center`}>{starDisplay}</div>
+              </div>
+            </div>
+
+            <div className="mt-4 sm:mt-5 text-center text-xl sm:text-2xl lg:text-3xl font-extrabold text-cyan-100 min-h-[2.2rem] sm:min-h-[2.7rem]">
+              {loadingText}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
