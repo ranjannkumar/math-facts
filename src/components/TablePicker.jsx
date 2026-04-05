@@ -179,6 +179,12 @@ const TablePicker = () => {
   const lvlKey = `L${levelNumber}`;
   const levelProgress = tableProgress?.[lvlKey];
   const isBlackBeltUnlocked = !!levelProgress?.black?.unlocked;
+  const cardSizeClass = 'min-w-[280px] sm:min-w-[380px] lg:min-w-[500px] xl:min-w-[560px]';
+  const cardPaddingClass = 'p-6 lg:p-8 xl:p-10';
+  const emojiWrapClass = 'w-20 h-20 text-5xl lg:w-24 lg:h-24 lg:text-6xl xl:w-28 xl:h-28 xl:text-7xl';
+  const nameClass = 'text-3xl lg:text-4xl xl:text-5xl';
+  const levelLineClass = 'text-lg lg:text-2xl xl:text-[1.65rem]';
+  const starsClass = 'text-2xl lg:text-3xl xl:text-4xl mt-2 lg:mt-3';
 
   const handleSelect = () => {
     if (!unlocked || isInitialPrepLoading) return; // Safeguard
@@ -274,14 +280,14 @@ const TablePicker = () => {
             {levelNumber ? ( 
               <button
                 onClick={handleSelect}
-                className={`relative rounded-2xl p-6 ${cardBgCls} text-white shadow-xl min-w-[280px] sm:min-w-[380px] ring-4 ${ringCls} 
+                className={`relative rounded-2xl ${cardPaddingClass} ${cardBgCls} text-white shadow-xl ${cardSizeClass} ring-4 ${ringCls} 
                   hover:shadow-2xl hover:-translate-y-0.5 transition-transform`}
                 aria-label={`Open Level ${levelNumber}`}
               >
                 <div className="absolute top-2 right-3 text-xl">{''}</div>
 
                 {/* Emoji badge (pop-in) */}
-                  <div className="w-20 h-20 bg-black/10 rounded-full shadow-md flex items-center justify-center text-5xl select-none mx-auto">
+                  <div className={`${emojiWrapClass} bg-black/10 rounded-full shadow-md flex items-center justify-center select-none mx-auto`}>
                     <span aria-hidden="true" className="leading-none">
                       {emojiForLevel}
                     </span>
@@ -289,15 +295,15 @@ const TablePicker = () => {
 
 
                 {/* Themed table name */}
-                <div className="text-3xl font-extrabold drop-shadow-sm text-center">{nameForLevel}</div>
+                <div className={`${nameClass} font-extrabold drop-shadow-sm text-center`}>{nameForLevel}</div>
 
                 {/* Level line */}
-                <div className="text-lg font-semibold mt-1 text-center opacity-95">
+                <div className={`${levelLineClass} font-semibold mt-1 lg:mt-2 text-center opacity-95`}>
                   {operationShortLabel} Level {levelNumber}
                 </div>
 
                 {/* Stars */}
-                <div className="text-2xl mt-2 text-center">{starDisplay}</div>
+                <div className={`${starsClass} text-center`}>{starDisplay}</div>
               </button>
             ) : (
                 <div className="text-white text-3xl font-extrabold drop-shadow-lg text-center">
