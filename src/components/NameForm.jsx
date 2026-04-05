@@ -165,7 +165,13 @@ const NameForm = () => {
 
   const [error, setError] = useState('');
   const [showAdminPinModal, setShowAdminPinModal] = useState(false);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const wasAdminPinModalOpenRef = useRef(false);
+  const loadingMessages = [
+    'Checking your passcode...',
+    'Loading your progress...',
+    'Setting up your math adventure...',
+  ];
 
   useEffect(() => {
     setChildName('');
@@ -179,6 +185,19 @@ const NameForm = () => {
     }
     wasAdminPinModalOpenRef.current = showAdminPinModal;
   }, [childPin, handlePinChange, showAdminPinModal]);
+
+  useEffect(() => {
+    if (!isLoginLoading) {
+      setLoadingMessageIndex(0);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isLoginLoading, loadingMessages.length]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -344,8 +363,25 @@ const handleDemoClick = () => {
                 backgroundColor: 'rgba(0, 0, 0, 0.9)', // Fallback and slight darkening 
             }} 
         > 
-            <div className="text-white text-2xl animate-pulse"> 
-                Loading...
+            <div className="relative w-[92vw] max-w-[26rem] sm:max-w-[30rem] lg:max-w-[36rem] rounded-3xl border border-white/25 bg-slate-950/60 p-5 sm:p-7 lg:p-8 text-white shadow-2xl backdrop-blur-md">
+                <span className="pointer-events-none absolute top-3 left-4 text-lg sm:top-4 sm:left-5 sm:text-xl lg:text-2xl text-cyan-100/80 animate-pulse">+</span>
+                <span className="pointer-events-none absolute top-3 right-4 text-lg sm:top-4 sm:right-5 sm:text-xl lg:text-2xl text-emerald-100/80 animate-pulse">-</span>
+
+                <div className="mx-auto mb-3 sm:mb-4 flex h-20 w-20 sm:h-24 sm:w-24 lg:h-28 lg:w-28 items-center justify-center rounded-full bg-gradient-to-br from-emerald-300 to-cyan-300 text-5xl sm:text-6xl lg:text-7xl shadow-lg animate-bounce">
+                  <span role="img" aria-label="octopus mascot">{'\u{1F419}'}</span>
+                </div>
+
+                <div className="text-center text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-200 drop-shadow-sm">
+                  Almost There
+                </div>
+
+                <div className="mt-2 sm:mt-3 text-center text-base sm:text-lg lg:text-xl font-semibold text-cyan-100 min-h-[28px] sm:min-h-[32px]">
+                  {loadingMessages[loadingMessageIndex]}
+                </div>
+
+                <div className="mt-5 sm:mt-6 h-2.5 sm:h-3 w-full overflow-hidden rounded-full bg-white/15">
+                  <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300 animate-pulse" />
+                </div>
             </div> 
         </div>
       )} 
