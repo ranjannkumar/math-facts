@@ -312,6 +312,7 @@ const useMathGame = () => {
   const inactivityTimeoutId = useRef(null);
   const isQuittingRef = useRef(false);
   const startQuizLockRef = useRef(false);
+  const quizDisruptionStreakRef = useRef(0);
 
   // --- CLIENT-SIDE HELPERS ---
   const determineMaxQuestions = useCallback((difficulty) => {
@@ -321,7 +322,7 @@ const useMathGame = () => {
 
   const symbolTimeoutRef = useRef(null);
 
-  const showAnswerSymbolFor300ms = useCallback((payload) => {
+const showAnswerSymbolFor300ms = useCallback((payload) => {
   // clear any previous timeout (prevents overlap)
   if (symbolTimeoutRef.current) {
     clearTimeout(symbolTimeoutRef.current);
@@ -334,6 +335,14 @@ const useMathGame = () => {
     symbolTimeoutRef.current = null;
   }, 500);
 }, []);
+
+  const registerQuizDisruption = useCallback(() => {
+    quizDisruptionStreakRef.current += 1;
+  }, []);
+
+  const resetQuizDisruptionStreak = useCallback(() => {
+    quizDisruptionStreakRef.current = 0;
+  }, []);
 
   const applySurfState = useCallback((payload) => {
     if (!payload) return;
@@ -1983,6 +1992,7 @@ const useMathGame = () => {
         }
         setSessionCorrectCount((s) => s + 1);
       } else {
+        registerQuizDisruption();
         newQuizStreak = 0;
         setCurrentQuizStreak(0);
         symbol = '';
@@ -1999,8 +2009,8 @@ const useMathGame = () => {
       }
 
       let uiAdvancedOptimistically = false;
-      if (isCorrect && nextIndex < quizQuestions.length) {
-        // Fast UI: show next local question immediately, then reconcile with backend response below.
+      if (isCorrect && quizDisruptionStreakRef.current < 2 && nextIndex < quizQuestions.length) {
+        // Keep instant-feel UX for normal flow; avoid flicker after repeated disruptions.
         setCurrentQuestionIndex(nextIndex);
         setCurrentQuestion(quizQuestions[nextIndex]);
         questionStartTimestamp.current = Date.now();
@@ -2027,6 +2037,10 @@ const useMathGame = () => {
           childPin,
           answerOptions
         );
+
+        if (isCorrect) {
+          resetQuizDisruptionStreak();
+        }
 
         if (out.completed) {
           const totalTimeMs = out.summary?.totalActiveMs || elapsedTime * 1000;
@@ -2139,7 +2153,6 @@ const useMathGame = () => {
             resolvedNextIndex < quizQuestions.length
           ) {
             const targetIndex = Math.max(0, resolvedNextIndex);
-            // Avoid unnecessary state churn when optimistic UI already shows same target.
             if (!uiAdvancedOptimistically || targetIndex !== nextIndex) {
               setCurrentQuestionIndex(targetIndex);
               setCurrentQuestion(quizQuestions[targetIndex]);
@@ -2254,6 +2267,8 @@ const useMathGame = () => {
       pretestTimeLimitMs,
       selectedOperation,
       applyProgressPayload,
+      registerQuizDisruption,
+      resetQuizDisruptionStreak,
       showUiMessage,
       getRecoveryRoute,
       logClientError,
@@ -2393,6 +2408,7 @@ const useMathGame = () => {
     setQuizProgress,
     setIsAwaitingInactivityResponse,
     onPlayInactivityClick: playInactivityClick,
+    onRegisterQuizDisruption: registerQuizDisruption,
     handleInactivityApi,
     childPin,
     setCurrentQuizStreak,

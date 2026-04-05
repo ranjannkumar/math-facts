@@ -16,6 +16,7 @@ export const useInactivityTimerEffect = ({
   setQuizProgress,
   setIsAwaitingInactivityResponse,
   onPlayInactivityClick,
+  onRegisterQuizDisruption,
   handleInactivityApi,
   childPin,
   setCurrentQuizStreak,
@@ -91,6 +92,7 @@ export const useInactivityTimerEffect = ({
         setQuizProgress((prev) => Math.min(prev + step, 100));
       }
 
+      onRegisterQuizDisruption?.();
       setIsAwaitingInactivityResponse(true);
 
       try {
@@ -231,6 +233,7 @@ export const useInactivityTimerEffect = ({
     setQuizProgress,
     setIsAwaitingInactivityResponse,
     onPlayInactivityClick,
+    onRegisterQuizDisruption,
     handleInactivityApi,
     setCurrentQuizStreak,
     setTransientStreakMessage,
