@@ -92,6 +92,20 @@ const OperationPicker = () => {
     navigate('/levels');
   };
 
+  const isMultiOperation = visibleOperations.length > 1;
+  const gridClass = isMultiOperation
+    ? 'grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 w-full max-w-xl lg:max-w-[58rem] place-items-center'
+    : 'grid-cols-1 gap-4 lg:gap-6 w-full max-w-xl lg:max-w-[40rem] place-items-center';
+  const cardSizeClass = isMultiOperation
+    ? 'w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 xl:w-72 xl:h-72'
+    : 'w-48 h-48 sm:w-56 sm:h-56 lg:w-72 lg:h-72 xl:w-80 xl:h-80';
+  const badgeSizeClass = isMultiOperation
+    ? 'w-12 h-12 text-3xl lg:w-14 lg:h-14 lg:text-4xl'
+    : 'w-12 h-12 text-3xl lg:w-16 lg:h-16 lg:text-5xl';
+  const labelSizeClass = isMultiOperation
+    ? 'text-2xl lg:text-[1.75rem]'
+    : 'text-2xl lg:text-[2.2rem]';
+
   return (
     <div
       className="relative min-h-screen w-full px-4"
@@ -115,29 +129,27 @@ const OperationPicker = () => {
         <FaArrowLeft size={24} />
       </button>
 
-      <h1 className="absolute left-1/2 top-[30%] z-10 -translate-x-1/2 -translate-y-full text-white text-3xl sm:text-4xl font-extrabold drop-shadow text-center animate-fade-in">
-        WELCOME, {childNameDisplay}
-      </h1>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 sm:gap-8 lg:gap-10 pt-20 sm:pt-24 lg:pt-28 pb-24">
+        <h1 className="z-10 text-white text-3xl sm:text-4xl lg:text-5xl font-extrabold drop-shadow text-center animate-fade-in">
+          WELCOME, {childNameDisplay}
+        </h1>
 
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div
-          className={`grid grid-cols-1 ${visibleOperations.length > 1 ? 'sm:grid-cols-2' : 'sm:grid-cols-1'} gap-4 w-full max-w-xl place-items-center`}
-        >
+        <div className={`grid ${gridClass}`}>
           {visibleOperations.map((operation) => (
             <button
               key={operation}
               onClick={() => handleSelect(operation)}
-              className="bg-green-600 hover:bg-green-700 rounded-2xl shadow-xl border-2 border-green-400 transition-all duration-200 hover:scale-[1.01] w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center text-center"
+              className={`bg-green-600 hover:bg-green-700 rounded-2xl shadow-xl border-2 border-green-400 transition-all duration-200 hover:scale-[1.01] ${cardSizeClass} flex items-center justify-center text-center`}
             >
-              <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center gap-4 lg:gap-5 px-3">
                 <div
-                  className={`w-12 h-12 rounded-full border-2 shadow-md flex items-center justify-center text-3xl font-black ${OPERATION_UI[operation]?.badgeClass || 'bg-white text-green-700 border-green-100'}`}
+                  className={`${badgeSizeClass} rounded-full border-2 shadow-md flex items-center justify-center font-black ${OPERATION_UI[operation]?.badgeClass || 'bg-white text-green-700 border-green-100'}`}
                   style={{ textShadow: '0 1px 0 rgba(0,0,0,0.18)' }}
                 >
                   {OPERATION_UI[operation]?.symbol || '?'}
                 </div>
                 <div
-                  className={`text-2xl font-black tracking-wide ${OPERATION_UI[operation]?.textClass || 'text-white'}`}
+                  className={`${labelSizeClass} leading-tight font-black tracking-wide text-center ${OPERATION_UI[operation]?.textClass || 'text-white'}`}
                   style={{ textShadow: '0 1px 0 rgba(0,0,0,0.2)' }}
                 >
                   {getOperationLabel(operation).toUpperCase()}
