@@ -1,9 +1,9 @@
 // src/components/DifficultyPicker.jsx
-import React, { useContext, useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import { MathGameContext } from '../App.jsx';
 import { getOperationLabel } from '../config/modulesConfig.js';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 // import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
 
 const COLOR_BELTS = ['white', 'yellow', 'green', 'blue', 'red', 'brown'];
@@ -36,7 +36,12 @@ const DifficultyPicker = () => {
     selectedOperation,
     tableProgress,
     startQuizWithDifficulty,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    selectedTable: ctx.selectedTable,
+    selectedOperation: ctx.selectedOperation,
+    tableProgress: ctx.tableProgress || {},
+    startQuizWithDifficulty: ctx.startQuizWithDifficulty || (() => {}),
+  }));
 
   const operationLabel = getOperationLabel(selectedOperation);
 

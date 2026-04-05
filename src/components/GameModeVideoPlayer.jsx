@@ -1,6 +1,6 @@
-﻿import React, { useEffect, useRef, useContext } from "react";
+import React, { useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { MathGameContext } from "../App.jsx";
+import { useMathGamePick } from "../store/mathGameBridgeStore.js";
 
 const GameModeVideoPlayer = () => {
   const navigate = useNavigate();
@@ -26,7 +26,30 @@ const GameModeVideoPlayer = () => {
     rocketResumeAfterVideo,
     setRocketResumeAfterVideo,
     startRocketNextQuiz,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
+    questionStartTimestamp: ctx.questionStartTimestamp || { current: null },
+    setPausedTime: ctx.setPausedTime || (() => {}),
+    shouldExitAfterVideo: Boolean(ctx.shouldExitAfterVideo),
+    setShouldExitAfterVideo: ctx.setShouldExitAfterVideo || (() => {}),
+    shouldGoToLightningCompleteAfterVideo: Boolean(ctx.shouldGoToLightningCompleteAfterVideo),
+    setShouldGoToLightningCompleteAfterVideo:
+      ctx.setShouldGoToLightningCompleteAfterVideo || (() => {}),
+    shouldGoToRocketIntroAfterVideo: Boolean(ctx.shouldGoToRocketIntroAfterVideo),
+    setShouldGoToRocketIntroAfterVideo: ctx.setShouldGoToRocketIntroAfterVideo || (() => {}),
+    shouldGoToSurfCompleteAfterVideo: Boolean(ctx.shouldGoToSurfCompleteAfterVideo),
+    setShouldGoToSurfCompleteAfterVideo: ctx.setShouldGoToSurfCompleteAfterVideo || (() => {}),
+    shouldGoToRocketCompleteAfterVideo: Boolean(ctx.shouldGoToRocketCompleteAfterVideo),
+    setShouldGoToRocketCompleteAfterVideo: ctx.setShouldGoToRocketCompleteAfterVideo || (() => {}),
+    lightningCount: Number.isFinite(ctx.lightningCount) ? ctx.lightningCount : 0,
+    setLightningCycleStart: ctx.setLightningCycleStart || (() => {}),
+    surfResumeAfterVideo: Boolean(ctx.surfResumeAfterVideo),
+    setSurfResumeAfterVideo: ctx.setSurfResumeAfterVideo || (() => {}),
+    startSurfNextQuiz: ctx.startSurfNextQuiz || (() => Promise.resolve()),
+    rocketResumeAfterVideo: Boolean(ctx.rocketResumeAfterVideo),
+    setRocketResumeAfterVideo: ctx.setRocketResumeAfterVideo || (() => {}),
+    startRocketNextQuiz: ctx.startRocketNextQuiz || (() => Promise.resolve()),
+  }));
 
   const { videoName } = useParams();
   const location = useLocation();
@@ -53,7 +76,7 @@ const GameModeVideoPlayer = () => {
       if (finishTriggeredRef.current) return;
       finishTriggeredRef.current = true;
 
-      // stop the element immediately so it can’t restart while waiting
+      // stop the element immediately so it can�t restart while waiting
       try {
         videoEl.pause();
       } catch {}

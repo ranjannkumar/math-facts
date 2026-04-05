@@ -1,9 +1,9 @@
 // src/components/ui/TopStreakCounter.jsx
-import React, { useContext } from 'react';
-import { MathGameContext } from '../../App.jsx';
+import React from 'react';
+import { useMathGameSelector } from '../../store/mathGameBridgeStore.js';
 
 const DailyStreakCounter = () => {
-  const { currentStreak } = useContext(MathGameContext);
+  const currentStreak = useMathGameSelector((ctx) => ctx.currentStreak ?? 0);
 
   if (currentStreak === 0) return null;
 

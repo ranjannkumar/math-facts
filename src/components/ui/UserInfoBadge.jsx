@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { MathGameContext } from '../../App.jsx';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { userGetDailyStats, userGetProgress } from '../../api/mathApi.js';
 import { normalizeOperation } from '../../config/modulesConfig.js';
+import { useMathGamePick } from '../../store/mathGameBridgeStore.js';
 
 const OPERATION_ORDER = ['add', 'sub', 'mul', 'div'];
 const MS_PER_SEC = 1000;
@@ -99,7 +99,12 @@ const formatBeltDisplay = (belt) => {
 };
 
 const UserInfoBadge = () => {
-  const { childName, childPin, grandTotalCorrect, selectedOperation } = useContext(MathGameContext);
+  const { childName, childPin, grandTotalCorrect, selectedOperation } = useMathGamePick((ctx) => ({
+    childName: ctx.childName || '',
+    childPin: ctx.childPin || '',
+    grandTotalCorrect: Number.isFinite(ctx.grandTotalCorrect) ? ctx.grandTotalCorrect : 0,
+    selectedOperation: ctx.selectedOperation || 'add',
+  }));
   const [isOpen, setIsOpen] = useState(false);
   const [remoteDaily, setRemoteDaily] = useState(null);
   const [remoteProgress, setRemoteProgress] = useState(null);

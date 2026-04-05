@@ -1,9 +1,9 @@
 // ranjannkumar/math-facts/math-facts-53836cb507e63890a9c757d863525a6cb3341e86/src/components/LearningModule.jsx
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { mapQuestionToFrontend } from '../api/mathApi.js';
-import { MathGameContext } from '../App.jsx';
 import audioManager from '../utils/audioUtils.js';
 import { normalizeDifficulty } from '../utils/mathGameLogic.js';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 /**
  * Learning flow:
@@ -172,7 +172,39 @@ const LearningModule = () => {
     hardResetQuizState,
     setRocketPracticeFact,
     setRocketPracticeReverse,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    pendingDifficulty: ctx.pendingDifficulty,
+    selectedTable: ctx.selectedTable,
+    setShowLearningModule: ctx.setShowLearningModule || (() => {}),
+    startActualQuiz: ctx.startActualQuiz || (() => Promise.resolve()),
+    navigate: ctx.navigate || (() => {}),
+    interventionQuestion: ctx.interventionQuestion,
+    setInterventionQuestion: ctx.setInterventionQuestion || (() => {}),
+    preQuizPracticeItems: Array.isArray(ctx.preQuizPracticeItems) ? ctx.preQuizPracticeItems : [],
+    quizRunId: ctx.quizRunId,
+    handlePracticeAnswer: ctx.handlePracticeAnswer || (() => Promise.resolve({})),
+    isQuizStarting: Boolean(ctx.isQuizStarting),
+    setIsQuizStarting: ctx.setIsQuizStarting || (() => {}),
+    isGameMode: Boolean(ctx.isGameMode),
+    gameModeType: ctx.gameModeType,
+    isGameModePractice: Boolean(ctx.isGameModePractice),
+    setIsAnimating: ctx.setIsAnimating || (() => {}),
+    setQuizStartTime: ctx.setQuizStartTime || (() => {}),
+    setSessionCorrectCount: ctx.setSessionCorrectCount || (() => {}),
+    setShowWayToGoAfterFailure: ctx.setShowWayToGoAfterFailure || (() => {}),
+    selectedDifficulty: ctx.selectedDifficulty,
+    isPretest: Boolean(ctx.isPretest),
+    pretestTimeLimitMs: ctx.pretestTimeLimitMs,
+    setPretestResult: ctx.setPretestResult || (() => {}),
+    stopPretestTimer: ctx.stopPretestTimer || (() => {}),
+    setIsPretest: ctx.setIsPretest || (() => {}),
+    selectedOperation: ctx.selectedOperation,
+    currentQuestionIndex: Number.isFinite(ctx.currentQuestionIndex) ? ctx.currentQuestionIndex : 0,
+    pretestQuestionCount: Number.isFinite(ctx.pretestQuestionCount) ? ctx.pretestQuestionCount : 20,
+    hardResetQuizState: ctx.hardResetQuizState || (() => {}),
+    setRocketPracticeFact: ctx.setRocketPracticeFact || (() => {}),
+    setRocketPracticeReverse: ctx.setRocketPracticeReverse || (() => {}),
+  }));
 
   const diff = useMemo(() => normalizeDifficulty(pendingDifficulty), [pendingDifficulty]);
 

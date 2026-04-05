@@ -1,7 +1,7 @@
-import React, { useEffect, useContext, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Confetti from 'react-confetti';
-import { MathGameContext } from '../App.jsx';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const WayToGoScreen = () => {
     const navigate = useNavigate();
@@ -19,7 +19,20 @@ const WayToGoScreen = () => {
         isQuizStarting,
         showWayToGoAfterFailure,
 
-    } = useContext(MathGameContext);
+    } = useMathGamePick((ctx) => ({
+        selectedDifficulty: ctx.selectedDifficulty,
+        selectedOperation: ctx.selectedOperation,
+        selectedTable: ctx.selectedTable,
+        sessionCorrectCount: Number.isFinite(ctx.sessionCorrectCount) ? ctx.sessionCorrectCount : 0,
+        correctCount: Number.isFinite(ctx.correctCount) ? ctx.correctCount : 0,
+        grandTotalCorrect: Number.isFinite(ctx.grandTotalCorrect) ? ctx.grandTotalCorrect : 0,
+        startQuizWithDifficulty: ctx.startQuizWithDifficulty || (() => {}),
+        setQuizRunId: ctx.setQuizRunId || (() => {}),
+        setSelectedDifficulty: ctx.setSelectedDifficulty || (() => {}),
+        setSelectedTable: ctx.setSelectedTable || (() => {}),
+        isQuizStarting: Boolean(ctx.isQuizStarting),
+        showWayToGoAfterFailure: Boolean(ctx.showWayToGoAfterFailure),
+    }));
 
     const AUTO_NAV_KEY = 'math-waytogo-auto-nav-once';
     const isBlackDegree7 = String(selectedDifficulty || '').startsWith('black-7');

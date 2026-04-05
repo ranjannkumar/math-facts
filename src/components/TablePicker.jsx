@@ -1,10 +1,10 @@
 // src/components/TablePicker.jsx
-import React, { useContext,useEffect,useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import { MathGameContext } from '../App.jsx';
 import { themeConfigs } from '../utils/mathGameLogic.js';
 import { getOperationLabel, getOperationMaxLevel } from '../config/modulesConfig.js';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 // import UserInfoBadge from './ui/UserInfoBadge.jsx';
 // import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
 
@@ -107,7 +107,18 @@ const TablePicker = () => {
     setPlayFactVideoAfterStreak,
     setHideStatsUI,
     isInitialPrepLoading,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    startLevelEntry: ctx.startLevelEntry || (() => {}),
+    tableProgress: ctx.tableProgress || {},
+    selectedTheme: ctx.selectedTheme,
+    selectedOperation: ctx.selectedOperation,
+    operationsMeta: ctx.operationsMeta || {},
+    showDailyStreakAnimation: Boolean(ctx.showDailyStreakAnimation),
+    playFactVideoAfterStreak: Boolean(ctx.playFactVideoAfterStreak),
+    setPlayFactVideoAfterStreak: ctx.setPlayFactVideoAfterStreak || (() => {}),
+    setHideStatsUI: ctx.setHideStatsUI || (() => {}),
+    isInitialPrepLoading: Boolean(ctx.isInitialPrepLoading),
+  }));
 
   // Resolve theme
   const themeKey = resolveThemeKey(selectedTheme);

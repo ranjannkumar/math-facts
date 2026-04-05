@@ -1,7 +1,7 @@
 // src/components/PreTestPopup.jsx
-import React, { useContext } from 'react';
-import { MathGameContext } from '../App.jsx';
+import React from 'react';
 import { generatePreTestQuestions } from '../utils/pretestUtils.js';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const PreTestPopup = () => {
   const {
@@ -12,7 +12,15 @@ const PreTestPopup = () => {
     setPreTestSection,
     setPreTestTimer,  
     navigate,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    setPreTestQuestions: ctx.setPreTestQuestions || (() => {}),
+    setPreTestCurrentQuestion: ctx.setPreTestCurrentQuestion || (() => {}),
+    setPreTestScore: ctx.setPreTestScore || (() => {}),
+    setPreTestTimerActive: ctx.setPreTestTimerActive || (() => {}),
+    setPreTestSection: ctx.setPreTestSection || (() => {}),
+    setPreTestTimer: ctx.setPreTestTimer || (() => {}),
+    navigate: ctx.navigate || (() => {}),
+  }));
 
   const startSection = (sectionKey) => {
     const qs = generatePreTestQuestions(sectionKey);

@@ -1,7 +1,7 @@
 // src/components/DailyStreakAnimation.jsx
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MathGameContext } from '../App.jsx';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const TOTAL_DURATION_VISIBLE_MS = 2000; 
 const ANIMATION_TIMINGS = {
@@ -12,7 +12,10 @@ const ANIMATION_TIMINGS = {
 export default function DailyStreakAnimation({ streakCount }) {
     if (streakCount <= 0) return null;
 
-    const { handleDailyStreakNext,setPlayFactVideoAfterStreak } = useContext(MathGameContext);
+    const { handleDailyStreakNext, setPlayFactVideoAfterStreak } = useMathGamePick((ctx) => ({
+        handleDailyStreakNext: ctx.handleDailyStreakNext || (() => {}),
+        setPlayFactVideoAfterStreak: ctx.setPlayFactVideoAfterStreak || (() => {}),
+    }));
     const [isExiting, setIsExiting] = useState(false);
 
     const handleNextClick = () => { 

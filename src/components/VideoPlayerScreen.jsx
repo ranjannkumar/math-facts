@@ -1,7 +1,7 @@
-import React, { useCallback, useContext, useEffect, useState, useRef, useMemo } from 'react';
-import { MathGameContext } from '../App.jsx';
+import React, { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getOperationMaxLevel, normalizeOperation } from '../config/modulesConfig.js';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const rewardVideoModules = import.meta.glob('/public/reward-videos/**/*.mp4', { as: 'url' });
 const rewardThumbPngModules = import.meta.glob('/public/reward-videos/**/*.png', { as: 'url' });
@@ -38,7 +38,15 @@ const VideoPlayerScreen = () => {
     selectedOperation,
     selectedTable,
     operationsMeta,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    setQuizRunId: ctx.setQuizRunId || (() => {}),
+    tempNextRoute: ctx.tempNextRoute,
+    setTempNextRoute: ctx.setTempNextRoute || (() => {}),
+    selectedDifficulty: ctx.selectedDifficulty,
+    selectedOperation: ctx.selectedOperation,
+    selectedTable: ctx.selectedTable,
+    operationsMeta: ctx.operationsMeta || {},
+  }));
   
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [videoOptions, setVideoOptions] = useState(null);

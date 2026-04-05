@@ -1,6 +1,5 @@
 // src/components/StreakAnimation.jsx
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { MathGameContext } from "../App.jsx";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import audioManager from "../utils/audioUtils.js";
 import { motion, AnimatePresence } from "framer-motion";
 import MascotPlayer from "./MascotPlayer";
@@ -38,7 +37,6 @@ function buildOrbit(radius = 120, points = 16, tiltRad = Math.PI / 10) {
 }
 
 export default function StreakAnimation({ streakCount, symbolType, onAnimationComplete }) {
-  const { /* childName */ } = useContext(MathGameContext);
   const [phase, setPhase] = useState("idle"); // idle | in | celebrate | out | done
 
   // === Safe radius so mascot never overlaps the chip ===

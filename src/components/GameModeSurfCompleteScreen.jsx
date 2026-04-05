@@ -1,10 +1,13 @@
-import React, { useContext, useEffect,useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MathGameContext } from '../App.jsx';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const GameModeSurfCompleteScreen = () => {
   const navigate = useNavigate();
-  const { setIsTimerPaused, setPausedTime } = useContext(MathGameContext);
+  const { setIsTimerPaused, setPausedTime } = useMathGamePick((ctx) => ({
+    setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
+    setPausedTime: ctx.setPausedTime || (() => {}),
+  }));
 
   const didNavigateRef = useRef(false);
 

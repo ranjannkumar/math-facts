@@ -1,11 +1,11 @@
 // src/components/ResultsScreen.jsx
-import React, { useEffect, useContext, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Confetti from 'react-confetti';
 import { showShootingStars, clearShootingStars } from '../utils/mathGameLogic';
-import { MathGameContext } from '../App.jsx';
 import { useNavigate } from 'react-router-dom';
 import { quizComplete } from '../api/mathApi.js';
 import { getOperationMaxLevel, normalizeOperation } from '../config/modulesConfig.js';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 // Helper function to determine the correct destination after video/rating
 const calculateFinalRoute = (selectedDifficulty, isBlack, degree, isLastLevelInOperation) => {
@@ -43,7 +43,20 @@ const ResultsScreen = () => {
         selectedOperation,
         selectedTable,
         operationsMeta,
-    } = useContext(MathGameContext);
+    } = useMathGamePick((ctx) => ({
+        selectedDifficulty: ctx.selectedDifficulty,
+        sessionCorrectCount: Number.isFinite(ctx.sessionCorrectCount) ? ctx.sessionCorrectCount : 0,
+        correctCount: Number.isFinite(ctx.correctCount) ? ctx.correctCount : 0,
+        grandTotalCorrect: Number.isFinite(ctx.grandTotalCorrect) ? ctx.grandTotalCorrect : 0,
+        setShowResult: ctx.setShowResult || (() => {}),
+        quizRunId: ctx.quizRunId,
+        childPin: ctx.childPin,
+        setQuizRunId: ctx.setQuizRunId || (() => {}),
+        setTempNextRoute: ctx.setTempNextRoute || (() => {}),
+        selectedOperation: ctx.selectedOperation,
+        selectedTable: ctx.selectedTable,
+        operationsMeta: ctx.operationsMeta || {},
+    }));
 
     // --- Quiz Info ---
     const isBlack = String(selectedDifficulty).startsWith('black');

@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useContext, useState } from 'react';
-import { MathGameContext } from '../App.jsx';
+import React, { useRef, useEffect, useState } from 'react';
 import { FaCog } from "react-icons/fa";
 import SettingsModal from "./SettingsModal.jsx";
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const GameModeScreen = () => {
 
@@ -27,7 +27,29 @@ const GameModeScreen = () => {
   handleQuit,
   handleResetProgress,
   setIsTimerPaused,
-} = useContext(MathGameContext);
+} = useMathGamePick((ctx) => ({
+  currentQuestion: ctx.currentQuestion || null,
+  handleAnswer: ctx.handleAnswer || (() => {}),
+  isAnimating: Boolean(ctx.isAnimating),
+  isTimerPaused: Boolean(ctx.isTimerPaused),
+  gameModeType: ctx.gameModeType,
+  surfCorrectStreak: Number.isFinite(ctx.surfCorrectStreak) ? ctx.surfCorrectStreak : 0,
+  completedSurfQuizzes: Number.isFinite(ctx.completedSurfQuizzes) ? ctx.completedSurfQuizzes : 0,
+  surfQuizzesRequired: Number.isFinite(ctx.surfQuizzesRequired) ? ctx.surfQuizzesRequired : 0,
+  questionsPerQuiz: Number.isFinite(ctx.questionsPerQuiz) ? ctx.questionsPerQuiz : 0,
+  rocketCorrectStreak: Number.isFinite(ctx.rocketCorrectStreak) ? ctx.rocketCorrectStreak : 0,
+  completedRocketQuizzes: Number.isFinite(ctx.completedRocketQuizzes) ? ctx.completedRocketQuizzes : 0,
+  rocketQuizzesRequired: Number.isFinite(ctx.rocketQuizzesRequired) ? ctx.rocketQuizzesRequired : 0,
+  rocketQuestionsPerQuiz: Number.isFinite(ctx.rocketQuestionsPerQuiz) ? ctx.rocketQuestionsPerQuiz : 0,
+  lightningCount: Number.isFinite(ctx.lightningCount) ? ctx.lightningCount : 0,
+  lightningCycleStart: Number.isFinite(ctx.lightningCycleStart) ? ctx.lightningCycleStart : 0,
+  questionStartTimestamp: ctx.questionStartTimestamp || { current: null },
+  showSettings: Boolean(ctx.showSettings),
+  setShowSettings: ctx.setShowSettings || (() => {}),
+  handleQuit: ctx.handleQuit || (() => {}),
+  handleResetProgress: ctx.handleResetProgress || (() => {}),
+  setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
+}));
 
 const isSurfMode = gameModeType === 'surf';
 const isRocketMode = gameModeType === 'rocket';

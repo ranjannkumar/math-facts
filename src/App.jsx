@@ -44,6 +44,7 @@ import StatusModal from './components/StatusModal.jsx';
 
 import { clearShootingStars } from './utils/mathGameLogic.js';
 import audioManager from './utils/audioUtils.js';
+import { syncMathGameBridgeStore } from './store/mathGameBridgeStore.js';
 
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 const AdminDashboard = lazy(() => import('./components/AdminDashboard.jsx'));
@@ -85,6 +86,10 @@ const App = () => {
   }, [location.pathname]);
 
   const providerValue = useMemo(() => ({ ...ctx, navigate }), [ctx, navigate]);
+
+  useEffect(() => {
+    syncMathGameBridgeStore(providerValue);
+  }, [providerValue]);
 
   return (
     <MathGameContext.Provider value={providerValue}>

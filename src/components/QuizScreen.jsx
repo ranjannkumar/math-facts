@@ -1,6 +1,6 @@
 // src/components/QuizScreen.jsx
-import React, { useRef, useEffect, useContext, useState } from 'react';
-import { MathGameContext } from '../App.jsx';
+import React, { useRef, useEffect, useState } from 'react';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 // import StreakAnimation from './StreakAnimation.jsx';
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -23,7 +23,24 @@ const QuizScreen = () => {
     pretestRemainingMs,
     pretestTimeLimitMs,
     pretestQuestionCount,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    currentQuestion: ctx.currentQuestion || null,
+    quizProgress: Number.isFinite(ctx.quizProgress) ? ctx.quizProgress : 0,
+    answerSymbols: Array.isArray(ctx.answerSymbols) ? ctx.answerSymbols : [],
+    handleAnswer: ctx.handleAnswer || (() => {}),
+    isAnimating: Boolean(ctx.isAnimating),
+    showResult: Boolean(ctx.showResult),
+    selectedDifficulty: ctx.selectedDifficulty,
+    currentQuestionIndex: Number.isFinite(ctx.currentQuestionIndex) ? ctx.currentQuestionIndex : 0,
+    isTimerPaused: Boolean(ctx.isTimerPaused),
+    transientStreakMessage: ctx.transientStreakMessage,
+    streakPosition: Number.isFinite(ctx.streakPosition) ? ctx.streakPosition : 0,
+    isAwaitingInactivityResponse: Boolean(ctx.isAwaitingInactivityResponse),
+    isPretest: Boolean(ctx.isPretest),
+    pretestRemainingMs: Number.isFinite(ctx.pretestRemainingMs) ? ctx.pretestRemainingMs : null,
+    pretestTimeLimitMs: Number.isFinite(ctx.pretestTimeLimitMs) ? ctx.pretestTimeLimitMs : null,
+    pretestQuestionCount: Number.isFinite(ctx.pretestQuestionCount) ? ctx.pretestQuestionCount : 20,
+  }));
 
   const answerRefs = useRef([]);
   

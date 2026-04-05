@@ -1,6 +1,6 @@
-﻿import React, { useContext, useEffect } from "react";
-import { MathGameContext } from "../App.jsx";
+﻿import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMathGamePick } from "../store/mathGameBridgeStore.js";
 
 const GameModeVideoSelectScreen = () => {
   const {
@@ -9,7 +9,13 @@ const GameModeVideoSelectScreen = () => {
     setIsTimerPaused,
     setPausedTime,
     gameModeType,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    videoOptions: ctx.videoOptions || null,
+    handleVideoSelection: ctx.handleVideoSelection || (() => {}),
+    setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
+    setPausedTime: ctx.setPausedTime || (() => {}),
+    gameModeType: ctx.gameModeType,
+  }));
   const navigate = useNavigate();
 
   // Pause timers/inactivity while the selection screen is visible.
@@ -41,23 +47,23 @@ const GameModeVideoSelectScreen = () => {
   if (!videoOptions) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center text-white">
-        Loading…
+        Loading...
       </div>
     );
   }
 
   const headingText =
     gameModeType === "surf"
-      ? "Accuracy Bonus Unlocked !"
+      ? "Accuracy Bonus Unlocked"
       : gameModeType === "rocket"
-        ? "Rocket Bonus Unlocked !"
-        : "Speed Bonus Unlocked! ⚡";
+        ? "Rocket Bonus Unlocked"
+        : "Speed Bonus Unlocked";
 
   const renderCard = (option, accentClass) => {
     const displayName =
       option.name.length <= 16
         ? option.name.toUpperCase()
-        : option.name.slice(0, 14).toUpperCase() + "…";
+        : option.name.slice(0, 14).toUpperCase() + "_";
 
     return (
       <button

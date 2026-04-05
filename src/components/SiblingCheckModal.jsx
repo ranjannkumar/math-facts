@@ -1,12 +1,16 @@
-import React, { useContext } from 'react';
-import { MathGameContext } from '../App.jsx';
+import React from 'react';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const SiblingCheckModal = () => {
     const { 
         showSiblingCheck, 
         loginPendingName, 
         handleSiblingCheck 
-    } = useContext(MathGameContext);
+    } = useMathGamePick((ctx) => ({
+        showSiblingCheck: Boolean(ctx.showSiblingCheck),
+        loginPendingName: ctx.loginPendingName,
+        handleSiblingCheck: ctx.handleSiblingCheck || (() => {}),
+    }));
 
     // Only render if the flag is true and we have a name
     if (!showSiblingCheck || !loginPendingName) {

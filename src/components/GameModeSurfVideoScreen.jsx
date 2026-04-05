@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useContext } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { MathGameContext } from '../App.jsx';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const VIDEO_MAP = {
   intro: '/SurfGameIntro.mp4',
@@ -27,7 +27,18 @@ const GameModeSurfVideoScreen = () => {
     pendingSurfPractice,
     setPendingSurfPractice,
     setShowLearningModule,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    startSurfNextQuiz: ctx.startSurfNextQuiz || (() => Promise.resolve()),
+    setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
+    setPausedTime: ctx.setPausedTime || (() => {}),
+    setShouldExitAfterVideo: ctx.setShouldExitAfterVideo || (() => {}),
+    setVideoOptions: ctx.setVideoOptions || (() => {}),
+    surfVideoList: Array.isArray(ctx.surfVideoList) ? ctx.surfVideoList : [],
+    setSurfResumeAfterVideo: ctx.setSurfResumeAfterVideo || (() => {}),
+    pendingSurfPractice: Boolean(ctx.pendingSurfPractice),
+    setPendingSurfPractice: ctx.setPendingSurfPractice || (() => {}),
+    setShowLearningModule: ctx.setShowLearningModule || (() => {}),
+  }));
 
   const videoSrc = VIDEO_MAP[kind] || VIDEO_MAP.intro;
   const exitAfter = !!location.state?.exitAfter;

@@ -1,10 +1,13 @@
-import React, { useEffect, useContext } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MathGameContext } from '../App.jsx';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const GameModeExitScreen = () => {
   const navigate = useNavigate();
-  const { setIsQuizStarting, hardResetQuizState } = useContext(MathGameContext) || {};
+  const { setIsQuizStarting, hardResetQuizState } = useMathGamePick((ctx) => ({
+    setIsQuizStarting: ctx.setIsQuizStarting || (() => {}),
+    hardResetQuizState: ctx.hardResetQuizState || (() => {}),
+  }));
 
   useEffect(() => {
     const belt = localStorage.getItem('game-mode-belt');

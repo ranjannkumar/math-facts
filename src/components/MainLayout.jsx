@@ -1,12 +1,12 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { FaCog } from 'react-icons/fa';
 import DailyStatsCounter from './ui/DailyStatsCounter';
 import SessionTimer from './ui/SessionTimer';
 import SettingsModal from './SettingsModal';
-import { MathGameContext } from '../App.jsx';
 import UserInfoBadge from './ui/UserInfoBadge.jsx';
 import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const MainLayout = ({ hideStats }) => {
   const {
@@ -19,7 +19,17 @@ const MainLayout = ({ hideStats }) => {
     elapsedTime,
     handleQuit,
     handleResetProgress,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    showSettings: Boolean(ctx.showSettings),
+    setShowSettings: ctx.setShowSettings || (() => {}),
+    isTimerPaused: Boolean(ctx.isTimerPaused),
+    quizStartTime: ctx.quizStartTime || null,
+    pausedTime: ctx.pausedTime || 0,
+    totalTimeToday: Number.isFinite(ctx.totalTimeToday) ? ctx.totalTimeToday : 0,
+    elapsedTime: Number.isFinite(ctx.elapsedTime) ? ctx.elapsedTime : 0,
+    handleQuit: ctx.handleQuit || (() => {}),
+    handleResetProgress: ctx.handleResetProgress || (() => {}),
+  }));
 
   const location = useLocation();
 

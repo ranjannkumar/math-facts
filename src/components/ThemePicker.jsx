@@ -1,15 +1,19 @@
 // src/components/ThemePicker.jsx
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import { useNavigate as useRRNavigate } from 'react-router-dom';
 import { themeConfigs, ageThemeMap } from '../utils/mathGameLogic.js';
-import { MathGameContext } from '../App.jsx';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const cardTitle = (key) =>
   key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
 
 const ThemePicker = () => {
-  const ctx = useContext(MathGameContext);
+  const ctx = useMathGamePick((state) => ({
+    navigate: state.navigate,
+    setSelectedTheme: state.setSelectedTheme,
+    userSavedThemeKey: state.userSavedThemeKey,
+  }));
   const rrNavigate = useRRNavigate();
   const navigate = ctx?.navigate || rrNavigate; // safe fallback
   const setSelectedTheme = ctx?.setSelectedTheme || (() => {});

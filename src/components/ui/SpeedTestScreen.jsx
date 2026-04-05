@@ -1,7 +1,7 @@
 // src/components/ui/SpeedTestScreen.jsx
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useEffect } from 'react';
 import audioManager from '../../utils/audioUtils';
-import { MathGameContext } from '../../App.jsx';
+import { useMathGamePick } from '../../store/mathGameBridgeStore.js';
 
 const SpeedTestScreen = () => {
     const {
@@ -21,7 +21,24 @@ const SpeedTestScreen = () => {
         setShowSpeedTest,
         handleSpeedTestInput,
         startSpeedTest,
-    } = useContext(MathGameContext);
+    } = useMathGamePick((ctx) => ({
+        showSpeedTest: Boolean(ctx.showSpeedTest),
+        speedTestPopupVisible: Boolean(ctx.speedTestPopupVisible),
+        speedTestPopupAnimation: ctx.speedTestPopupAnimation || '',
+        speedTestNumbers: Array.isArray(ctx.speedTestNumbers) ? ctx.speedTestNumbers : [],
+        currentSpeedTestIndex: Number.isFinite(ctx.currentSpeedTestIndex) ? ctx.currentSpeedTestIndex : -1,
+        speedTestStartTime: ctx.speedTestStartTime,
+        speedTestComplete: Boolean(ctx.speedTestComplete),
+        speedTestStarted: Boolean(ctx.speedTestStarted),
+        speedTestCorrectCount: Number.isFinite(ctx.speedTestCorrectCount) ? ctx.speedTestCorrectCount : 0,
+        speedTestShowTick: Boolean(ctx.speedTestShowTick),
+        studentReactionSpeed: Number.isFinite(ctx.studentReactionSpeed) ? ctx.studentReactionSpeed : 1,
+        setSpeedTestPopupVisible: ctx.setSpeedTestPopupVisible || (() => {}),
+        setSpeedTestPopupAnimation: ctx.setSpeedTestPopupAnimation || (() => {}),
+        setShowSpeedTest: ctx.setShowSpeedTest || (() => {}),
+        handleSpeedTestInput: ctx.handleSpeedTestInput || (() => {}),
+        startSpeedTest: ctx.startSpeedTest || (() => {}),
+    }));
 
     // Set up keyboard event listener
     useEffect(() => {

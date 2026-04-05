@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MathGameContext } from '../App.jsx';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const VIDEO_MAP = {
   intro: '/RocketIntro.mp4',
@@ -19,7 +19,13 @@ const GameModeRocketVideoScreen = () => {
     pendingRocketPractice,
     setPendingRocketPractice,
     setShowLearningModule,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
+    setPausedTime: ctx.setPausedTime || (() => {}),
+    pendingRocketPractice: Boolean(ctx.pendingRocketPractice),
+    setPendingRocketPractice: ctx.setPendingRocketPractice || (() => {}),
+    setShowLearningModule: ctx.setShowLearningModule || (() => {}),
+  }));
 
   const videoSrc = VIDEO_MAP[kind] || VIDEO_MAP.intro;
 

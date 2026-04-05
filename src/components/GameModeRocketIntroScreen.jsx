@@ -1,9 +1,14 @@
-import React, { useContext, useEffect, useRef } from 'react';
-import { MathGameContext } from '../App.jsx';
+import React, { useEffect, useRef } from 'react';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const GameModeRocketIntroScreen = () => {
   const { startOrResumeGameModeRun, navigate, setIsTimerPaused, setPausedTime } =
-    useContext(MathGameContext);
+    useMathGamePick((ctx) => ({
+      startOrResumeGameModeRun: ctx.startOrResumeGameModeRun || (() => Promise.resolve(false)),
+      navigate: ctx.navigate || (() => {}),
+      setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
+      setPausedTime: ctx.setPausedTime || (() => {}),
+    }));
   const didStartRef = useRef(false);
 
   useEffect(() => {

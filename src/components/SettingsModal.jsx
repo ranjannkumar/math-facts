@@ -1,9 +1,12 @@
 // src/components/SettingsModal.jsx
-import React, { useState, useContext } from 'react';
-import { MathGameContext } from '../App.jsx';
+import React, { useState } from 'react';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const SettingsModal = () => {
-    const { handleQuit, setShowSettings } = useContext(MathGameContext);
+    const { handleQuit, setShowSettings } = useMathGamePick((ctx) => ({
+        handleQuit: ctx.handleQuit || (() => {}),
+        setShowSettings: ctx.setShowSettings || (() => {}),
+    }));
     const [isClosingSettings, setIsClosingSettings] = useState(false);
 
     const handleCloseSettings = () => {

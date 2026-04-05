@@ -1,8 +1,7 @@
-import { useContext } from 'react';
-import { MathGameContext } from '../../App.jsx';
+import { useMathGameSelector } from '../../store/mathGameBridgeStore.js';
 
 const DailyStatsCounter = ({ style }) => {
-    const { correctCount: dailyCorrect,grandTotalCorrect  } = useContext(MathGameContext);
+    const dailyCorrect = useMathGameSelector((ctx) => ctx.correctCount ?? 0);
 
     return (
       <div style={style}>

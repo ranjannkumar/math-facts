@@ -1,9 +1,9 @@
 // src/components/NameForm.jsx
 
-import React, { useContext, useEffect, useState } from 'react';
-import { MathGameContext } from '../App.jsx';
+import React, { useEffect, useRef, useState } from 'react';
 import { getAdminStats } from '../api/mathApi.js';
 import { FaUserShield } from 'react-icons/fa';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const formInputClass =
   "!w-full !max-w-[320px] sm:!max-w-[340px] mx-auto mb-2 sm:mb-3 h-10 sm:h-12 " +
@@ -17,6 +17,11 @@ const panelClass =
   "p-3 sm:p-4 shadow-2xl flex flex-col items-center relative z-10 mx-2 sm:mx-4 " +
   "w-full max-w-sm border border-blue-200/30 backdrop-blur-md";
 
+const NOOP = () => {};
+const NOOP_NAVIGATE = () => {};
+const LOGIN_UNAVAILABLE = async () => {
+  throw new Error('Login unavailable');
+};
 
 const AdminPinModal = ({
     setShowAdminPinModal,
@@ -143,17 +148,29 @@ const NameForm = () => {
     isLoginLoading,
     handleDemoLogin,
     navigate,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    childPin: ctx.childPin || '',
+    childName: ctx.childName || '',
+    handleNameChange: ctx.handleNameChange || NOOP,
+    handlePinChange: ctx.handlePinChange || NOOP,
+    handlePinSubmit: ctx.handlePinSubmit || LOGIN_UNAVAILABLE,
+    isLoginLoading: Boolean(ctx.isLoginLoading),
+    handleDemoLogin: ctx.handleDemoLogin || NOOP,
+    navigate: ctx.navigate || NOOP_NAVIGATE,
+  }));
 
   const [error, setError] = useState('');
   const [showAdminPinModal, setShowAdminPinModal] = useState(false);
+  const wasAdminPinModalOpenRef = useRef(false);
 
 
   useEffect(() => {
-    if (!showAdminPinModal) { 
-        handlePinChange({ target: { value: '' } });
+    const wasOpen = wasAdminPinModalOpenRef.current;
+    if (wasOpen && !showAdminPinModal && childPin) {
+      handlePinChange({ target: { value: '' } });
     }
-  }, [handlePinChange, showAdminPinModal]);
+    wasAdminPinModalOpenRef.current = showAdminPinModal;
+  }, [childPin, handlePinChange, showAdminPinModal]);
 
   const onSubmit = async (e) => {
     e.preventDefault();

@@ -1,9 +1,13 @@
-import React, { useContext, useEffect } from 'react';
-import { MathGameContext } from '../App.jsx';
+import React, { useEffect } from 'react';
 import QuizScreen from './QuizScreen.jsx';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const PreTestScreen = () => {
-  const { isPretest, navigate, isQuittingRef } = useContext(MathGameContext);
+  const { isPretest, navigate, isQuittingRef } = useMathGamePick((ctx) => ({
+    isPretest: Boolean(ctx.isPretest),
+    navigate: ctx.navigate || (() => {}),
+    isQuittingRef: ctx.isQuittingRef || { current: false },
+  }));
 
   useEffect(() => {
     if (!isPretest) {

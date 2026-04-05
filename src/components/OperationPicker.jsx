@@ -1,7 +1,6 @@
-import React, { useContext, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import { MathGameContext } from '../App.jsx';
 import {
   DEFAULT_OPERATION,
   MODULE_META,
@@ -10,6 +9,7 @@ import {
   getOperationMaxLevel,
   normalizeOperation,
 } from '../config/modulesConfig.js';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const OPERATION_UI = {
   add: {
@@ -44,7 +44,14 @@ const OperationPicker = () => {
     refreshOperationAndProgress,
     childName,
   } =
-    useContext(MathGameContext);
+    useMathGamePick((ctx) => ({
+      operationsMeta: ctx.operationsMeta || {},
+      progressByOperation: ctx.progressByOperation || {},
+      flowMode: ctx.flowMode,
+      setSelectedOperation: ctx.setSelectedOperation || (() => {}),
+      refreshOperationAndProgress: ctx.refreshOperationAndProgress || (() => Promise.resolve()),
+      childName: ctx.childName || '',
+    }));
   const childNameDisplay = (childName || '').toUpperCase();
 
   useEffect(() => {

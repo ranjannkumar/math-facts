@@ -19,13 +19,21 @@ import {
   userUpdateTheme,
 } from '../api/mathApi.js';
 import {
-  DEFAULT_FLOW_MODE,
   DEFAULT_OPERATION,
-  MODULE_META,
-  MODULE_SEQUENCE,
-  getDefaultEnabledOperations,
   normalizeOperation,
 } from '../config/modulesConfig.js';
+import { useConfigProgressDomain } from './domains/useConfigProgressDomain.js';
+import { buildGameModeSlice } from './slices/gameModeSlice.js';
+import { buildPretestSlice } from './slices/pretestSlice.js';
+import { buildQuizSlice } from './slices/quizSlice.js';
+import { buildUiSlice } from './slices/uiSlice.js';
+import {
+  readStoredNumber,
+  resolvePretestInactivityThresholdMs,
+} from './helpers/mathGameHelpers.js';
+import { useInactivityTimerEffect } from './effects/useInactivityTimerEffect.js';
+import { usePretestCountdownEffect } from './effects/usePretestCountdownEffect.js';
+import { useQuizTimerEffect } from './effects/useQuizTimerEffect.js';
 
 // Auto-import all game mode videos and thumbnails from public/game-videos
 const videoModules = import.meta.glob('/public/game-videos/*.mp4', { as: 'url' });
@@ -69,58 +77,6 @@ const INACTIVITY_TIMEOUT_STORAGE_KEY = 'math-inactivity-ms';
 const PRETEST_INACTIVITY_TIMEOUT_STORAGE_KEY = 'math-pretest-inactivity-ms';
 const LIGHTNING_TARGET_STORAGE_KEY = 'math-lightning-target';
 const LIGHTNING_FAST_MS_STORAGE_KEY = 'math-lightning-fast-ms';
-
-const readStoredNumber = (key, fallback) => {
-  const stored = Number.parseInt(localStorage.getItem(key), 10);
-  return Number.isFinite(stored) ? stored : fallback;
-};
-
-const hasFlatLevelKeys = (obj) =>
-  !!obj && typeof obj === 'object' && Object.keys(obj).some((key) => /^L\d+$/i.test(key));
-
-const resolvePretestInactivityThresholdMs = (...sources) => {
-  for (const source of sources) {
-    if (!source || typeof source !== 'object') continue;
-
-    const fromPretestModeMs = Number(source?.pretestMode?.inactivityThresholdMs);
-    if (Number.isFinite(fromPretestModeMs) && fromPretestModeMs >= 0) return fromPretestModeMs;
-
-    const fromPretestModeSeconds = Number(source?.pretestMode?.inactivityThresholdSeconds);
-    if (Number.isFinite(fromPretestModeSeconds) && fromPretestModeSeconds >= 0) {
-      return Math.round(fromPretestModeSeconds * 1000);
-    }
-
-    const fromTopLevelMs = Number(source?.pretestInactivityThresholdMs);
-    if (Number.isFinite(fromTopLevelMs) && fromTopLevelMs >= 0) return fromTopLevelMs;
-
-    const fromGeneralMs = Number(source?.general?.pretestInactivityThresholdMs);
-    if (Number.isFinite(fromGeneralMs) && fromGeneralMs >= 0) return fromGeneralMs;
-  }
-
-  return null;
-};
-
-const normalizeProgressTree = (payload, fallbackOperation = DEFAULT_OPERATION) => {
-  if (!payload || typeof payload !== 'object') return {};
-  const source = payload?.progress && typeof payload.progress === 'object' ? payload.progress : payload;
-
-  if (hasFlatLevelKeys(source)) {
-    return { [normalizeOperation(fallbackOperation)]: source };
-  }
-
-  const tree = {};
-  MODULE_SEQUENCE.forEach((op) => {
-    if (source?.[op] && typeof source[op] === 'object') {
-      tree[op] = source[op];
-    }
-  });
-  return tree;
-};
-
-const getOperationProgressSlice = (progressTree, operation) => {
-  const op = normalizeOperation(operation);
-  return progressTree?.[op] && typeof progressTree[op] === 'object' ? progressTree[op] : {};
-};
 
 const useMathGame = () => {
   const navigate = useNavigate();
@@ -246,81 +202,42 @@ const useMathGame = () => {
     [quizStartTime, isTimerPaused, updateDailyTotalMs]
   );
 
-  const applyOperationMeta = useCallback((payload) => {
-    const operations =
-      payload?.operations && typeof payload.operations === 'object'
-        ? payload.operations
-        : payload && typeof payload === 'object'
-          ? payload
-          : null;
-    if (!operations || typeof operations !== 'object') return;
-
-    setOperationsMeta((prev) => {
-      const next = { ...(prev || {}) };
-      MODULE_SEQUENCE.forEach((op) => {
-        const fromApi = operations?.[op] || {};
-        next[op] = {
-          maxLevel: Number.isFinite(fromApi?.maxLevel)
-            ? fromApi.maxLevel
-            : next?.[op]?.maxLevel || MODULE_META[op]?.maxLevel || 19,
-          enabled:
-            typeof fromApi?.enabled === 'boolean'
-              ? fromApi.enabled
-              : next?.[op]?.enabled ?? MODULE_META[op]?.enabled ?? false,
-          unlocked:
-            typeof fromApi?.unlocked === 'boolean'
-              ? fromApi.unlocked
-              : next?.[op]?.unlocked ?? op === DEFAULT_OPERATION,
-          prerequisite:
-            fromApi?.prerequisite !== undefined
-              ? fromApi.prerequisite
-              : next?.[op]?.prerequisite ?? (op === DEFAULT_OPERATION ? null : DEFAULT_OPERATION),
-        };
-      });
-      return next;
-    });
-  }, []);
-
   // Identity and Progress
   const [selectedTheme, setSelectedTheme] = useState(null);
   const [userThemeKey, setUserThemeKey] = useState(null);
   const [childName, setChildName] = useState(() => localStorage.getItem('math-child-name') || '');
   const [childAge, setChildAge] = useState(() => localStorage.getItem('math-child-age') || '');
   const [childPin, setChildPin] = useState(() => localStorage.getItem('math-child-pin') || '');
-  const [selectedOperation, setSelectedOperation] = useState(() =>
-    normalizeOperation(localStorage.getItem('math-selected-operation') || DEFAULT_OPERATION)
-  );
-  const [tableProgress, setTableProgress] = useState({});
-  const [progressByOperation, setProgressByOperation] = useState({});
-  const [operationsMeta, setOperationsMeta] = useState(() => {
-    const enabled = getDefaultEnabledOperations();
-    return MODULE_SEQUENCE.reduce((acc, op) => {
-      acc[op] = {
-        maxLevel: MODULE_META[op]?.maxLevel || 19,
-        enabled: MODULE_META[op]?.enabled ?? false,
-        unlocked: op === DEFAULT_OPERATION,
-        prerequisite: op === DEFAULT_OPERATION ? null : DEFAULT_OPERATION,
-      };
-      if (enabled.includes(op)) {
-        acc[op].enabled = true;
-      }
-      return acc;
-    }, {});
+  const {
+    selectedOperation,
+    setSelectedOperation,
+    tableProgress,
+    setTableProgress,
+    progressByOperation,
+    setProgressByOperation,
+    operationsMeta,
+    flowMode,
+    applyOperationMeta,
+    applyProgressPayload,
+    refreshOperationAndProgress,
+    syncConfigFromStorage,
+  } = useConfigProgressDomain({
+    childPin,
+    userGetOperations,
+    userGetProgress,
+    lightningTargetStorageKey: LIGHTNING_TARGET_STORAGE_KEY,
+    lightningFastMsStorageKey: LIGHTNING_FAST_MS_STORAGE_KEY,
+    inactivityTimeoutStorageKey: INACTIVITY_TIMEOUT_STORAGE_KEY,
+    pretestInactivityTimeoutStorageKey: PRETEST_INACTIVITY_TIMEOUT_STORAGE_KEY,
+    defaultLightningTarget: DEFAULT_LIGHTNING_TARGET,
+    defaultLightningFastMs: DEFAULT_LIGHTNING_FAST_MS,
+    defaultInactivityTimeoutMs: DEFAULT_INACTIVITY_TIMEOUT_MS,
+    defaultPretestInactivityTimeoutMs: DEFAULT_PRETEST_INACTIVITY_TIMEOUT_MS,
+    setLightningTargetCorrect,
+    setLightningFastThresholdMs,
+    setInactivityTimeoutMs,
+    setPretestInactivityTimeoutMs,
   });
-  const [flowMode] = useState(DEFAULT_FLOW_MODE);
-
-  const applyProgressPayload = useCallback(
-    (payload, operation = selectedOperation) => {
-      const normalizedTree = normalizeProgressTree(payload, operation);
-      if (!normalizedTree || typeof normalizedTree !== 'object') return {};
-
-      setProgressByOperation(normalizedTree);
-      const scopedProgress = getOperationProgressSlice(normalizedTree, operation);
-      setTableProgress(scopedProgress);
-      return scopedProgress;
-    },
-    [selectedOperation]
-  );
 
   const [currentStreak, setCurrentStreak] = useState(0);
   const [showDailyStreakAnimation, setShowDailyStreakAnimation] = useState(false);
@@ -443,24 +360,6 @@ const useMathGame = () => {
     if (typeof nextTarget === 'number') {
       setLightningTargetCorrect(nextTarget);
     }
-  }, []);
-
-  const syncConfigFromStorage = useCallback(() => {
-    setLightningTargetCorrect(
-      readStoredNumber(LIGHTNING_TARGET_STORAGE_KEY, DEFAULT_LIGHTNING_TARGET)
-    );
-    setLightningFastThresholdMs(
-      readStoredNumber(LIGHTNING_FAST_MS_STORAGE_KEY, DEFAULT_LIGHTNING_FAST_MS)
-    );
-    setInactivityTimeoutMs(
-      readStoredNumber(INACTIVITY_TIMEOUT_STORAGE_KEY, DEFAULT_INACTIVITY_TIMEOUT_MS)
-    );
-    setPretestInactivityTimeoutMs(
-      readStoredNumber(
-        PRETEST_INACTIVITY_TIMEOUT_STORAGE_KEY,
-        DEFAULT_PRETEST_INACTIVITY_TIMEOUT_MS
-      )
-    );
   }, []);
 
   const showUiMessage = useCallback((payload = {}) => {
@@ -603,12 +502,6 @@ const useMathGame = () => {
   useEffect(() => {
     setStreakPosition(quizProgress);
   }, [quizProgress]);
-
-  useEffect(() => {
-    localStorage.setItem('math-selected-operation', selectedOperation);
-    const scopedProgress = getOperationProgressSlice(progressByOperation, selectedOperation);
-    setTableProgress(scopedProgress);
-  }, [selectedOperation, progressByOperation]);
 
   // --- FINAL step of login (unchanged) ---
   const processLoginFinal = useCallback(
@@ -827,29 +720,6 @@ const useMathGame = () => {
       });
     });
   }, [handlePinSubmit, showUiMessage]);
-
-  const refreshOperationAndProgress = useCallback(async () => {
-    if (!childPin) return;
-
-    try {
-      const [operationsPayload, latestProgress] = await Promise.all([
-        userGetOperations(childPin),
-        userGetProgress(childPin),
-      ]);
-
-      applyOperationMeta(operationsPayload || {});
-      applyProgressPayload(latestProgress || {}, selectedOperation);
-
-      const unlockedOperations = Object.entries(operationsPayload?.operations || {})
-        .filter(([, meta]) => meta?.unlocked !== false && meta?.enabled !== false)
-        .map(([op]) => normalizeOperation(op));
-      if (unlockedOperations.length > 0 && !unlockedOperations.includes(selectedOperation)) {
-        setSelectedOperation(unlockedOperations[0]);
-      }
-    } catch (e) {
-      console.warn('Failed to refresh operations/progress:', e?.message || e);
-    }
-  }, [childPin, applyOperationMeta, applyProgressPayload, selectedOperation]);
 
   // Persist theme
   const updateThemeAndNavigate = useCallback(
@@ -2487,246 +2357,78 @@ const useMathGame = () => {
     ]
   );
 
-  useEffect(() => {
-    syncConfigFromStorage();
-  }, [syncConfigFromStorage]);
-
-  useEffect(() => {
-    const trackedKeys = new Set([
-      INACTIVITY_TIMEOUT_STORAGE_KEY,
-      PRETEST_INACTIVITY_TIMEOUT_STORAGE_KEY,
-      LIGHTNING_TARGET_STORAGE_KEY,
-      LIGHTNING_FAST_MS_STORAGE_KEY,
-    ]);
-
-    const handleStorage = (event) => {
-      if (!trackedKeys.has(event.key)) return;
-      syncConfigFromStorage();
-    };
-
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, [syncConfigFromStorage]);
-
-  // ---------------- INACTIVITY TIMER ----------------
-  useEffect(() => {
-    if (isQuittingRef.current) {
-      if (inactivityTimeoutId.current) {
-        clearTimeout(inactivityTimeoutId.current);
-        inactivityTimeoutId.current = null;
-      }
-      return;
+  const handleInactivityApi = useCallback(async (runId, pin) => {
+    const out = await quizHandleInactivity(runId, pin);
+    if (out?.practice) {
+      return { ...out, practice: mapQuestionToFrontend(out.practice) };
     }
+    return out;
+  }, []);
+  const playInactivityClick = useCallback(() => {
+    audioManager.playSoftClick();
+  }, []);
 
-    const isActiveScreen =
-      !!quizRunId &&
-      !!currentQuestion &&
-      !isTimerPaused &&
-      !showResult &&
-      !isAwaitingInactivityResponse;
-
-    if (!isActiveScreen) {
-      if (inactivityTimeoutId.current) {
-        clearTimeout(inactivityTimeoutId.current);
-        inactivityTimeoutId.current = null;
-      }
-      return;
-    }
-
-    const effectiveInactivityTimeoutMs = isPretest
-      ? pretestInactivityTimeoutMs
-      : inactivityTimeoutMs;
-
-    if (inactivityTimeoutId.current) clearTimeout(inactivityTimeoutId.current);
-
-    inactivityTimeoutId.current = setTimeout(async () => {
-      if (isQuittingRef.current) return;
-      audioManager.playSoftClick();
-
-      if (inactivityTimeoutId.current) {
-        clearTimeout(inactivityTimeoutId.current);
-        inactivityTimeoutId.current = null;
-      }
-
-      const totalForProgress = isPretest ? pretestQuestionCount || 20 : maxQuestions;
-      if (totalForProgress > 0) {
-        const step = 100 / totalForProgress;
-        setQuizProgress((prev) => Math.min(prev + step, 100));
-      }
-
-      setIsAwaitingInactivityResponse(true);
-
-      try {
-        //  Contract-style inactivity: only quizRunId (pin passed separately by api wrapper)
-        const out = await quizHandleInactivity(quizRunId, childPin);
-
-        if (isQuittingRef.current) {
-          setIsAwaitingInactivityResponse(false);
-          return;
-        }
-
-        setCurrentQuizStreak(0);
-        setTransientStreakMessage(null);
-
-        if (out?.practice) {
-          setIsTimerPaused(true);
-          setPausedTime(Date.now());
-          setInterventionQuestion(mapQuestionToFrontend(out.practice));
-          setShowLearningModule(true);
-
-          if (isGameMode) {
-            setIsGameModePractice(true);
-            setGameModeInterventionIndex(currentQuestionIndex);
-          }
-
-          setIsAwaitingInactivityResponse(false);
-          if (isGameMode && gameModeType === 'surf') {
-            setRocketPracticeFact(null);
-            setRocketPracticeReverse(null);
-            setPendingSurfPractice(false);
-            navigate('/learning', { replace: true });
-            return;
-          }
-          if (isGameMode && gameModeType === 'rocket') {
-            setRocketPracticeFact(null);
-            setRocketPracticeReverse(null);
-            setPendingRocketPractice(false);
-            navigate('/learning', { replace: true });
-            return;
-          }
-          setRocketPracticeFact(null);
-          setRocketPracticeReverse(null);
-          navigate('/learning');
-          return;
-        }
-
-        if (out?.completed && !isGameMode) {
-          // Quiz completed by inactivity -> pretest result or WayToGo
-          setQuizStartTime(null);
-
-          setSessionCorrectCount(out.sessionCorrectCount || 0);
-          localStorage.setItem(
-            'math-last-quiz-duration',
-            Math.round((out.summary?.totalActiveMs || 0) / 1000)
-          );
-          setIsTimerPaused(true);
-
-          setIsAwaitingInactivityResponse(false);
-
-          if (isPretest) {
-            stopPretestTimer();
-            const resultPayload = {
-              passed: out.passed === true,
-              failReason: out.failReason || 'time',
-              summary: out.summary || null,
-              totalTimeMs: out.totalTimeMs ?? out.summary?.totalActiveMs ?? 0,
-              timeLimitMs: out.timeLimitMs ?? out.pretestTimeLimitMs ?? pretestTimeLimitMs,
-              level: selectedTable,
-              operation: selectedOperation,
-              levelAwarded: out.levelAwarded,
-              pretestSkipped: out.pretestSkipped,
-            };
-            setPretestResult(resultPayload);
-            navigate('/pretest-result', { replace: true, state: { pretestResult: resultPayload } });
-            return;
-          }
-
-          navigate('/way-to-go');
-          return;
-        }
-
-        // If completed in game mode, exit (backend is authoritative)
-        if (out?.completed && isGameMode) {
-          setIsAwaitingInactivityResponse(false);
-          setIsGameMode(false);
-          if (gameModeType === 'rocket') {
-            navigate('/game-mode-exit', { replace: true });
-            return;
-          }
-          navigate('/game-mode-exit', { replace: true });
-          return;
-        }
-
-        setIsAwaitingInactivityResponse(false);
-      } catch (e) {
-        const fallbackRoute = getRecoveryRoute();
-        logClientError('Inactivity API failed', e, { quizRunId, isGameMode, isPretest });
-        setIsTimerPaused(true);
-        setPausedTime(Date.now());
-        setIsAwaitingInactivityResponse(false);
-        showUiMessage({
-          type: 'error',
-          title: "Something went wrong",
-          message: 'Please try again.',
-        });
-        navigate(fallbackRoute, { replace: true });
-      }
-    }, effectiveInactivityTimeoutMs);
-
-    return () => {
-      if (inactivityTimeoutId.current) {
-        clearTimeout(inactivityTimeoutId.current);
-        inactivityTimeoutId.current = null;
-      }
-    };
-  }, [
+  useInactivityTimerEffect({
+    isQuittingRef,
+    inactivityTimeoutId,
+    quizRunId,
     currentQuestion,
     isTimerPaused,
     showResult,
     isAwaitingInactivityResponse,
-    quizRunId,
-    childPin,
-    navigate,
-    isGameMode,
-    gameModeType,
-    currentQuestionIndex,
-    maxQuestions,
-    pretestQuestionCount,
-    inactivityTimeoutMs,
-    pretestInactivityTimeoutMs,
     isPretest,
+    pretestInactivityTimeoutMs,
+    inactivityTimeoutMs,
+    pretestQuestionCount,
+    maxQuestions,
+    setQuizProgress,
+    setIsAwaitingInactivityResponse,
+    onPlayInactivityClick: playInactivityClick,
+    handleInactivityApi,
+    childPin,
+    setCurrentQuizStreak,
+    setTransientStreakMessage,
+    setPausedTime,
+    setInterventionQuestion,
+    setShowLearningModule,
+    isGameMode,
+    setIsGameModePractice,
+    setGameModeInterventionIndex,
+    currentQuestionIndex,
+    gameModeType,
+    setRocketPracticeFact,
+    setRocketPracticeReverse,
+    setPendingSurfPractice,
+    setPendingRocketPractice,
+    navigate,
+    setQuizStartTime,
+    setSessionCorrectCount,
     stopPretestTimer,
     pretestTimeLimitMs,
-    selectedOperation,
     selectedTable,
+    selectedOperation,
+    setPretestResult,
+    setIsGameMode,
+    setIsTimerPaused,
     getRecoveryRoute,
     logClientError,
     showUiMessage,
-  ]);
+  });
 
-  // Timer Effect (client-side time tracking)
-  useEffect(() => {
-    let timer;
-    if (!isTimerPaused && quizStartTime) {
-      timer = setInterval(() => {
-        const sessionElapsedMs = Date.now() - quizStartTime;
-        const totalElapsedSeconds = Math.floor((dailyTotalMs + sessionElapsedMs) / 1000);
+  useQuizTimerEffect({
+    isTimerPaused,
+    quizStartTime,
+    dailyTotalMs,
+    setElapsedTime,
+    setTotalTimeToday,
+  });
 
-        setElapsedTime(sessionElapsedMs / 1000);
-        setTotalTimeToday(totalElapsedSeconds);
-      }, 100);
-    }
-    return () => {
-      clearInterval(timer);
-    };
-  }, [isTimerPaused, quizStartTime, dailyTotalMs]);
-
-  // Pretest countdown (wall-clock; does not pause during practice)
-  useEffect(() => {
-    if (!pretestTimerRunning) return;
-
-    const interval = setInterval(() => {
-      const startedAt = pretestTimerStartRef.current;
-      const initialMs = pretestTimerInitialRef.current;
-      if (!Number.isFinite(initialMs) || !Number.isFinite(startedAt)) return;
-
-      const elapsed = Date.now() - startedAt;
-      const nextRemaining = Math.max(0, initialMs - elapsed);
-      setPretestRemainingMs(nextRemaining);
-    }, 250);
-
-    return () => clearInterval(interval);
-  }, [pretestTimerRunning]);
+  usePretestCountdownEffect({
+    pretestTimerRunning,
+    pretestTimerStartRef,
+    pretestTimerInitialRef,
+    setPretestRemainingMs,
+  });
 
   // ---------------- QUIT/RESET ----------------
   const handleConfirmQuit = useCallback(() => {
@@ -2794,9 +2496,7 @@ const useMathGame = () => {
         return 0;
     }
   })();
-
-  return {
-    // Core Quiz State & Actions
+  const sliceDeps = {
     selectedTable,
     setSelectedTable,
     selectedDifficulty,
@@ -2811,8 +2511,6 @@ const useMathGame = () => {
     streakPosition,
     tempNextRoute,
     setTempNextRoute,
-
-    // GAME MODE
     isGameMode,
     setIsGameMode,
     gameModeType,
@@ -2869,12 +2567,7 @@ const useMathGame = () => {
     shouldGoToRocketCompleteAfterVideo,
     setShouldGoToRocketCompleteAfterVideo,
     isRocketModeEnabled: ENABLE_ROCKET_MODE,
-
-
-    // backend-driven starter
     startOrResumeGameModeRun,
-
-    // UI & Progress
     isAnimating,
     setIsAnimating,
     showResult,
@@ -2894,8 +2587,6 @@ const useMathGame = () => {
     currentQuestionIndex,
     setCurrentQuestionIndex,
     maxQuestions,
-
-    // Timers
     quizStartTime,
     setQuizStartTime,
     elapsedTime,
@@ -2905,9 +2596,7 @@ const useMathGame = () => {
     isTimerPaused,
     setIsTimerPaused,
     totalTimeToday,
-    getQuizTimeLimit: () => quizTimeLimit,
-
-    // Learning/Practice
+    quizTimeLimit,
     isInitialPrepLoading,
     isQuizStarting,
     setIsQuizStarting,
@@ -2923,8 +2612,6 @@ const useMathGame = () => {
     interventionQuestion,
     setInterventionQuestion,
     handlePracticeAnswer,
-
-    // Identity & Settings
     childName,
     setChildName,
     handleNameChange,
@@ -2936,26 +2623,22 @@ const useMathGame = () => {
     handlePinChange,
     handlePinSubmit,
     handleDemoLogin,
-    userSavedThemeKey: userThemeKey,
+    userThemeKey,
     selectedTheme,
-    setSelectedTheme: updateThemeAndNavigate,
-
+    updateThemeAndNavigate,
     isLoginLoading,
     showSiblingCheck,
     loginPendingName,
     handleSiblingCheck,
-
     showDailyStreakAnimation,
     streakCountToDisplay,
     handleDailyStreakNext,
-
-    handleResetProgress: handleInitiateReset,
+    handleInitiateReset,
     handleConfirmReset,
     handleCancelReset,
     handleConfirmQuit,
     handleCancelQuit,
-    handleQuit: handleInitiateQuit,
-
+    handleInitiateQuit,
     showQuitModal,
     setShowQuitModal,
     showResetModal,
@@ -2966,16 +2649,12 @@ const useMathGame = () => {
     showUiMessage,
     clearUiMessage,
     isQuittingRef,
-
-    // Progression Data
     tableProgress,
     setTableProgress,
     progressByOperation,
     operationsMeta,
     flowMode,
     refreshOperationAndProgress,
-
-    // Pre-test exports
     preTestSection,
     setPreTestSection,
     preTestQuestions,
@@ -2992,8 +2671,6 @@ const useMathGame = () => {
     setPreTestResults,
     completedSections,
     showPreTestPopup,
-
-    // Pretest (backend-driven)
     isPretest,
     isPretestIntroVisible,
     setIsPretest,
@@ -3006,7 +2683,6 @@ const useMathGame = () => {
     stopPretestTimer,
     selectedOperation,
     setSelectedOperation,
-
     navigate,
     lastQuestion,
     showSpeedTest,
@@ -3021,17 +2697,20 @@ const useMathGame = () => {
     speedTestCorrectCount,
     speedTestShowTick,
     studentReactionSpeed,
-
     currentStreak,
     hardResetQuizState,
-
     playFactVideoAfterStreak,
     setPlayFactVideoAfterStreak,
     hideStatsUI,
     setHideStatsUI,
-
-    // kept exports (minimal breakage)
     setSessionCorrectCount,
+  };
+
+  return {
+    ...buildQuizSlice(sliceDeps),
+    ...buildGameModeSlice(sliceDeps),
+    ...buildPretestSlice(sliceDeps),
+    ...buildUiSlice(sliceDeps),
   };
 };
 

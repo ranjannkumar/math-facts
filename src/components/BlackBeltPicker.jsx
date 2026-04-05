@@ -1,8 +1,8 @@
 // src/components/BlackBeltPicker.jsx
-import React, { useContext, useMemo, useEffect, useRef, useState } from 'react';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MathGameContext } from '../App.jsx';
 import { FaArrowLeft } from 'react-icons/fa';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const degrees = [1, 2, 3, 4, 5, 6, 7];
 
@@ -13,7 +13,12 @@ const BlackBeltPicker = () => {
     startQuizWithDifficulty,
     tableProgress,
     isQuizStarting,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    selectedTable: ctx.selectedTable,
+    startQuizWithDifficulty: ctx.startQuizWithDifficulty || (() => {}),
+    tableProgress: ctx.tableProgress || {},
+    isQuizStarting: Boolean(ctx.isQuizStarting),
+  }));
   const [isPickLocked, setIsPickLocked] = useState(false);
   const isMountedRef = useRef(true);
 

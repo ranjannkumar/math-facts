@@ -1,8 +1,8 @@
-import React, { useContext, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import Confetti from 'react-confetti';
 import { useLocation } from 'react-router-dom';
-import { MathGameContext } from '../App.jsx';
 import { getOperationMaxLevel, normalizeOperation } from '../config/modulesConfig.js';
+import { useMathGamePick } from '../store/mathGameBridgeStore.js';
 
 const formatMs = (ms) => {
   if (!Number.isFinite(ms)) return '--:--';
@@ -21,7 +21,15 @@ const PretestResultScreen = () => {
     setPretestResult,
     setIsPretest,
     navigate,
-  } = useContext(MathGameContext);
+  } = useMathGamePick((ctx) => ({
+    pretestResult: ctx.pretestResult || null,
+    selectedOperation: ctx.selectedOperation,
+    selectedTable: ctx.selectedTable,
+    operationsMeta: ctx.operationsMeta || {},
+    setPretestResult: ctx.setPretestResult || (() => {}),
+    setIsPretest: ctx.setIsPretest || (() => {}),
+    navigate: ctx.navigate || (() => {}),
+  }));
   const location = useLocation();
 
   const effectiveResult = useMemo(() => {
