@@ -6,24 +6,32 @@ export const MODULE_META = {
     label: 'Addition',
     maxLevel: 19,
     enabled: true,
+    unlockedByDefault: true,
+    prerequisite: null,
   },
   sub: {
     id: 'sub',
     label: 'Subtraction',
     maxLevel: 11,
     enabled: true,
+    unlockedByDefault: false,
+    prerequisite: 'add',
   },
   mul: {
     id: 'mul',
     label: 'Multiplication',
-    maxLevel: 19,
-    enabled: false,
+    maxLevel: 10,
+    enabled: true,
+    unlockedByDefault: false,
+    prerequisite: 'sub',
   },
   div: {
     id: 'div',
     label: 'Division',
     maxLevel: 19,
     enabled: false,
+    unlockedByDefault: false,
+    prerequisite: 'mul',
   },
 };
 
@@ -44,4 +52,3 @@ export const getDefaultEnabledOperations = () =>
 
 export const getOperationMaxLevel = (op, fallback = MODULE_META[DEFAULT_OPERATION].maxLevel) =>
   MODULE_META[normalizeOperation(op)]?.maxLevel || fallback;
-

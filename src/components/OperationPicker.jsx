@@ -68,10 +68,27 @@ const OperationPicker = () => {
   };
 
   const visibleOperations = useMemo(() => {
+    const hasUnlockedProgressForOperation = (op) => {
+      const opProgress = progressByOperation?.[op];
+      if (!opProgress || typeof opProgress !== 'object') return false;
+      return Object.values(opProgress).some((levelNode) => {
+        if (!levelNode || typeof levelNode !== 'object') return false;
+        return levelNode.unlocked === true || levelNode.completed === true;
+      });
+    };
+
     const enabledUnlocked = MODULE_SEQUENCE.filter((op) => {
       const meta = operationsMeta?.[op];
-      if (!meta) return MODULE_META[op]?.enabled && op === DEFAULT_OPERATION;
-      return meta.enabled !== false && meta.unlocked !== false;
+      const unlockedFromProgress = hasUnlockedProgressForOperation(op);
+      if (!meta) {
+        const isEnabled = MODULE_META[op]?.enabled !== false;
+        const isUnlockedByDefault =
+          MODULE_META[op]?.unlockedByDefault ?? op === DEFAULT_OPERATION;
+        return isEnabled && (isUnlockedByDefault || unlockedFromProgress);
+      }
+      const unlockedFromMeta = meta.unlocked === true;
+      const unlockedByNormalGate = meta.enabled !== false && meta.unlocked !== false;
+      return unlockedFromMeta || unlockedFromProgress || unlockedByNormalGate;
     });
 
     if (flowMode !== 'sequential') return enabledUnlocked;

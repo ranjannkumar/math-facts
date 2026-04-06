@@ -41,8 +41,9 @@ export const useConfigProgressDomain = ({
       acc[op] = {
         maxLevel: MODULE_META[op]?.maxLevel || 19,
         enabled: MODULE_META[op]?.enabled ?? false,
-        unlocked: op === DEFAULT_OPERATION,
-        prerequisite: op === DEFAULT_OPERATION ? null : DEFAULT_OPERATION,
+        unlocked: MODULE_META[op]?.unlockedByDefault ?? op === DEFAULT_OPERATION,
+        prerequisite:
+          MODULE_META[op]?.prerequisite ?? (op === DEFAULT_OPERATION ? null : DEFAULT_OPERATION),
       };
       if (enabled.includes(op)) {
         acc[op].enabled = true;
@@ -76,11 +77,15 @@ export const useConfigProgressDomain = ({
           unlocked:
             typeof fromApi?.unlocked === 'boolean'
               ? fromApi.unlocked
-              : next?.[op]?.unlocked ?? op === DEFAULT_OPERATION,
+              : next?.[op]?.unlocked ??
+                MODULE_META[op]?.unlockedByDefault ??
+                op === DEFAULT_OPERATION,
           prerequisite:
             fromApi?.prerequisite !== undefined
               ? fromApi.prerequisite
-              : next?.[op]?.prerequisite ?? (op === DEFAULT_OPERATION ? null : DEFAULT_OPERATION),
+              : next?.[op]?.prerequisite ??
+                MODULE_META[op]?.prerequisite ??
+                (op === DEFAULT_OPERATION ? null : DEFAULT_OPERATION),
         };
       });
       return next;
@@ -134,9 +139,21 @@ export const useConfigProgressDomain = ({
       applyOperationMeta(operationsPayload || {});
       applyProgressPayload(latestProgress || {}, selectedOperation);
 
-      const unlockedOperations = Object.entries(operationsPayload?.operations || {})
-        .filter(([, meta]) => meta?.unlocked !== false && meta?.enabled !== false)
+      const unlockedFromOperationsMeta = Object.entries(operationsPayload?.operations || {})
+        .filter(([, meta]) => meta?.unlocked === true)
         .map(([op]) => normalizeOperation(op));
+      const normalizedProgress = normalizeProgressTree(latestProgress || {}, selectedOperation);
+      const unlockedFromProgress = MODULE_SEQUENCE.filter((op) => {
+        const opProgress = normalizedProgress?.[op];
+        if (!opProgress || typeof opProgress !== 'object') return false;
+        return Object.values(opProgress).some((levelNode) => {
+          if (!levelNode || typeof levelNode !== 'object') return false;
+          return levelNode.unlocked === true || levelNode.completed === true;
+        });
+      });
+      const unlockedOperations = Array.from(
+        new Set([...unlockedFromOperationsMeta, ...unlockedFromProgress].map(normalizeOperation))
+      );
       if (unlockedOperations.length > 0 && !unlockedOperations.includes(selectedOperation)) {
         setSelectedOperation(unlockedOperations[0]);
       }
