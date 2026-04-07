@@ -1,10 +1,20 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSignOutAlt, FaCog } from 'react-icons/fa';
+import {
+  FaSignOutAlt,
+  FaCog,
+  FaUsers,
+  FaClock,
+  FaTrophy,
+  FaChartLine,
+  FaCircle,
+  FaStar,
+} from 'react-icons/fa';
 import { getAdminStats, userGetProgress } from '../api/mathApi.js';
+import '../styles/AdminDashboard.css';
 
 const MS_PER_SEC = 1000;
-// const MS_PER_MIN = 60000;
+const PROGRESS_PLACEHOLDER = 'Loading...';
 
 const formatTime = (ms) => {
   const safeMs = Number(ms);
@@ -19,13 +29,50 @@ const formatTime = (ms) => {
   return `${seconds}s`;
 };
 
+const formatCompactTime = (ms) => {
+  const safeMs = Number(ms);
+  if (!Number.isFinite(safeMs) || safeMs <= 0) return '0m';
+  const totalMinutes = Math.round(safeMs / (60 * MS_PER_SEC));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+};
+
 const OPERATION_ORDER = ['add', 'sub', 'mul', 'div'];
-const PROGRESS_PLACEHOLDER = 'Loading...';
+
+const toSafeNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 
 const formatStudentNameForDashboard = (name = '') => {
   const safeName = String(name).trim();
-  if (!safeName) return '';
+  if (!safeName) return 'Unknown';
   return safeName.charAt(0).toUpperCase() + safeName.slice(1).toLowerCase();
+};
+
+const getInitial = (name = '') => {
+  const safe = String(name).trim();
+  return safe ? safe.charAt(0).toUpperCase() : '?';
+};
+
+const AVATAR_TONES = [
+  'admin-dashboard__avatar--emerald',
+  'admin-dashboard__avatar--violet',
+  'admin-dashboard__avatar--sky',
+  'admin-dashboard__avatar--amber',
+  'admin-dashboard__avatar--rose',
+  'admin-dashboard__avatar--teal',
+  'admin-dashboard__avatar--blue',
+];
+
+const getAvatarToneClass = (name = '') => {
+  const initial = getInitial(name);
+  const code = initial.charCodeAt(0);
+  if (!Number.isFinite(code)) return AVATAR_TONES[0];
+  return AVATAR_TONES[code % AVATAR_TONES.length];
 };
 
 const getBeltLabel = (levelData = {}) => {
@@ -83,7 +130,6 @@ const getCurrentProgress = (progress) => {
   );
 
   // Backward-compatible: old flat format { L1, L2, ... }.
-  // Only use it when operation-scoped nodes are not present.
   if (!hasScopedOps && hasFlatLevelKeys(progress)) {
     const flatLevels = parseLevelsFromNode(progress);
     if (flatLevels.length > 0) {
@@ -120,6 +166,33 @@ const getCurrentProgress = (progress) => {
   };
 };
 
+const getLevelToneClass = (level = '') => {
+  const safe = String(level).toUpperCase();
+  if (!safe || safe === 'N/A' || safe === 'ERROR' || safe === PROGRESS_PLACEHOLDER.toUpperCase()) {
+    return 'admin-dashboard__pill--neutral';
+  }
+  if (safe.includes('MUL')) return 'admin-dashboard__pill--green';
+  if (safe.includes('DIV')) return 'admin-dashboard__pill--blue';
+  if (safe.includes('SUB')) return 'admin-dashboard__pill--violet';
+  if (safe.includes('ADD')) return 'admin-dashboard__pill--amber';
+  return 'admin-dashboard__pill--sky';
+};
+
+const getBeltToneClass = (belt = '') => {
+  const safe = String(belt).toLowerCase();
+  if (!safe || safe === 'n/a' || safe === 'error' || safe === PROGRESS_PLACEHOLDER.toLowerCase()) {
+    return 'admin-dashboard__pill--neutral';
+  }
+  if (safe.includes('black')) return 'admin-dashboard__pill--dark';
+  if (safe.includes('white')) return 'admin-dashboard__pill--white';
+  if (safe.includes('yellow')) return 'admin-dashboard__pill--yellow';
+  if (safe.includes('green')) return 'admin-dashboard__pill--green';
+  if (safe.includes('blue')) return 'admin-dashboard__pill--blue';
+  if (safe.includes('red')) return 'admin-dashboard__pill--red';
+  if (safe.includes('brown')) return 'admin-dashboard__pill--brown';
+  return 'admin-dashboard__pill--neutral';
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState([]);
@@ -130,6 +203,8 @@ const AdminDashboard = () => {
   const [offset, setOffset] = useState(0);
   const limit = 10;
   const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(() => new Date());
   const loadMoreSentinelRef = useRef(null);
   const requestingNextPageRef = useRef(false);
 
@@ -162,32 +237,35 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
 
-      // NEW: paginated backend request
       const statsResponse = await getAdminStats(storedPin, limit, offset);
       const initialData = Array.isArray(statsResponse)
         ? statsResponse
         : Array.isArray(statsResponse?.data)
           ? statsResponse.data
           : [];
+
       const hasMoreFromHeader =
         typeof statsResponse?.pagination?.hasMore === 'boolean'
           ? statsResponse.pagination.hasMore
           : null;
       setHasMore(hasMoreFromHeader ?? initialData.length >= limit);
 
+      const parsedTotalCount = Number(statsResponse?.pagination?.totalCount);
+      setTotalCount(Number.isFinite(parsedTotalCount) ? parsedTotalCount : null);
+
       const initialRows = initialData.map((student) => ({
-          ...student,
-          currentLevel: PROGRESS_PLACEHOLDER,
-          currentBelt: PROGRESS_PLACEHOLDER,
+        ...student,
+        currentLevel: PROGRESS_PLACEHOLDER,
+        currentBelt: PROGRESS_PLACEHOLDER,
       }));
 
-      // NEW: append pages
       if (offset === 0) {
         setStats(initialRows);
       } else {
         setStats((prev) => [...prev, ...initialRows]);
       }
 
+      setLastUpdatedAt(new Date());
       setError(null);
 
       initialData.forEach((student) => {
@@ -269,192 +347,294 @@ const AdminDashboard = () => {
     navigate('/name', { replace: true });
   };
 
-  const handleRefresh = () => {
-    setStats([]);
-    setOffset(0);
-    setHasMore(true);
+  const handleViewStats = (pin) => {
+    navigate(`/admin/students/${pin}/analytics`);
   };
 
-  const handleViewStats = (pin) => {
-  navigate(`/admin/students/${pin}/analytics`);
-};
+  const summary = useMemo(() => {
+    const totalStudents = Number.isFinite(totalCount) ? totalCount : stats.length;
+    const loadedStudents = stats.length;
+    const onlineStudents = stats.reduce(
+      (acc, student) => acc + (Boolean(student?.loggedInToday) ? 1 : 0),
+      0
+    );
 
+    const totalTimeMs = stats.reduce(
+      (acc, student) => acc + toSafeNumber(student?.grandTotalActiveMs),
+      0
+    );
+
+    const totalScore = stats.reduce(
+      (acc, student) => acc + toSafeNumber(student?.grandTotalCorrect),
+      0
+    );
+
+    return {
+      totalStudents,
+      loadedStudents,
+      onlineStudents,
+      totalTimeMs,
+      totalScore,
+    };
+  }, [stats, totalCount]);
 
   const dashboardStyle = {
-    backgroundImage: "url('/night_sky_landscape.jpg')",
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
     minHeight: '100vh',
     paddingTop: 'max(env(safe-area-inset-top), 1rem)',
     paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)',
   };
-  const tableHeaderStyle = {
-    background: 'rgba(84, 187, 213, 0.86)',
-    borderBottom: '1px solid rgba(179, 244, 255, 0.5)',
-  };
 
   if (loading && offset === 0 && stats.length === 0) {
     return (
-      <div className="flex items-center justify-center" style={dashboardStyle}>
-        <p className="text-white text-2xl animate-pulse">Loading Admin Dashboard...</p>
+      <div className="admin-dashboard admin-dashboard__state" style={dashboardStyle}>
+        <p className="admin-dashboard__state-text">Loading Admin Dashboard...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center p-4" style={dashboardStyle}>
-        <h1 className="text-white text-3xl font-bold mb-4">Admin Dashboard</h1>
-        <p className="text-red-400 text-lg mb-4">{error}</p>
+      <div className="admin-dashboard admin-dashboard__state" style={dashboardStyle}>
+        <h1 className="admin-dashboard__title">Admin Dashboard</h1>
+        <p className="admin-dashboard__state-error">{error}</p>
         <button
           onClick={handleLogout}
-          className="kid-btn bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center"
+          className="admin-dashboard__btn admin-dashboard__btn--logout"
         >
-          <FaSignOutAlt className="mr-2" /> Logout
+          <FaSignOutAlt />
+          <span>Logout</span>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8" style={dashboardStyle}>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-6">
-        <h1 className="text-white text-3xl sm:text-4xl font-extrabold drop-shadow">
-          Student Stats
-        </h1>
-        <button
-          onClick={() => navigate('/admin-settings')}
-          type="button"
-          className="justify-self-center bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full shadow flex items-center gap-2"
-          aria-label="Open app settings"
-        >
-          <FaCog size={16} />
-          App Settings
-        </button>
-        <div className="flex justify-self-end space-x-2">
-          {/* <button
-            onClick={handleRefresh}
-            className="bg-green-600/90 hover:bg-green-700/90 text-white font-semibold py-2 px-4 rounded-xl shadow transition"
-          >
-            Refresh
-          </button> */}
-          <button
-            onClick={handleLogout}
-            className="bg-red-600/90 hover:bg-red-700/90 text-white font-semibold py-2 px-4 rounded-xl shadow transition flex items-center"
-          >
-            <FaSignOutAlt className="mr-1" size={16} /> Logout
-          </button>
-        </div>
-      </div>
+    <div className="admin-dashboard" style={dashboardStyle}>
+      <div className="admin-dashboard__shell">
+        <header className="admin-dashboard__topbar">
+          <div className="admin-dashboard__heading-wrap">
+            <div className="admin-dashboard__title-icon" aria-hidden="true">
+              <FaChartLine />
+            </div>
+            <div>
+              <h1 className="admin-dashboard__title">Student Stats</h1>
+              <p className="admin-dashboard__subtitle">Track student progress, time spent, and performance</p>
+            </div>
+          </div>
 
-      {stats.length === 0 ? (
-        <p className="text-white/80 text-xl text-center">No students found.</p>
-      ) : (
-        <>
-          <div className="overflow-x-auto rounded-xl shadow-2xl bg-white/10 backdrop-blur-sm">
-            <table className="min-w-full divide-y divide-gray-700">
-              <thead
-                className="text-white backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
-                style={tableHeaderStyle}
-              >
-                <tr>
-                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
-                    Name (#PIN)
-                  </th>
-                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
-                    Logged In Today
-                  </th>
-                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
-                    Level
-                  </th>
-                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
-                    Belt
-                  </th>
-                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
-                    Today Time
-                  </th>
-                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
-                    Today Score
-                  </th>
-                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
-                    Total Time
-                  </th>
-                  <th className="px-3 py-3.5 sm:px-6 sm:py-5 text-left text-xs sm:text-sm font-black uppercase tracking-[0.11em] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]">
-                    Total Score
-                  </th>
-                </tr>
-              </thead>
+          <div className="admin-dashboard__actions">
+            <button
+              onClick={() => navigate('/admin-settings')}
+              type="button"
+              className="admin-dashboard__btn admin-dashboard__btn--settings"
+              aria-label="Open app settings"
+            >
+              <FaCog />
+              <span>App Settings</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              type="button"
+              className="admin-dashboard__btn admin-dashboard__btn--logout"
+              aria-label="Logout"
+            >
+              <FaSignOutAlt />
+              <span>Logout</span>
+            </button>
+          </div>
+        </header>
 
-              <tbody className="divide-y divide-gray-700 text-white">
-                {stats.map((student) => (
-                  <tr
-                    key={student.id || student._id || student.pin}
-                    className="group cursor-pointer transition duration-200 ease-out hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(0,0,0,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/75"
-                    onClick={() => handleViewStats(student.pin)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        handleViewStats(student.pin);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`View question stats for ${student.name}`}
-                  >
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-semibold transition-colors duration-200 group-hover:bg-emerald-400/60">
-                      <span
-                        className="text-white transition duration-150 ease-in-out text-left"
-                        title={`View question stats for ${student.name}`}
-                      >
-                        {formatStudentNameForDashboard(student.name)} (<span className="tabular-nums">#{student.pin}</span>)
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:bg-emerald-400/60">
-                      {student.loggedInToday ? '✅ Yes' : '❌ No'}
-                    </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:bg-emerald-400/60">
-                      {student.currentLevel}
-                    </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-medium transition-colors duration-200 group-hover:bg-emerald-400/60">
-                      {student.currentBelt}
-                    </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm tabular-nums transition-colors duration-200 group-hover:bg-emerald-400/60">
-                      {formatTime(student.todayActiveMs)}
-                    </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm tabular-nums transition-colors duration-200 group-hover:bg-emerald-400/60">
-                      {student.todayCorrect}
-                    </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm tabular-nums transition-colors duration-200 group-hover:bg-emerald-400/60">
-                      {formatTime(student.grandTotalActiveMs)}
-                    </td>
-                    <td className="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-sm font-bold tabular-nums transition-colors duration-200 group-hover:bg-emerald-400/60">
-                      {student.grandTotalCorrect}
-                    </td>
+        <section className="admin-dashboard__cards" aria-label="Summary cards">
+          <article className="admin-dashboard__card">
+            <div className="admin-dashboard__card-icon admin-dashboard__card-icon--blue" aria-hidden="true">
+              <FaUsers />
+            </div>
+            <div>
+              <p className="admin-dashboard__card-value">{summary.totalStudents}</p>
+              <p className="admin-dashboard__card-label">Total Students</p>
+            </div>
+          </article>
+
+          <article className="admin-dashboard__card">
+            <div className="admin-dashboard__card-icon admin-dashboard__card-icon--green" aria-hidden="true">
+              <FaClock />
+            </div>
+            <div>
+              <p className="admin-dashboard__card-value">{formatCompactTime(summary.totalTimeMs)}</p>
+              <p className="admin-dashboard__card-label">Total Time</p>
+            </div>
+          </article>
+
+          <article className="admin-dashboard__card">
+            <div className="admin-dashboard__card-icon admin-dashboard__card-icon--amber" aria-hidden="true">
+              <FaTrophy />
+            </div>
+            <div>
+              <p className="admin-dashboard__card-value">{summary.totalScore}</p>
+              <p className="admin-dashboard__card-label">Total Score</p>
+            </div>
+          </article>
+
+          <article className="admin-dashboard__card">
+            <div className="admin-dashboard__card-icon admin-dashboard__card-icon--violet" aria-hidden="true">
+              <FaChartLine />
+            </div>
+            <div>
+              <p className="admin-dashboard__card-value">{summary.onlineStudents}</p>
+              <p className="admin-dashboard__card-label">Students Logged In</p>
+            </div>
+          </article>
+        </section>
+
+        {stats.length === 0 ? (
+          <p className="admin-dashboard__empty">No students found.</p>
+        ) : (
+          <>
+            <div className="admin-dashboard__table-wrap">
+              <table className="admin-dashboard__table">
+                <colgroup>
+                  <col className="admin-dashboard__col admin-dashboard__col--student" />
+                  <col className="admin-dashboard__col admin-dashboard__col--status" />
+                  <col className="admin-dashboard__col admin-dashboard__col--level" />
+                  <col className="admin-dashboard__col admin-dashboard__col--belt" />
+                  <col className="admin-dashboard__col admin-dashboard__col--time" />
+                  <col className="admin-dashboard__col admin-dashboard__col--score" />
+                  <col className="admin-dashboard__col admin-dashboard__col--time" />
+                  <col className="admin-dashboard__col admin-dashboard__col--score" />
+                </colgroup>
+                <thead>
+                  <tr className="admin-dashboard__head-row admin-dashboard__head-row--group">
+                    <th rowSpan={2}>Student</th>
+                    <th rowSpan={2}>Status</th>
+                    <th rowSpan={2}>Level</th>
+                    <th rowSpan={2}>Belt</th>
+                    <th colSpan={2} className="admin-dashboard__group-head admin-dashboard__group-head--today">Today</th>
+                    <th colSpan={2} className="admin-dashboard__group-head admin-dashboard__group-head--overall">Overall</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  <tr className="admin-dashboard__head-row admin-dashboard__head-row--sub">
+                    <th className="admin-dashboard__sub-head admin-dashboard__sub-head--today-time">Time</th>
+                    <th className="admin-dashboard__sub-head admin-dashboard__sub-head--today-score">Score</th>
+                    <th className="admin-dashboard__sub-head admin-dashboard__sub-head--overall-time">Time</th>
+                    <th className="admin-dashboard__sub-head admin-dashboard__sub-head--overall-score">Score</th>
+                  </tr>
+                </thead>
 
-          <div className="flex flex-col items-center mt-5 pb-2">
-            <div ref={loadMoreSentinelRef} className="h-1 w-full" aria-hidden="true" />
-            {hasMore && (
-              <div className="mt-3 inline-flex items-center gap-3 px-4 py-2 rounded-full bg-green-600/90 ring-1 ring-green-300/40 shadow-lg backdrop-blur-sm text-white">
-                <span className="h-4 w-4 rounded-full border-2 border-white/35 border-t-white animate-spin" aria-hidden="true" />
-                <span className="text-sm font-medium">
-                  {loading && offset > 0 ? 'Loading more students...' : 'Scroll down to load more'}
-                </span>
+                <tbody>
+                  {stats.map((student) => {
+                    const studentName = formatStudentNameForDashboard(student.name);
+                    const studentPin = student.pin;
+                    const isOnline = Boolean(student.loggedInToday);
+
+                    return (
+                      <tr
+                        key={student.id || student._id || student.pin}
+                        onClick={() => handleViewStats(student.pin)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            handleViewStats(student.pin);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View analytics for ${studentName}`}
+                      >
+                        <td>
+                          <div className="admin-dashboard__student-cell">
+                            <span
+                              className={`admin-dashboard__avatar ${getAvatarToneClass(studentName)}`}
+                              aria-hidden="true"
+                            >
+                              {getInitial(studentName)}
+                            </span>
+                            <span>
+                              <strong className="admin-dashboard__student-name">{studentName}</strong>
+                              <small className="admin-dashboard__student-pin">#{studentPin}</small>
+                            </span>
+                          </div>
+                        </td>
+
+                        <td>
+                          <span className={`admin-dashboard__status ${isOnline ? 'is-online' : 'is-offline'}`}>
+                            <FaCircle aria-hidden="true" />
+                            {isOnline ? 'Online' : 'Offline'}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className={`admin-dashboard__pill ${getLevelToneClass(student.currentLevel)}`}>
+                            {student.currentLevel}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className={`admin-dashboard__pill ${getBeltToneClass(student.currentBelt)}`}>
+                            {student.currentBelt}
+                          </span>
+                        </td>
+
+                        <td className="admin-dashboard__metric-cell">
+                          <span className="admin-dashboard__metric-content">
+                            <FaClock aria-hidden="true" />
+                            <span>{formatTime(student.todayActiveMs)}</span>
+                          </span>
+                        </td>
+
+                        <td className="admin-dashboard__metric-cell admin-dashboard__metric-cell--score">
+                          <span className="admin-dashboard__metric-content">
+                            <FaStar aria-hidden="true" />
+                            <span>{toSafeNumber(student.todayCorrect)}</span>
+                          </span>
+                        </td>
+
+                        <td className="admin-dashboard__metric-cell">
+                          <span className="admin-dashboard__metric-content">
+                            <FaClock aria-hidden="true" />
+                            <span>{formatTime(student.grandTotalActiveMs)}</span>
+                          </span>
+                        </td>
+
+                        <td className="admin-dashboard__metric-cell admin-dashboard__metric-cell--trophy">
+                          <span className="admin-dashboard__metric-content">
+                            <FaTrophy aria-hidden="true" />
+                            <span>{toSafeNumber(student.grandTotalCorrect)}</span>
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <footer className="admin-dashboard__footer">
+              <div className="admin-dashboard__footer-chip">
+                Showing 1 to {summary.loadedStudents} of {summary.totalStudents} students
               </div>
-            )}
-            {!hasMore && stats.length > 0 && (
-              <div className="mt-3 text-xs sm:text-sm text-white/70">
-                All students loaded
+              <div className="admin-dashboard__footer-chip">
+                Last updated:{' '}
+                {lastUpdatedAt.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
               </div>
-            )}
-          </div>
-        </>
-      )}
+            </footer>
+
+            <div className="admin-dashboard__load-more">
+              <div ref={loadMoreSentinelRef} className="admin-dashboard__sentinel" aria-hidden="true" />
+              {hasMore && (
+                <div className="admin-dashboard__loading-pill">
+                  <span className="admin-dashboard__loading-spinner" aria-hidden="true" />
+                  <span>{loading && offset > 0 ? 'Loading more students...' : 'Scroll down to load more'}</span>
+                </div>
+              )}
+              {!hasMore && stats.length > 0 && (
+                <div className="admin-dashboard__done-text">All students loaded</div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
