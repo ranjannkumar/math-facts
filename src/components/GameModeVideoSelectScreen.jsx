@@ -8,21 +8,31 @@ const GameModeVideoSelectScreen = () => {
     handleVideoSelection,
     setIsTimerPaused,
     setPausedTime,
+    isTimerPaused,
+    pausedTime,
     gameModeType,
   } = useMathGamePick((ctx) => ({
     videoOptions: ctx.videoOptions || null,
     handleVideoSelection: ctx.handleVideoSelection || (() => {}),
     setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
     setPausedTime: ctx.setPausedTime || (() => {}),
+    isTimerPaused: Boolean(ctx.isTimerPaused),
+    pausedTime: ctx.pausedTime || 0,
     gameModeType: ctx.gameModeType,
   }));
   const navigate = useNavigate();
 
   // Pause timers/inactivity while the selection screen is visible.
   useEffect(() => {
-    setIsTimerPaused(true);
-    setPausedTime(Date.now());
-  }, [setIsTimerPaused, setPausedTime]);
+    if (!isTimerPaused) {
+      setIsTimerPaused(true);
+      setPausedTime(Date.now());
+      return;
+    }
+    if (!pausedTime) {
+      setPausedTime(Date.now());
+    }
+  }, [isTimerPaused, pausedTime, setIsTimerPaused, setPausedTime]);
 
   // Redirect if no options are set (e.g., direct access)
   useEffect(() => {

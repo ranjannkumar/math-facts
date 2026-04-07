@@ -41,6 +41,7 @@ import PretestIntroScreen from './components/PretestIntroScreen.jsx';
 import PretestResultScreen from './components/PretestResultScreen.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
 import StatusModal from './components/StatusModal.jsx';
+import ScreenStatsDock from './components/ui/ScreenStatsDock.jsx';
 
 import { clearShootingStars } from './utils/mathGameLogic.js';
 import audioManager from './utils/audioUtils.js';
@@ -85,7 +86,61 @@ const App = () => {
     }
   }, [location.pathname]);
 
+  // Keep game-mode timer aligned with backend timing:
+  // run only on the question screen, pause on all other game-mode routes.
+  useEffect(() => {
+    const isGameMode = Boolean(ctx.isGameMode);
+    if (!isGameMode) return;
+
+    const isQuestionScreen =
+      location.pathname === '/game-mode' &&
+      Boolean(ctx.currentQuestion) &&
+      !Boolean(ctx.isAwaitingInactivityResponse);
+
+    if (isQuestionScreen) {
+      if (Boolean(ctx.isTimerPaused)) {
+        const pausedAt = Number(ctx.pausedTime);
+        if (Number.isFinite(pausedAt) && pausedAt > 0) {
+          ctx.setQuizStartTime?.((prev) => (prev ? prev + (Date.now() - pausedAt) : prev));
+        }
+        ctx.setPausedTime?.(0);
+        ctx.setIsTimerPaused?.(false);
+      }
+      return;
+    }
+
+    if (!Boolean(ctx.isTimerPaused)) {
+      ctx.setPausedTime?.(Date.now());
+      ctx.setIsTimerPaused?.(true);
+    }
+  }, [
+    location.pathname,
+    ctx.isGameMode,
+    ctx.currentQuestion,
+    ctx.isAwaitingInactivityResponse,
+    ctx.isTimerPaused,
+    ctx.pausedTime,
+    ctx.setIsTimerPaused,
+    ctx.setPausedTime,
+    ctx.setQuizStartTime,
+  ]);
+
   const providerValue = useMemo(() => ({ ...ctx, navigate }), [ctx, navigate]);
+  const showScreenStatsDock = useMemo(() => {
+    const routesWithStats = new Set([
+      '/game-mode',
+      '/game-mode-intro',
+      '/game-mode-exit',
+      '/game-mode-lightning-complete',
+      '/game-mode-surf-intro',
+      '/game-mode-surf-complete',
+      '/game-mode-rocket-intro',
+      '/learning',
+      '/pretest-intro',
+      '/pretest-result',
+    ]);
+    return routesWithStats.has(location.pathname);
+  }, [location.pathname]);
 
   useEffect(() => {
     syncMathGameBridgeStore(providerValue);
@@ -145,6 +200,8 @@ const App = () => {
         </Route>
       </Routes>
       </Suspense>
+
+      {showScreenStatsDock && <ScreenStatsDock />}
 
       {(ctx.isInitialPrepLoading || ctx.isQuizStarting) && <GetReadyScreen />}
 

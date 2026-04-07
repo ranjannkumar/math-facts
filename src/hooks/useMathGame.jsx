@@ -960,7 +960,12 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         setQuizQuestions(mapped);
         setCurrentQuestionIndex(safeIndex);
         setCurrentQuestion(mapped[safeIndex]);
-        questionStartTimestamp.current = Date.now();
+        const now = Date.now();
+        setQuizStartTime(now);
+        setIsTimerPaused(false);
+        setElapsedTime(0);
+        setPausedTime(0);
+        questionStartTimestamp.current = now;
 
         if (navigateToIntro) {
           navigate('/game-mode-intro', { replace: true });
@@ -1728,6 +1733,17 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     }
 
     // Update lightning from backend authority first so we can infer fast answers.
+    if (out?.dailyStats) {
+      setCorrectCount(out.dailyStats.correctCount);
+      applyDailyStatsTotalMs(out.dailyStats.totalActiveMs);
+      if (out.dailyStats.grandTotal !== undefined) setGrandTotalCorrect(out.dailyStats.grandTotal);
+      if (out.dailyStats.currentStreak !== undefined) setCurrentStreak(out.dailyStats.currentStreak);
+    } else if (isCorrect) {
+      // Keep score card responsive even when backend omits dailyStats for intermediate lightning answers.
+      setCorrectCount((prev) => prev + 1);
+    }
+
+    // Update lightning from backend authority first so we can infer fast answers.
     const prevTotal = lightningCount;
     const nextTotal = typeof out?.totalCorrect === 'number' ? out.totalCorrect : prevTotal;
     setLightningCount(nextTotal);
@@ -2305,6 +2321,11 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
             questionStartTimestamp.current = Date.now();
           }
 
+          // Keep paused until /game-mode is visible.
+          // App route effect handles the single source of truth for resume + time rebase.
+          setIsTimerPaused(true);
+          if (!pausedTime) setPausedTime(Date.now());
+
           setGameModeType('surf');
           applySurfState(out);
           if (typeof out?.surfCorrectStreak !== 'number') {
@@ -2325,6 +2346,11 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
             questionStartTimestamp.current = Date.now();
           }
 
+          // Keep paused until /game-mode is visible.
+          // App route effect handles the single source of truth for resume + time rebase.
+          setIsTimerPaused(true);
+          if (!pausedTime) setPausedTime(Date.now());
+
           setGameModeType('rocket');
           applyRocketState(out);
           if (typeof out?.rocketCorrectStreak !== 'number') {
@@ -2337,10 +2363,16 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         }
 
         if (out.resume) {
-          setIsTimerPaused(false);
-
-          if (pausedTime) {
-            setQuizStartTime((prev) => (prev ? prev + (Date.now() - pausedTime) : prev));
+          if (isGameMode) {
+            // Keep game-mode paused here; App route effect resumes and rebases exactly once.
+            setIsTimerPaused(true);
+            if (!pausedTime) setPausedTime(Date.now());
+          } else {
+            // Non-game quiz keeps existing local resume behavior.
+            setIsTimerPaused(false);
+            if (pausedTime) {
+              setQuizStartTime((prev) => (prev ? prev + (Date.now() - pausedTime) : prev));
+            }
           }
 
           if (out.next) {

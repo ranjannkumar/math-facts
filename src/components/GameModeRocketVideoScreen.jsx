@@ -16,12 +16,16 @@ const GameModeRocketVideoScreen = () => {
   const {
     setIsTimerPaused,
     setPausedTime,
+    isTimerPaused,
+    pausedTime,
     pendingRocketPractice,
     setPendingRocketPractice,
     setShowLearningModule,
   } = useMathGamePick((ctx) => ({
     setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
     setPausedTime: ctx.setPausedTime || (() => {}),
+    isTimerPaused: Boolean(ctx.isTimerPaused),
+    pausedTime: ctx.pausedTime || 0,
     pendingRocketPractice: Boolean(ctx.pendingRocketPractice),
     setPendingRocketPractice: ctx.setPendingRocketPractice || (() => {}),
     setShowLearningModule: ctx.setShowLearningModule || (() => {}),
@@ -37,8 +41,12 @@ const GameModeRocketVideoScreen = () => {
     const videoEl = videoRef.current;
     if (!videoEl) return;
 
-    setIsTimerPaused(true);
-    setPausedTime(Date.now());
+    if (!isTimerPaused) {
+      setIsTimerPaused(true);
+      setPausedTime(Date.now());
+    } else if (!pausedTime) {
+      setPausedTime(Date.now());
+    }
 
     const finish = () => {
       if (finishedRef.current) return;
@@ -84,6 +92,8 @@ const GameModeRocketVideoScreen = () => {
   }, [
     kind,
     navigate,
+    isTimerPaused,
+    pausedTime,
     pendingRocketPractice,
     setIsTimerPaused,
     setPausedTime,

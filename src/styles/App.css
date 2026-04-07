@@ -975,3 +975,61 @@ html {
     min-width: 0;
   }
 }
+
+/* Fixed stats dock for full-screen flows outside MainLayout */
+.screen-stats-dock {
+  position: fixed;
+  left: max(env(safe-area-inset-left), 0.5rem);
+  right: max(env(safe-area-inset-right), 0.5rem);
+  bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  z-index: 150;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+
+.screen-stats-dock > div {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 280px;
+  pointer-events: auto;
+}
+
+@media (min-width: 768px) {
+  .screen-stats-dock {
+    left: auto;
+    right: max(env(safe-area-inset-right), 1rem);
+    bottom: max(env(safe-area-inset-bottom), 1rem);
+    width: auto;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: 0.75rem;
+  }
+
+  .screen-stats-dock > div {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 220px;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 500px) {
+  .screen-stats-dock {
+    left: max(env(safe-area-inset-left), 0.5rem);
+    right: max(env(safe-area-inset-right), 0.5rem);
+    width: auto;
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  .screen-stats-dock > div {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 280px;
+  }
+}

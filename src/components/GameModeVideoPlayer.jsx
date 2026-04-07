@@ -76,27 +76,23 @@ const GameModeVideoPlayer = () => {
       if (finishTriggeredRef.current) return;
       finishTriggeredRef.current = true;
 
-      // stop the element immediately so it can’t restart while waiting
+      // stop the element immediately so it can't restart while waiting
       try {
         videoEl.pause();
       } catch {}
 
       if (surfResumeAfterVideo) {
-        setIsTimerPaused(false);
         if (questionStartTimestamp?.current != null) {
           questionStartTimestamp.current = Date.now();
         }
-        setPausedTime?.(0);
         setSurfResumeAfterVideo(false);
         await startSurfNextQuiz({ navigateToGameMode: true });
         return;
       }
       if (rocketResumeAfterVideo) {
-        setIsTimerPaused(false);
         if (questionStartTimestamp?.current != null) {
           questionStartTimestamp.current = Date.now();
         }
-        setPausedTime?.(0);
         setRocketResumeAfterVideo(false);
         await startRocketNextQuiz({ navigateToGameMode: true });
         return;
@@ -110,11 +106,9 @@ const GameModeVideoPlayer = () => {
         !shouldExitAfterVideo;
 
       if (shouldResumeGameMode) {
-        setIsTimerPaused(false);
         if (questionStartTimestamp?.current != null) {
           questionStartTimestamp.current = Date.now();
         }
-        setPausedTime?.(0);
         setLightningCycleStart(lightningCount);
       } else {
         setIsTimerPaused(true);

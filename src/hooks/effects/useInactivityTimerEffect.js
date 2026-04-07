@@ -173,6 +173,9 @@ export const useInactivityTimerEffect = ({
         }
 
         if (out?.completed && isGameMode) {
+          setIsTimerPaused(true);
+          setPausedTime(Date.now());
+          setQuizStartTime(null);
           setIsAwaitingInactivityResponse(false);
           setIsGameMode(false);
           if (gameModeType === 'rocket') {

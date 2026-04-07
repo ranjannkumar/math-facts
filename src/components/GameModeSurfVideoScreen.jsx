@@ -20,6 +20,8 @@ const GameModeSurfVideoScreen = () => {
     startSurfNextQuiz,
     setIsTimerPaused,
     setPausedTime,
+    isTimerPaused,
+    pausedTime,
     setShouldExitAfterVideo,
     setVideoOptions,
     surfVideoList,
@@ -31,6 +33,8 @@ const GameModeSurfVideoScreen = () => {
     startSurfNextQuiz: ctx.startSurfNextQuiz || (() => Promise.resolve()),
     setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
     setPausedTime: ctx.setPausedTime || (() => {}),
+    isTimerPaused: Boolean(ctx.isTimerPaused),
+    pausedTime: ctx.pausedTime || 0,
     setShouldExitAfterVideo: ctx.setShouldExitAfterVideo || (() => {}),
     setVideoOptions: ctx.setVideoOptions || (() => {}),
     surfVideoList: Array.isArray(ctx.surfVideoList) ? ctx.surfVideoList : [],
@@ -57,8 +61,13 @@ const GameModeSurfVideoScreen = () => {
     if (!v) return;
 
     // Pause timers/inactivity while surf videos play.
-    setIsTimerPaused(true);
-    setPausedTime(Date.now());
+    // Preserve the original paused timestamp to avoid timer jitter on resume.
+    if (!isTimerPaused) {
+      setIsTimerPaused(true);
+      setPausedTime(Date.now());
+    } else if (!pausedTime) {
+      setPausedTime(Date.now());
+    }
 
     const pickTwoOptions = (list) => {
       if (!list || list.length === 0) return null;
@@ -79,8 +88,6 @@ const GameModeSurfVideoScreen = () => {
       endHandledRef.current = true;
 
       if (kind === 'intro') {
-        setIsTimerPaused(false);
-        setPausedTime(0);
         navigate('/game-mode-surf-intro', { replace: true });
         return;
       }
@@ -91,9 +98,6 @@ const GameModeSurfVideoScreen = () => {
         navigate('/learning', { replace: true });
         return;
       }
-
-      setIsTimerPaused(false);
-      setPausedTime(0);
 
       if (kind === 'win') {
         if (toRocketFlow) {
@@ -147,6 +151,8 @@ const GameModeSurfVideoScreen = () => {
     toRocketFlow,
     exitAfter,
     navigate,
+    isTimerPaused,
+    pausedTime,
     setIsTimerPaused,
     setPausedTime,
     startSurfNextQuiz,

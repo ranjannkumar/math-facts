@@ -26,7 +26,6 @@ const GameModeScreen = () => {
   setShowSettings,
   handleQuit,
   handleResetProgress,
-  setIsTimerPaused,
 } = useMathGamePick((ctx) => ({
   currentQuestion: ctx.currentQuestion || null,
   handleAnswer: ctx.handleAnswer || (() => {}),
@@ -48,16 +47,11 @@ const GameModeScreen = () => {
   setShowSettings: ctx.setShowSettings || (() => {}),
   handleQuit: ctx.handleQuit || (() => {}),
   handleResetProgress: ctx.handleResetProgress || (() => {}),
-  setIsTimerPaused: ctx.setIsTimerPaused || (() => {}),
 }));
 
 const isSurfMode = gameModeType === 'surf';
 const isRocketMode = gameModeType === 'rocket';
 const isLightningMode = gameModeType === 'lightning' && !isSurfMode;
-
-useEffect(() => {
-    setIsTimerPaused(false);
-  }, [setIsTimerPaused]);
 
   const answerRefs = useRef([]);
   const lastClickRef = useRef({ qid: null, t: 0 });
