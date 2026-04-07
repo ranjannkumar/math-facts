@@ -24,14 +24,13 @@ const LOGIN_UNAVAILABLE = async () => {
 };
 
 const AdminPinModal = ({
-    setShowAdminPinModal,
-    navigate,
-    getAdminStats,
+    adminPin,
+    setAdminPin,
+    isAdminLoading,
+    error,
+    onSubmit,
+    onCancel,
 }) => {
-    const [error, setError] = useState('');
-    const [adminPin, setAdminPin] = useState('');
-    const [isAdminLoading, setIsAdminLoading] = useState(false);
-
     const handleAdminKeypadInput = (key) => {
         if (isAdminLoading) return;
         if (key === 'C') return setAdminPin('');
@@ -51,26 +50,6 @@ const AdminPinModal = ({
             {label || value}
         </button>
     );
-
-    const handleAdminPinSubmit = async () => {
-        setError('');
-        if (isAdminLoading) return;
-        
-        setIsAdminLoading(true);
-
-        try {
-            await getAdminStats(adminPin);
-            localStorage.setItem('math-admin-pin', adminPin);
-            setShowAdminPinModal(false);
-            navigate('/admin-dashboard');
-        } catch (e) {
-            setError('Admin access failed: ' + (e.message || 'Server error.'));
-            setShowAdminPinModal(true);
-        } finally {
-            setIsAdminLoading(false);
-            setAdminPin('');
-        }
-    };
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] animate-fade-in"
@@ -111,19 +90,15 @@ const AdminPinModal = ({
                 <div className="flex justify-center space-x-2 w-full">
                     <button
                         type="button"
-                        onClick={handleAdminPinSubmit}
+                        onClick={onSubmit}
                         className="bg-green-800 hover:bg-green-900 text-white font-bold py-1 px-3 sm:px-4 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1 text-sm max-w-[140px]"
                         disabled={adminPin.length !== 4 || isAdminLoading}
                     >
-                        {/* {isAdminLoading ? 'Checking...' : 'Enter'} */}
                         Enter
                     </button>
                     <button
                         type="button"
-                        onClick={() => {
-                            setShowAdminPinModal(false);
-                            setError('');
-                        }}
+                        onClick={onCancel}
                         className="bg-gray-400 hover:bg-gray-500 text-gray-800 font-bold py-1 px-3 sm:px-4 rounded-2xl duration-300 transform hover:scale-105 active:scale-95 shadow-lg flex-1 text-sm max-w-[140px]"
                         disabled={isAdminLoading}
                     >
@@ -165,6 +140,10 @@ const NameForm = () => {
 
   const [error, setError] = useState('');
   const [showAdminPinModal, setShowAdminPinModal] = useState(false);
+  const [adminPin, setAdminPin] = useState('');
+  const [adminError, setAdminError] = useState('');
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
+  const [adminLoadingDots, setAdminLoadingDots] = useState('.');
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const wasAdminPinModalOpenRef = useRef(false);
   const loadingMessages = [
@@ -198,6 +177,62 @@ const NameForm = () => {
 
     return () => clearInterval(timer);
   }, [isLoginLoading, loadingMessages.length]);
+
+  useEffect(() => {
+    if (!isAdminLoading) {
+      setAdminLoadingDots('.');
+      return;
+    }
+
+    const dotCycle = ['.', '..', '...'];
+    let dotIndex = 0;
+    const timer = setInterval(() => {
+      dotIndex = (dotIndex + 1) % dotCycle.length;
+      setAdminLoadingDots(dotCycle[dotIndex]);
+    }, 450);
+
+    return () => clearInterval(timer);
+  }, [isAdminLoading]);
+
+  const handleOpenAdminPinModal = () => {
+    if (isAdminLoading) return;
+    setError('');
+    setAdminError('');
+    setAdminPin('');
+    setShowAdminPinModal(true);
+  };
+
+  const handleCloseAdminPinModal = () => {
+    if (isAdminLoading) return;
+    setShowAdminPinModal(false);
+    setAdminError('');
+    setAdminPin('');
+  };
+
+  const handleAdminPinSubmit = async () => {
+    if (isAdminLoading) return;
+    if (!adminPin || adminPin.length !== 4) {
+      setAdminError('Enter a valid 4-digit admin PIN.');
+      return;
+    }
+
+    setAdminError('');
+    setIsAdminLoading(true);
+    setShowAdminPinModal(false);
+
+    try {
+      await getAdminStats(adminPin);
+      localStorage.setItem('math-admin-pin', adminPin);
+      navigate('/admin-dashboard');
+      return;
+    } catch (e) {
+      setAdminError('Admin access failed: ' + (e.message || 'Server error.'));
+      setShowAdminPinModal(true);
+      setAdminPin('');
+    }
+
+    setIsAdminLoading(false);
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -266,10 +301,7 @@ const handleDemoClick = () => {
     >
       <button
         type="button"
-        onClick={() => {
-          setError('');
-          setShowAdminPinModal(true);
-        }}
+        onClick={handleOpenAdminPinModal}
         className="fixed z-50 bg-white/80 hover:bg-gray-200 text-gray-700 rounded-full p-2 shadow-lg border-2 border-gray-400 focus:outline-none transition-all duration-300 transform hover:scale-110 active:scale-95 flex items-center justify-center space-x-1"
         style={{
           top: 'max(env(safe-area-inset-top), 0.5rem)',
@@ -385,12 +417,35 @@ const handleDemoClick = () => {
             </div> 
         </div>
       )} 
+
+      {isAdminLoading && (
+        <div
+          className="fixed inset-0 z-[102] flex items-center justify-center bg-[#040b16]"
+          style={{
+            backgroundColor: '#040b16',
+            backgroundImage: "url('/night_sky_landscape.jpg')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        >
+          <div className="rounded-3xl border border-white/20 bg-slate-950/62 px-7 py-5 text-center text-white shadow-2xl backdrop-blur-md">
+            <p className="text-xl sm:text-2xl font-extrabold tracking-wide">
+              Loading Admin Dashboard
+              <span className="inline-block w-[2.2ch] text-left">{adminLoadingDots}</span>
+            </p>
+          </div>
+        </div>
+      )}
       
       {showAdminPinModal && (
         <AdminPinModal 
-          setShowAdminPinModal={setShowAdminPinModal}
-          navigate={navigate}
-          getAdminStats={getAdminStats}
+          adminPin={adminPin}
+          setAdminPin={setAdminPin}
+          isAdminLoading={isAdminLoading}
+          error={adminError}
+          onSubmit={handleAdminPinSubmit}
+          onCancel={handleCloseAdminPinModal}
         />
       )}
     </div>

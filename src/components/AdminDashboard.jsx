@@ -15,6 +15,7 @@ import '../styles/AdminDashboard.css';
 
 const MS_PER_SEC = 1000;
 const PROGRESS_PLACEHOLDER = 'Loading...';
+const LOADING_DOTS = ['.', '..', '...'];
 
 const formatTime = (ms) => {
   const safeMs = Number(ms);
@@ -197,6 +198,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingDots, setLoadingDots] = useState(LOADING_DOTS[0]);
   const [error, setError] = useState(null);
 
   // Pagination states
@@ -320,6 +322,21 @@ const AdminDashboard = () => {
   }, [loading]);
 
   useEffect(() => {
+    if (!loading) {
+      setLoadingDots(LOADING_DOTS[0]);
+      return undefined;
+    }
+
+    let dotIndex = 0;
+    const intervalId = setInterval(() => {
+      dotIndex = (dotIndex + 1) % LOADING_DOTS.length;
+      setLoadingDots(LOADING_DOTS[dotIndex]);
+    }, 450);
+
+    return () => clearInterval(intervalId);
+  }, [loading]);
+
+  useEffect(() => {
     const sentinel = loadMoreSentinelRef.current;
     if (!sentinel || !hasMore) return;
 
@@ -386,8 +403,24 @@ const AdminDashboard = () => {
 
   if (loading && offset === 0 && stats.length === 0) {
     return (
-      <div className="admin-dashboard admin-dashboard__state" style={dashboardStyle}>
-        <p className="admin-dashboard__state-text">Loading Admin Dashboard...</p>
+      <div
+        className="fixed inset-0 z-[102] flex items-center justify-center bg-[#040b16]"
+        style={{
+          backgroundColor: '#040b16',
+          backgroundImage: "url('/night_sky_landscape.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        <div className="rounded-3xl border border-white/20 bg-slate-950/62 px-7 py-5 text-center text-white shadow-2xl backdrop-blur-md">
+          <p className="text-xl sm:text-2xl font-extrabold tracking-wide">
+            Loading Admin Dashboard
+            <span className="inline-block w-[2.2ch] text-left" aria-hidden="true">
+              {loadingDots}
+            </span>
+          </p>
+        </div>
       </div>
     );
   }
