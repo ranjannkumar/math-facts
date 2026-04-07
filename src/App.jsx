@@ -146,10 +146,8 @@ const App = () => {
       </Routes>
       </Suspense>
 
-     {ctx.isInitialPrepLoading && <InitialLoadingScreen />}
+      {(ctx.isInitialPrepLoading || ctx.isQuizStarting) && <GetReadyScreen />}
 
-      {/* 2. Show "GET READY" only right before the quiz starts (post-practice or black belt) */}
-      {ctx.isQuizStarting && <GetReadyScreen />}
 
      {/* --- DAILY STREAK ANIMATION OVERLAY (NEW COMPONENT) --- */}
       {ctx.showDailyStreakAnimation && ctx.streakCountToDisplay > 0 && (
