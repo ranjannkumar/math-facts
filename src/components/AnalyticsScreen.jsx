@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 
@@ -21,6 +21,7 @@ const OPS = [
 const LEVELS = [{ value: "all", label: "All levels" }].concat(
   Array.from({ length: 19 }, (_, i) => ({ value: String(i + 1), label: `Level ${i + 1}` }))
 );
+const FACTS_PAGE_SIZE = 50;
 
 function pct(x) {
   if (x == null || Number.isNaN(x)) return "—";
@@ -184,16 +185,24 @@ export default function AnalyticsScreen() {
   const [operation, setOperation] = useState("all");
 
   const [facts, setFacts] = useState([]);
-  const [pagination, setPagination] = useState({ limit: 50, offset: 0, total: 0, hasMore: false });
+  const [pagination, setPagination] = useState({
+    limit: FACTS_PAGE_SIZE,
+    nextOffset: 0,
+    total: 0,
+    hasMore: false,
+  });
 
   const [loadingTop, setLoadingTop] = useState(true);
   const [loadingFacts, setLoadingFacts] = useState(true);
+  const [loadingMoreFacts, setLoadingMoreFacts] = useState(false);
   const [error, setError] = useState("");
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailFact, setDetailFact] = useState(null);
   const [lastFactDetail, setLastFactDetail] = useState(null);
   const [lastFactKey, setLastFactKey] = useState(null);
+  const loadMoreRef = useRef(null);
+  const factsRequestSeqRef = useRef(0);
 
   const sortedFacts = useMemo(() => {
     if (!Array.isArray(facts)) return [];
@@ -210,6 +219,30 @@ export default function AnalyticsScreen() {
   const handleDetailLoaded = (data, key) => {
     setLastFactDetail(data);
     setLastFactKey(key);
+  };
+
+  const getFactStableId = (f) => f?._id ?? f?.id ?? f?.factId ?? f?.fact?._id ?? null;
+  const mergeFacts = (prevFacts, nextFacts) => {
+    const combined = [...prevFacts, ...nextFacts];
+    const hasStableIds = combined.some((f) => getFactStableId(f) != null);
+    if (!hasStableIds) {
+      return combined;
+    }
+
+    const seen = new Set();
+    const merged = [];
+    combined.forEach((f) => {
+      const stableId = getFactStableId(f);
+      if (stableId == null) {
+        merged.push(f);
+        return;
+      }
+      const idKey = String(stableId);
+      if (seen.has(idKey)) return;
+      seen.add(idKey);
+      merged.push(f);
+    });
+    return merged;
   };
 
   const escapeCsv = (value) => {
@@ -338,30 +371,91 @@ export default function AnalyticsScreen() {
     };
   }, [pin, level]);
 
-  const loadFacts = async (nextOffset = 0) => {
-    if (!pin) return;
-    setLoadingFacts(true);
-    setError("");
-    try {
-      const data = await analyticsGetFacts(pin, {
-        level,
-        operation,
-        limit: 50,
-        offset: nextOffset,
-      });
-      setFacts(data.facts || []);
-      setPagination(data.pagination || { limit: 50, offset: nextOffset, total: 0, hasMore: false });
-    } catch (e) {
-      setError(e?.message || "Failed to load facts");
-    } finally {
-      setLoadingFacts(false);
-    }
-  };
+  const loadFacts = useCallback(
+    async (nextOffset = 0, { append = false } = {}) => {
+      if (!pin) return;
+      const requestSeq = ++factsRequestSeqRef.current;
+
+      if (append) {
+        setLoadingMoreFacts(true);
+      } else {
+        setLoadingFacts(true);
+      }
+      setError("");
+
+      try {
+        const data = await analyticsGetFacts(pin, {
+          level,
+          operation,
+          limit: FACTS_PAGE_SIZE,
+          offset: nextOffset,
+        });
+        if (requestSeq !== factsRequestSeqRef.current) return;
+
+        const nextFacts = Array.isArray(data?.facts) ? data.facts : [];
+        setFacts((prev) => (append ? mergeFacts(prev, nextFacts) : nextFacts));
+
+        const rawPagination = data?.pagination || {};
+        const limit = Number(rawPagination.limit);
+        const resolvedLimit = Number.isFinite(limit) && limit > 0 ? limit : FACTS_PAGE_SIZE;
+        const offset = Number(rawPagination.offset);
+        const resolvedOffset = Number.isFinite(offset) && offset >= 0 ? offset : nextOffset;
+        const totalRaw = Number(rawPagination.total ?? rawPagination.totalCount);
+        const hasMore = Boolean(rawPagination.hasMore);
+
+        setPagination((prev) => ({
+          limit: resolvedLimit,
+          nextOffset: resolvedOffset + resolvedLimit,
+          total: Number.isFinite(totalRaw) && totalRaw >= 0 ? totalRaw : prev.total,
+          hasMore,
+        }));
+      } catch (e) {
+        if (requestSeq !== factsRequestSeqRef.current) return;
+        setError(e?.message || "Failed to load facts");
+      } finally {
+        if (append) {
+          setLoadingMoreFacts(false);
+        } else {
+          setLoadingFacts(false);
+        }
+      }
+    },
+    [pin, level, operation]
+  );
 
   useEffect(() => {
-    loadFacts(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pin, level, operation]);
+    setFacts([]);
+    setPagination({
+      limit: FACTS_PAGE_SIZE,
+      nextOffset: 0,
+      total: 0,
+      hasMore: false,
+    });
+    loadFacts(0, { append: false });
+  }, [loadFacts]);
+
+  const loadMoreFacts = useCallback(() => {
+    if (!pagination.hasMore || loadingFacts || loadingMoreFacts) return;
+    loadFacts(pagination.nextOffset, { append: true });
+  }, [pagination.hasMore, pagination.nextOffset, loadingFacts, loadingMoreFacts, loadFacts]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !pagination.hasMore) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
+          loadMoreFacts();
+        }
+      },
+      { root: null, rootMargin: "200px 0px", threshold: 0.01 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [pagination.hasMore, loadMoreFacts]);
 
   const openFact = (f) => {
     setDetailFact({ operation: f.operation, a: f.a, b: f.b });
@@ -508,7 +602,10 @@ export default function AnalyticsScreen() {
                 <tbody>
                   {sortedFacts.map((f, idx) => (
                     <tr
-                      key={idx}
+                      key={
+                        getFactStableId(f) ??
+                        `${f.operation}-${f.a}-${f.b}-${f.question ?? ""}-${idx}`
+                      }
                       className="bg-black/20 hover:bg-black/30 cursor-pointer"
                       onClick={() => openFact(f)}
                     >
@@ -532,26 +629,27 @@ export default function AnalyticsScreen() {
 
           <div className="flex items-center justify-between mt-4 text-sm text-white/70">
             <div>
-              Showing {pagination.offset + 1}-{Math.min(pagination.offset + pagination.limit, pagination.total)} of{" "}
-              {pagination.total}
+              Showing {sortedFacts.length > 0 ? 1 : 0}-{sortedFacts.length} of{" "}
+              {pagination.total || sortedFacts.length}
             </div>
             <div className="flex gap-2">
               <button
                 className="kid-btn bg-white/90 hover:bg-white text-black px-4 py-2 disabled:opacity-50"
-                disabled={pagination.offset <= 0}
-                onClick={() => loadFacts(Math.max(0, pagination.offset - pagination.limit))}
+                disabled={!pagination.hasMore || loadingMoreFacts || loadingFacts}
+                onClick={loadMoreFacts}
               >
-                Prev
-              </button>
-              <button
-                className="kid-btn bg-white/90 hover:bg-white text-black px-4 py-2 disabled:opacity-50"
-                disabled={!pagination.hasMore}
-                onClick={() => loadFacts(pagination.offset + pagination.limit)}
-              >
-                Next
+                {loadingMoreFacts ? "Loading..." : "Load more"}
               </button>
             </div>
           </div>
+
+          {loadingMoreFacts && (
+            <div className="mt-3 text-sm text-white/70">Loading more facts...</div>
+          )}
+          {!pagination.hasMore && !loadingFacts && sortedFacts.length > 0 && (
+            <div className="mt-3 text-sm text-white/60">All facts loaded.</div>
+          )}
+          <div ref={loadMoreRef} className="h-2" />
         </div>
       </div>
 
