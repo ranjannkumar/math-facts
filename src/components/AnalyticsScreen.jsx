@@ -144,7 +144,7 @@ const FactDetailModal = ({ open, onClose, pin, factKey, onDetailLoaded }) => {
                     className="border border-gray-300 rounded-xl p-4 bg-white shadow-sm flex flex-col gap-2"
                   >
                     <div className="font-semibold text-gray-900">
-                      {a.correct ? "✅ Correct" : "❌ Wrong"} · answered{" "}
+                      {a.correct ? "✅ Correct" : "⏰ Timed Out"} · answered{" "}
                       <span className="font-mono">{a.userAnswer}</span>{" "}
                       (correct {a.correctAnswer})
                     </div>
@@ -212,11 +212,12 @@ export default function AnalyticsScreen() {
 
   const sortedFacts = useMemo(() => {
     if (!Array.isArray(facts)) return [];
-    const avgBucket = (rawAvg) => {
+    const avgDisplayBucketMs = (rawAvg) => {
       const avg = Number(rawAvg ?? 0);
       if (!Number.isFinite(avg)) return 0;
-      // Match the table display: <1000ms shown in ms, otherwise 1-decimal seconds.
-      return avg < 1000 ? Math.round(avg) : Math.round(avg / 100);
+      // Match display precision while keeping one unit (milliseconds) for sorting.
+      // <1000ms is displayed as integer ms, >=1000ms is displayed as 0.1s (100ms steps).
+      return avg < 1000 ? Math.round(avg) : Math.round(avg / 100) * 100;
     };
 
     return [...facts].sort((a, b) => {
@@ -226,8 +227,8 @@ export default function AnalyticsScreen() {
       const attemptsB = Number(b?.stats?.totalAttempts ?? 0);
       const avgA = Number(a?.stats?.avgMs ?? 0);
       const avgB = Number(b?.stats?.avgMs ?? 0);
-      const avgBucketA = avgBucket(avgA);
-      const avgBucketB = avgBucket(avgB);
+      const avgBucketA = avgDisplayBucketMs(avgA);
+      const avgBucketB = avgDisplayBucketMs(avgB);
 
       if (factsSort === FACT_SORT.ATTEMPTS) {
         if (attemptsB !== attemptsA) return attemptsB - attemptsA;
