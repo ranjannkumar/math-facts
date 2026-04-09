@@ -22,6 +22,11 @@ const LEVELS = [{ value: "all", label: "All levels" }].concat(
   Array.from({ length: 19 }, (_, i) => ({ value: String(i + 1), label: `Level ${i + 1}` }))
 );
 const FACTS_PAGE_SIZE = 50;
+const FACT_SORT = {
+  ACCURACY: "accuracy",
+  ATTEMPTS: "attempts",
+  AVG: "avg",
+};
 
 function pct(x) {
   if (x == null || Number.isNaN(x)) return "—";
@@ -185,6 +190,7 @@ export default function AnalyticsScreen() {
   const [operation, setOperation] = useState("all");
 
   const [facts, setFacts] = useState([]);
+  const [factsSort, setFactsSort] = useState(FACT_SORT.ACCURACY);
   const [pagination, setPagination] = useState({
     limit: FACTS_PAGE_SIZE,
     nextOffset: 0,
@@ -206,15 +212,42 @@ export default function AnalyticsScreen() {
 
   const sortedFacts = useMemo(() => {
     if (!Array.isArray(facts)) return [];
+    const avgBucket = (rawAvg) => {
+      const avg = Number(rawAvg ?? 0);
+      if (!Number.isFinite(avg)) return 0;
+      // Match the table display: <1000ms shown in ms, otherwise 1-decimal seconds.
+      return avg < 1000 ? Math.round(avg) : Math.round(avg / 100);
+    };
+
     return [...facts].sort((a, b) => {
       const accA = Number(a?.stats?.accuracy ?? 0);
       const accB = Number(b?.stats?.accuracy ?? 0);
-      if (accB !== accA) return accB - accA;
       const attemptsA = Number(a?.stats?.totalAttempts ?? 0);
       const attemptsB = Number(b?.stats?.totalAttempts ?? 0);
-      return attemptsB - attemptsA;
+      const avgA = Number(a?.stats?.avgMs ?? 0);
+      const avgB = Number(b?.stats?.avgMs ?? 0);
+      const avgBucketA = avgBucket(avgA);
+      const avgBucketB = avgBucket(avgB);
+
+      if (factsSort === FACT_SORT.ATTEMPTS) {
+        if (attemptsB !== attemptsA) return attemptsB - attemptsA;
+        if (accB !== accA) return accB - accA;
+        return avgB - avgA;
+      }
+
+      if (factsSort === FACT_SORT.AVG) {
+        if (avgBucketB !== avgBucketA) return avgBucketB - avgBucketA;
+        if (attemptsB !== attemptsA) return attemptsB - attemptsA;
+        return accB - accA;
+      }
+
+      if (accB !== accA) return accB - accA;
+      if (attemptsB !== attemptsA) return attemptsB - attemptsA;
+      return avgB - avgA;
     });
-  }, [facts]);
+  }, [facts, factsSort]);
+
+  const getSortLabel = (key, label) => (factsSort === key ? `${label} (desc)` : label);
 
   const handleDetailLoaded = (data, key) => {
     setLastFactDetail(data);
@@ -592,9 +625,33 @@ export default function AnalyticsScreen() {
                 <thead className="text-xs text-white/70">
                   <tr>
                     <th className="px-2">Question</th>
-                    <th className="px-2">Accuracy</th>
-                    <th className="px-2">Attempts</th>
-                    <th className="px-2">Avg</th>
+                    <th className="px-2">
+                      <button
+                        type="button"
+                        onClick={() => setFactsSort(FACT_SORT.ACCURACY)}
+                        className="hover:text-white transition-colors"
+                      >
+                        {getSortLabel(FACT_SORT.ACCURACY, "Accuracy")}
+                      </button>
+                    </th>
+                    <th className="px-2">
+                      <button
+                        type="button"
+                        onClick={() => setFactsSort(FACT_SORT.ATTEMPTS)}
+                        className="hover:text-white transition-colors"
+                      >
+                        {getSortLabel(FACT_SORT.ATTEMPTS, "Attempts")}
+                      </button>
+                    </th>
+                    <th className="px-2">
+                      <button
+                        type="button"
+                        onClick={() => setFactsSort(FACT_SORT.AVG)}
+                        className="hover:text-white transition-colors"
+                      >
+                        {getSortLabel(FACT_SORT.AVG, "Avg")}
+                      </button>
+                    </th>
                     <th className="px-2">Last</th>
                     <th className="px-2">Flags</th>
                   </tr>
