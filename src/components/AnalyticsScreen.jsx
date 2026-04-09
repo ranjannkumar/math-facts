@@ -247,7 +247,12 @@ export default function AnalyticsScreen() {
     });
   }, [facts, factsSort]);
 
-  const getSortLabel = (key, label) => (factsSort === key ? `${label} (desc)` : label);
+  const renderSortHeader = (key, label) => (
+    <span className="inline-flex items-center gap-1">
+      <span>{label}</span>
+      {factsSort === key ? <span aria-hidden="true">↓</span> : null}
+    </span>
+  );
 
   const handleDetailLoaded = (data, key) => {
     setLastFactDetail(data);
@@ -629,27 +634,27 @@ export default function AnalyticsScreen() {
                       <button
                         type="button"
                         onClick={() => setFactsSort(FACT_SORT.ACCURACY)}
-                        className="hover:text-white transition-colors"
+                        className="inline-flex items-center p-0 m-0 border-0 bg-transparent text-inherit font-inherit leading-none hover:text-white transition-colors"
                       >
-                        {getSortLabel(FACT_SORT.ACCURACY, "Accuracy")}
+                        {renderSortHeader(FACT_SORT.ACCURACY, "Accuracy")}
                       </button>
                     </th>
                     <th className="px-2">
                       <button
                         type="button"
                         onClick={() => setFactsSort(FACT_SORT.ATTEMPTS)}
-                        className="hover:text-white transition-colors"
+                        className="inline-flex items-center p-0 m-0 border-0 bg-transparent text-inherit font-inherit leading-none hover:text-white transition-colors"
                       >
-                        {getSortLabel(FACT_SORT.ATTEMPTS, "Attempts")}
+                        {renderSortHeader(FACT_SORT.ATTEMPTS, "Attempts")}
                       </button>
                     </th>
                     <th className="px-2">
                       <button
                         type="button"
                         onClick={() => setFactsSort(FACT_SORT.AVG)}
-                        className="hover:text-white transition-colors"
+                        className="inline-flex items-center p-0 m-0 border-0 bg-transparent text-inherit font-inherit leading-none hover:text-white transition-colors"
                       >
-                        {getSortLabel(FACT_SORT.AVG, "Avg")}
+                        {renderSortHeader(FACT_SORT.AVG, "Avg")}
                       </button>
                     </th>
                     <th className="px-2">Last</th>
