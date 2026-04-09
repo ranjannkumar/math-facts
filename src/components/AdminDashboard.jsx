@@ -441,7 +441,7 @@ const AdminDashboard = () => {
           onClick={handleLogout}
           className="admin-dashboard__btn admin-dashboard__btn--logout"
         >
-          <FaSignOutAlt />
+          <FaSignOutAlt className="admin-dashboard__btn-icon" />
           <span>Logout</span>
         </button>
       </div>
@@ -469,7 +469,7 @@ const AdminDashboard = () => {
               className="admin-dashboard__btn admin-dashboard__btn--settings"
               aria-label="Open app settings"
             >
-              <FaCog />
+              <FaCog className="admin-dashboard__btn-icon" />
               <span>App Settings</span>
             </button>
             <button
@@ -478,7 +478,7 @@ const AdminDashboard = () => {
               className="admin-dashboard__btn admin-dashboard__btn--logout"
               aria-label="Logout"
             >
-              <FaSignOutAlt />
+              <FaSignOutAlt className="admin-dashboard__btn-icon" />
               <span>Logout</span>
             </button>
           </div>

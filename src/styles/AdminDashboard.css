@@ -119,20 +119,30 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.65rem;
+  gap: clamp(0.65rem, 1.2vw, 1rem);
 }
 
-.admin-dashboard__btn {
+.admin-dashboard button.admin-dashboard__btn {
   border: 1px solid transparent;
-  border-radius: 0.9rem;
-  padding: 0.65rem 1rem;
+  border-radius: clamp(0.95rem, 1.5vw, 1.15rem);
+  min-height: clamp(3.05rem, 5.2vw, 3.85rem);
+  padding: clamp(0.9rem, 1.9vw, 1.2rem) clamp(1.45rem, 2.8vw, 2.3rem);
   display: inline-flex;
   align-items: center;
-  gap: 0.52rem;
-  font-weight: 700;
-  color: #eaf4ff;
+  justify-content: center;
+  gap: 0.62rem;
+  font-size: clamp(0.92rem, 1.2vw, 1.02rem);
+  line-height: 1.2;
+  letter-spacing: 0.008em;
+  font-weight: 800;
+  color: #f6f8ff;
+  white-space: nowrap;
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
 }
 
 .admin-dashboard__btn:hover {
@@ -143,24 +153,48 @@
   transform: translateY(0);
 }
 
+.admin-dashboard button.admin-dashboard__btn .admin-dashboard__btn-icon {
+  position: static;
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+  opacity: 0.97;
+}
+
+.admin-dashboard button.admin-dashboard__btn span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
+
 .admin-dashboard__btn--settings {
-  background: rgba(20, 34, 62, 0.92);
-  border-color: rgba(136, 171, 214, 0.32);
-  box-shadow: 0 8px 18px rgba(1, 8, 19, 0.4), inset 0 1px 0 rgba(219, 240, 255, 0.14);
+  min-width: clamp(10.6rem, 16vw, 14.6rem);
+  background: linear-gradient(172deg, rgba(23, 39, 70, 0.94), rgba(15, 29, 53, 0.96));
+  border-color: rgba(118, 147, 190, 0.34);
+  box-shadow:
+    0 9px 20px rgba(2, 10, 24, 0.42),
+    inset 0 1px 0 rgba(219, 238, 255, 0.1);
 }
 
 .admin-dashboard__btn--settings:hover {
-  background: rgba(28, 46, 79, 0.94);
+  background: linear-gradient(172deg, rgba(29, 49, 84, 0.98), rgba(19, 36, 66, 0.99));
+  border-color: rgba(142, 178, 228, 0.44);
 }
 
 .admin-dashboard__btn--logout {
-  background: linear-gradient(130deg, #ff5d6f, #ff3d52);
-  border-color: rgba(255, 171, 180, 0.65);
-  box-shadow: 0 10px 20px rgba(75, 8, 16, 0.45);
+  min-width: clamp(9.8rem, 13.5vw, 12.4rem);
+  background-color: #ff2f2f;
+  background-image: linear-gradient(145deg, #ff4a4a 0%, #ff2f2f 100%);
+  border-color: rgba(255, 175, 179, 0.74);
+  box-shadow:
+    0 11px 22px rgba(101, 8, 22, 0.42),
+    0 0 0 1px rgba(255, 124, 131, 0.12);
 }
 
 .admin-dashboard__btn--logout:hover {
-  background: linear-gradient(130deg, #ff6f80, #ff475c);
+  background-color: #ff3b3b;
+  background-image: linear-gradient(145deg, #ff5a5a 0%, #ff3b3b 100%);
+  border-color: rgba(255, 195, 198, 0.76);
 }
 
 .admin-dashboard__cards {
@@ -758,4 +792,3 @@
     align-items: stretch;
   }
 }
-
