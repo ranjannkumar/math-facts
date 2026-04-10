@@ -543,6 +543,7 @@ const AdminDashboard = () => {
                 <colgroup>
                   <col className="admin-dashboard__col admin-dashboard__col--student" />
                   <col className="admin-dashboard__col admin-dashboard__col--status" />
+                  <col className="admin-dashboard__col admin-dashboard__col--streak" />
                   <col className="admin-dashboard__col admin-dashboard__col--level" />
                   <col className="admin-dashboard__col admin-dashboard__col--belt" />
                   <col className="admin-dashboard__col admin-dashboard__col--time" />
@@ -554,6 +555,7 @@ const AdminDashboard = () => {
                   <tr className="admin-dashboard__head-row admin-dashboard__head-row--group">
                     <th rowSpan={2}>Student</th>
                     <th rowSpan={2}>Logged In Today</th>
+                    <th rowSpan={2}>Streak</th>
                     <th rowSpan={2}>Level</th>
                     <th rowSpan={2}>Belt</th>
                     <th colSpan={2} className="admin-dashboard__group-head admin-dashboard__group-head--today">Today</th>
@@ -573,7 +575,7 @@ const AdminDashboard = () => {
                     const studentPin = student.pin;
                     const isOnline = Boolean(student.loggedInToday);
                     const currentStreak = toSafeInteger(student.currentStreak);
-                    const streakLabel = `${currentStreak} day${currentStreak === 1 ? '' : 's'} streak`;
+                    const streakLabel = `${currentStreak} day${currentStreak === 1 ? '' : 's'} `;
 
                     return (
                       <tr
@@ -605,18 +607,19 @@ const AdminDashboard = () => {
                         </td>
 
                         <td>
-                          <div className="admin-dashboard__status-stack">
-                            <span className={`admin-dashboard__status ${isOnline ? 'is-online' : 'is-offline'}`}>
-                              <FaCircle aria-hidden="true" />
-                              {isOnline ? 'YES' : 'NO'}
-                            </span>
-                            <span
-                              className={`admin-dashboard__streak ${isOnline ? 'is-online' : 'is-offline'} ${currentStreak === 0 ? 'is-zero' : ''}`}
-                            >
-                              <FaFire aria-hidden="true" />
-                              {streakLabel}
-                            </span>
-                          </div>
+                          <span className={`admin-dashboard__status ${isOnline ? 'is-online' : 'is-offline'}`}>
+                            <FaCircle aria-hidden="true" />
+                            {isOnline ? 'YES' : 'NO'}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span
+                            className={`admin-dashboard__streak ${isOnline ? 'is-online' : 'is-offline'} ${currentStreak === 0 ? 'is-zero' : ''}`}
+                          >
+                            <FaFire aria-hidden="true" />
+                            {streakLabel}
+                          </span>
                         </td>
 
                         <td>

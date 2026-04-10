@@ -294,6 +294,10 @@
   width: 110px;
 }
 
+.admin-dashboard__col--streak {
+  width: 130px;
+}
+
 .admin-dashboard__col--level {
   width: 100px;
 }
@@ -530,6 +534,7 @@
   font-size: 0.79rem;
   font-weight: 700;
   color: #ffb04d;
+  white-space: nowrap;
 }
 
 .admin-dashboard__streak svg {
