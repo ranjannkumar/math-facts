@@ -158,6 +158,7 @@ export const useInactivityTimerEffect = ({
           setIsAwaitingInactivityResponse(false);
 
           if (isPretest) {
+            setQuizProgress(100);
             stopPretestTimer();
             const resultPayload = {
               passed: out.passed === true,

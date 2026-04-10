@@ -1183,11 +1183,12 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
           setSessionCorrectCount(safeCorrect);
           setWrongCount(safeWrong);
 
-          const answeredSoFar = safeCorrect + safeWrong;
           const totalForProgress = safeCount || limitedQuestions.length;
 
           if (totalForProgress > 0) {
-            const restoredProgress = Math.min((answeredSoFar / totalForProgress) * 100, 100);
+            // On pretest resume, progress must follow backend pointer (currentIndex),
+            // not cumulative attempts, otherwise wrong/inactivity retries can overfill.
+            const restoredProgress = Math.min((Math.max(0, startIndex) / totalForProgress) * 100, 100);
             setQuizProgress(restoredProgress);
           }
         } else {
@@ -2079,6 +2080,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
           const isBlackDegree7 = selectedDifficulty && String(selectedDifficulty).startsWith('black-7');
 
           if (isPretest) {
+            setQuizProgress(100);
             stopPretestTimer();
             setIsTimerPaused(true);
 
