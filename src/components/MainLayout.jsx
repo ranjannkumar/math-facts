@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { FaCog } from 'react-icons/fa';
 import DailyStatsCounter from './ui/DailyStatsCounter';
 import SessionTimer from './ui/SessionTimer';
+import CurrentLevelCounter from './ui/CurrentLevelCounter.jsx';
 import SettingsModal from './SettingsModal';
 import UserInfoBadge from './ui/UserInfoBadge.jsx';
 import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
@@ -85,6 +86,12 @@ const MainLayout = ({ hideStats }) => {
         {/* Responsive stats bar (score + time) */}
         {shouldRenderStats && (
           <div className="stats-floating">
+            <CurrentLevelCounter
+              style={{
+                width: '100%',
+                maxWidth: '280px',
+              }}
+            />
             <DailyStatsCounter
               style={{
                 width: '100%',

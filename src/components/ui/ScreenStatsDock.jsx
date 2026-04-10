@@ -1,6 +1,7 @@
 import React from 'react';
 import DailyStatsCounter from './DailyStatsCounter.jsx';
 import SessionTimer from './SessionTimer.jsx';
+import CurrentLevelCounter from './CurrentLevelCounter.jsx';
 import { useMathGamePick } from '../../store/mathGameBridgeStore.js';
 
 const ScreenStatsDock = () => {
@@ -18,6 +19,12 @@ const ScreenStatsDock = () => {
 
   return (
     <div className="screen-stats-dock" aria-label="Daily stats">
+      <CurrentLevelCounter
+        style={{
+          width: '100%',
+          maxWidth: '280px',
+        }}
+      />
       <DailyStatsCounter
         style={{
           width: '100%',
