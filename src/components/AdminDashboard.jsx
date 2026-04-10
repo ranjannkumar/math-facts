@@ -371,8 +371,16 @@ const AdminDashboard = () => {
     navigate('/name', { replace: true });
   };
 
-  const handleViewStats = (pin) => {
-    navigate(`/admin/students/${pin}/analytics`);
+  const handleViewStats = (student) => {
+    if (!student?.pin) return;
+    navigate(`/admin/students/${student.pin}/analytics`, {
+      state: {
+        studentName: student.name || '',
+        studentLevel: student.currentLevel || 'N/A',
+        studentBelt: student.currentBelt || 'N/A',
+        studentPin: student.pin,
+      },
+    });
   };
 
   const summary = useMemo(() => {
@@ -521,7 +529,7 @@ const AdminDashboard = () => {
             </div>
             <div>
               <p className="admin-dashboard__card-value">{summary.onlineStudents}</p>
-              <p className="admin-dashboard__card-label">Students Logged In</p>
+              <p className="admin-dashboard__card-label">Students Logged In Today</p>
             </div>
           </article>
         </section>
@@ -570,11 +578,11 @@ const AdminDashboard = () => {
                     return (
                       <tr
                         key={student.id || student._id || student.pin}
-                        onClick={() => handleViewStats(student.pin)}
+                        onClick={() => handleViewStats(student)}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault();
-                            handleViewStats(student.pin);
+                            handleViewStats(student);
                           }
                         }}
                         role="button"

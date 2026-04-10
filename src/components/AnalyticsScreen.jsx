@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import { FaArrowLeft, FaExclamationTriangle } from "react-icons/fa";
 import {
@@ -8,6 +9,8 @@ import {
   analyticsGetFacts,
   analyticsGetFactDetail,
   analyticsGetStruggling,
+  getAdminStats,
+  userGetProgress,
 } from "../api/mathApi.js";
 
 const OPS = [
@@ -26,6 +29,133 @@ const FACT_SORT = {
   ACCURACY: "accuracy",
   ATTEMPTS: "attempts",
   AVG: "avg",
+};
+const PROGRESS_OPERATION_ORDER = ["add", "sub", "mul", "div"];
+
+const toSafeStudentText = (value, fallback = "N/A") => {
+  const safe = String(value ?? "").trim();
+  return safe.length ? safe : fallback;
+};
+
+const getBeltLabel = (levelData = {}) => {
+  const beltsOrder = ["white", "yellow", "green", "blue", "red", "brown"];
+  let currentBelt = "White";
+
+  if (levelData.black?.unlocked) {
+    const completedDegrees = Array.isArray(levelData.black?.completedDegrees)
+      ? levelData.black.completedDegrees
+      : [];
+    const currentDegree = Math.min(completedDegrees.length + 1, 7);
+    currentBelt = `Black Degree ${currentDegree}`;
+  } else {
+    for (const belt of beltsOrder) {
+      if (levelData[belt] && (levelData[belt].unlocked || levelData[belt].completed)) {
+        currentBelt = belt.charAt(0).toUpperCase() + belt.slice(1);
+      }
+    }
+  }
+
+  if (levelData.completed && !levelData.black?.unlocked) {
+    return "Level Mastered";
+  }
+  return currentBelt;
+};
+
+const parseLevelsFromNode = (node = {}) =>
+  Object.keys(node)
+    .filter((k) => k.startsWith("L"))
+    .map((k) => ({ key: k, level: parseInt(k.substring(1), 10), data: node[k] }))
+    .filter((x) => Number.isFinite(x.level))
+    .sort((a, b) => a.level - b.level);
+
+const hasFlatLevelKeys = (node) =>
+  !!node &&
+  typeof node === "object" &&
+  Object.keys(node).some((key) => /^L\d+$/i.test(key));
+
+const pickCurrentLevelFromLevels = (levelsAsc = []) => {
+  if (!levelsAsc.length) return null;
+
+  const unlockedLevels = levelsAsc.filter((l) => !!l.data?.unlocked);
+  const highestUnlockedIncomplete = [...unlockedLevels]
+    .reverse()
+    .find((l) => !l.data?.completed);
+
+  return highestUnlockedIncomplete || unlockedLevels[unlockedLevels.length - 1] || levelsAsc[0];
+};
+
+const getCurrentProgress = (progress) => {
+  if (!progress) return { level: "N/A", belt: "N/A" };
+
+  const hasScopedOps = PROGRESS_OPERATION_ORDER.some(
+    (op) => progress?.[op] && typeof progress[op] === "object"
+  );
+
+  if (!hasScopedOps && hasFlatLevelKeys(progress)) {
+    const flatLevels = parseLevelsFromNode(progress);
+    if (flatLevels.length > 0) {
+      const currentLevelInfo = pickCurrentLevelFromLevels(flatLevels);
+      if (!currentLevelInfo) return { level: "N/A", belt: "N/A" };
+      return {
+        level: `L${currentLevelInfo.level}`,
+        belt: getBeltLabel(currentLevelInfo.data),
+      };
+    }
+  }
+
+  const opSnapshots = PROGRESS_OPERATION_ORDER.map((operationName) => {
+    const levels = parseLevelsFromNode(progress?.[operationName] || {});
+    if (!levels.length) return null;
+    const current = pickCurrentLevelFromLevels(levels);
+    if (!current || !current.data?.unlocked) return null;
+    return { operationName, current };
+  }).filter(Boolean);
+
+  if (!opSnapshots.length) return { level: "N/A", belt: "N/A" };
+
+  const highestUnlockedIncompleteOp = [...opSnapshots]
+    .reverse()
+    .find((entry) => !entry.current.data?.completed);
+  const active = highestUnlockedIncompleteOp || opSnapshots[opSnapshots.length - 1];
+  const opLabel = active.operationName.toUpperCase();
+
+  return {
+    level: `${opLabel} L${active.current.level}`,
+    belt: getBeltLabel(active.current.data),
+  };
+};
+
+const findStudentFromAdminStats = async (adminPin, targetPin) => {
+  const wantedPin = String(targetPin ?? "").trim();
+  if (!adminPin || !wantedPin) return null;
+
+  const pageSize = 100;
+  let offset = 0;
+  let safetyCounter = 0;
+
+  while (safetyCounter < 100) {
+    const response = await getAdminStats(adminPin, pageSize, offset);
+    const rows = Array.isArray(response)
+      ? response
+      : Array.isArray(response?.data)
+        ? response.data
+        : [];
+
+    const found = rows.find((row) => String(row?.pin ?? "").trim() === wantedPin);
+    if (found) return found;
+
+    const hasMoreFromHeader =
+      typeof response?.pagination?.hasMore === "boolean"
+        ? response.pagination.hasMore
+        : null;
+    const hasMore = hasMoreFromHeader ?? rows.length >= pageSize;
+    if (!hasMore) return null;
+
+    offset += pageSize;
+    safetyCounter += 1;
+  }
+
+  return null;
 };
 
 function pct(x) {
@@ -177,6 +307,7 @@ const FactDetailModal = ({ open, onClose, pin, factKey, onDetailLoaded }) => {
 
 export default function AnalyticsScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { pin: routePin } = useParams();
 
   const pin = useMemo(() => {
@@ -185,6 +316,12 @@ export default function AnalyticsScreen() {
 
   const [summary, setSummary] = useState(null);
   const [struggling, setStruggling] = useState(null);
+  const [studentInfo, setStudentInfo] = useState(() => ({
+    name: toSafeStudentText(location.state?.studentName, "Loading..."),
+    level: toSafeStudentText(location.state?.studentLevel, "Loading..."),
+    belt: toSafeStudentText(location.state?.studentBelt, "Loading..."),
+    pin: toSafeStudentText(routePin || location.state?.studentPin, "N/A"),
+  }));
 
   const [level, setLevel] = useState("all");
   const [operation, setOperation] = useState("all");
@@ -305,6 +442,9 @@ export default function AnalyticsScreen() {
     const todayLabel = new Date().toISOString().slice(0, 10);
 
     rows.push(["Summary Totals"]);
+    rows.push(["Student name", studentInfo.name || ""]);
+    rows.push(["Current level", studentInfo.level || ""]);
+    rows.push(["Current belt", studentInfo.belt || ""]);
     rows.push(["PIN", pin || ""]);
     rows.push(["Date (exported)", todayLabel]);
     rows.push(["Level filter", level]);
@@ -376,6 +516,62 @@ export default function AnalyticsScreen() {
     link.remove();
     URL.revokeObjectURL(url);
   };
+
+  useEffect(() => {
+    if (!pin) return;
+
+    let cancelled = false;
+    const loadStudentInfo = async () => {
+      const initialName = toSafeStudentText(location.state?.studentName, "Loading...");
+      const initialLevel = toSafeStudentText(location.state?.studentLevel, "Loading...");
+      const initialBelt = toSafeStudentText(location.state?.studentBelt, "Loading...");
+      const initialPin = toSafeStudentText(routePin || location.state?.studentPin || pin, "N/A");
+
+      setStudentInfo((prev) => ({
+        ...prev,
+        name: initialName,
+        level: initialLevel,
+        belt: initialBelt,
+        pin: initialPin,
+      }));
+
+      const adminPin = localStorage.getItem("math-admin-pin") || "";
+
+      const [progressResult, adminStudent] = await Promise.allSettled([
+        userGetProgress(pin),
+        findStudentFromAdminStats(adminPin, pin),
+      ]);
+
+      if (cancelled) return;
+
+      const progressPayload =
+        progressResult.status === "fulfilled" ? progressResult.value?.progress : null;
+      const progressInfo = getCurrentProgress(progressPayload);
+      const resolvedName =
+        adminStudent.status === "fulfilled" ? toSafeStudentText(adminStudent.value?.name, "") : "";
+
+      setStudentInfo((prev) => ({
+        name: resolvedName || (prev.name === "Loading..." ? "N/A" : prev.name),
+        level: progressInfo.level || prev.level || "N/A",
+        belt: progressInfo.belt || prev.belt || "N/A",
+        pin: toSafeStudentText(pin, prev.pin || "N/A"),
+      }));
+    };
+
+    loadStudentInfo().catch(() => {
+      if (cancelled) return;
+      setStudentInfo((prev) => ({
+        ...prev,
+        name: prev.name === "Loading..." ? "N/A" : prev.name,
+        level: prev.level === "Loading..." ? "N/A" : prev.level,
+        belt: prev.belt === "Loading..." ? "N/A" : prev.belt,
+      }));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pin, routePin, location.state]);
 
   useEffect(() => {
     if (!pin) {
@@ -540,6 +736,25 @@ export default function AnalyticsScreen() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           <div className="bg-white/10 rounded-2xl p-4">
+            <div className="text-xs text-white/70">Name</div>
+            <div className="text-2xl font-extrabold">{studentInfo.name}</div>
+          </div>
+          <div className="bg-white/10 rounded-2xl p-4">
+            <div className="text-xs text-white/70">Level</div>
+            <div className="text-2xl font-extrabold">{studentInfo.level}</div>
+          </div>
+          <div className="bg-white/10 rounded-2xl p-4">
+            <div className="text-xs text-white/70">Belt</div>
+            <div className="text-2xl font-extrabold">{studentInfo.belt}</div>
+          </div>
+          <div className="bg-white/10 rounded-2xl p-4">
+            <div className="text-xs text-white/70">PIN</div>
+            <div className="text-2xl font-extrabold">{studentInfo.pin}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          <div className="bg-white/10 rounded-2xl p-4">
             <div className="text-xs text-white/70">Total attempts</div>
             <div className="text-2xl font-extrabold">{summary?.overall?.totalAttempts ?? 0}</div>
           </div>
@@ -550,10 +765,6 @@ export default function AnalyticsScreen() {
           <div className="bg-white/10 rounded-2xl p-4">
             <div className="text-xs text-white/70">Accuracy</div>
             <div className="text-2xl font-extrabold">{pct(summary?.overall?.accuracy ?? 0)}</div>
-          </div>
-          <div className="bg-white/10 rounded-2xl p-4">
-            <div className="text-xs text-white/70">PIN</div>
-            <div className="text-2xl font-extrabold">{pin || "—"}</div>
           </div>
         </div>
 
