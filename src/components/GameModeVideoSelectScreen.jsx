@@ -11,6 +11,8 @@ const GameModeVideoSelectScreen = () => {
     isTimerPaused,
     pausedTime,
     gameModeType,
+    showQuitModal,
+    isQuittingRef,
   } = useMathGamePick((ctx) => ({
     videoOptions: ctx.videoOptions || null,
     handleVideoSelection: ctx.handleVideoSelection || (() => {}),
@@ -19,6 +21,8 @@ const GameModeVideoSelectScreen = () => {
     isTimerPaused: Boolean(ctx.isTimerPaused),
     pausedTime: ctx.pausedTime || 0,
     gameModeType: ctx.gameModeType,
+    showQuitModal: Boolean(ctx.showQuitModal),
+    isQuittingRef: ctx.isQuittingRef || { current: false },
   }));
   const navigate = useNavigate();
 
@@ -36,12 +40,14 @@ const GameModeVideoSelectScreen = () => {
 
   // Redirect if no options are set (e.g., direct access)
   useEffect(() => {
+    if (showQuitModal || isQuittingRef?.current) return;
     if (!videoOptions) {
       navigate("/game-mode", { replace: true });
     }
-  }, [videoOptions, navigate]);
+  }, [videoOptions, navigate, showQuitModal, isQuittingRef]);
 
   useEffect(() => {
+    if (showQuitModal || isQuittingRef?.current) return;
     if (!videoOptions) return;
 
     const timeoutId = setTimeout(() => {
@@ -52,7 +58,7 @@ const GameModeVideoSelectScreen = () => {
     }, 5000);
 
     return () => clearTimeout(timeoutId);
-  }, [videoOptions, handleVideoSelection]);
+  }, [videoOptions, handleVideoSelection, showQuitModal, isQuittingRef]);
 
   if (!videoOptions) {
     return (

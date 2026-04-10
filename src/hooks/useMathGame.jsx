@@ -1,6 +1,6 @@
 // src/hooks/useMathGame.jsx
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import audioManager from '../utils/audioUtils.js';
 import { themeConfigs } from '../utils/mathGameLogic.js';
 
@@ -83,6 +83,7 @@ const shouldStartWithEmptyIdentity = () =>
 
 const useMathGame = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // ---------- global nav/state ----------
   const [selectedTable, setSelectedTable] = useState(null); // level (1..6)
@@ -2470,6 +2471,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
     getRecoveryRoute,
     logClientError,
     showUiMessage,
+    pathname: location.pathname,
   });
 
   useQuizTimerEffect({

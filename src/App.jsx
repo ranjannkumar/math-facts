@@ -1,4 +1,4 @@
-import React, { useEffect, createContext, lazy, Suspense, useMemo } from 'react'; 
+import React, { useEffect, createContext, lazy, Suspense, useMemo, useRef } from 'react'; 
 import useMathGame from './hooks/useMathGame.jsx';
 import DailyStreakAnimation from './components/DailyStreakAnimation.jsx';
 import GetReadyScreen from './components/GetReadyScreen.jsx';
@@ -74,6 +74,18 @@ const App = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const ctx = useMathGame();
+  const guardedPathRef = useRef(location.pathname);
+  const isGuardedFlowPath =
+    location.pathname.startsWith('/game-mode') ||
+    location.pathname === '/quiz' ||
+    location.pathname === '/learning' ||
+    location.pathname === '/pretest' ||
+    location.pathname === '/video' ||
+    location.pathname === '/results' ||
+    location.pathname === '/way-to-go' ||
+    location.pathname === '/pretest-intro' ||
+    location.pathname === '/pretest-result';
+  const shouldGuardBrowserBack = isGuardedFlowPath;
 
     const { showSiblingCheck } = ctx;
 
@@ -124,6 +136,96 @@ const App = () => {
     ctx.setPausedTime,
     ctx.setQuizStartTime,
   ]);
+
+  // Route guards for stateful screens.
+  useEffect(() => {
+    if (ctx.isQuittingRef?.current || ctx.showQuitModal) return;
+
+    const path = location.pathname;
+    const hasQuestion = Boolean(ctx.currentQuestion);
+
+    if (path === '/quiz') {
+      if (!ctx.isQuizStarting && (!ctx.quizRunId || !hasQuestion)) {
+        navigate('/belts', { replace: true });
+      }
+      return;
+    }
+
+    if (path === '/pretest') {
+      if (!ctx.isQuizStarting && (!ctx.isPretest || !ctx.quizRunId || !hasQuestion)) {
+        navigate('/levels', { replace: true });
+      }
+      return;
+    }
+
+    if (path === '/learning') {
+      const hasLearningState =
+        Boolean(ctx.showLearningModule) ||
+        Boolean(ctx.interventionQuestion) ||
+        (Array.isArray(ctx.preQuizPracticeItems) && ctx.preQuizPracticeItems.length > 0) ||
+        Boolean(ctx.pendingSurfPractice) ||
+        Boolean(ctx.pendingRocketPractice);
+
+      if (ctx.isQuizStarting) return;
+
+      if (!hasLearningState) {
+        // Resume active run instead of dropping to belts during learning->quiz/game transition.
+        if (ctx.quizRunId && hasQuestion) {
+          if (ctx.isGameMode) {
+            navigate('/game-mode', { replace: true });
+          } else if (ctx.isPretest) {
+            navigate('/pretest', { replace: true });
+          } else {
+            navigate('/quiz', { replace: true });
+          }
+        } else {
+          navigate('/belts', { replace: true });
+        }
+      }
+      return;
+    }
+  }, [
+    location.pathname,
+    ctx.quizRunId,
+    ctx.currentQuestion,
+    ctx.isQuizStarting,
+    ctx.isPretest,
+    ctx.isGameMode,
+    ctx.interventionQuestion,
+    ctx.preQuizPracticeItems,
+    ctx.pendingSurfPractice,
+    ctx.pendingRocketPractice,
+    ctx.showQuitModal,
+    ctx.isQuittingRef,
+    navigate,
+  ]);
+
+  // Block browser back during quiz/game flow and reuse the existing quit modal.
+  useEffect(() => {
+    if (!shouldGuardBrowserBack) return;
+
+    guardedPathRef.current = location.pathname;
+
+    const pushBackGuardState = (targetPath = guardedPathRef.current) => {
+      window.history.pushState({ mathBackGuard: true }, '', targetPath);
+    };
+
+    pushBackGuardState();
+
+    const handlePopState = () => {
+      const guardedPath = guardedPathRef.current || '/';
+      if (window.location.pathname !== guardedPath) {
+        navigate(guardedPath, { replace: true });
+      }
+      ctx.setShowQuitModal?.(true);
+      pushBackGuardState(guardedPath);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [shouldGuardBrowserBack, location.pathname, ctx.setShowQuitModal]);
 
   const providerValue = useMemo(() => ({ ...ctx, navigate }), [ctx, navigate]);
   const showScreenStatsDock = useMemo(() => {

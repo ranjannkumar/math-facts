@@ -172,6 +172,8 @@ const LearningModule = () => {
     hardResetQuizState,
     setRocketPracticeFact,
     setRocketPracticeReverse,
+    showQuitModal,
+    isQuittingRef,
   } = useMathGamePick((ctx) => ({
     pendingDifficulty: ctx.pendingDifficulty,
     selectedTable: ctx.selectedTable,
@@ -204,6 +206,8 @@ const LearningModule = () => {
     hardResetQuizState: ctx.hardResetQuizState || (() => {}),
     setRocketPracticeFact: ctx.setRocketPracticeFact || (() => {}),
     setRocketPracticeReverse: ctx.setRocketPracticeReverse || (() => {}),
+    showQuitModal: Boolean(ctx.showQuitModal),
+    isQuittingRef: ctx.isQuittingRef || { current: false },
   }));
 
   const diff = useMemo(() => normalizeDifficulty(pendingDifficulty), [pendingDifficulty]);
@@ -252,6 +256,7 @@ useEffect(() => {
   
   // --- INIT & RESET ---
   useEffect(() => {
+    if (showQuitModal || isQuittingRef?.current) return;
     // Helper to map and set practice question details
     if (isClosing) return;
     const initializePractice = (rawQuestion) => {
@@ -296,14 +301,27 @@ useEffect(() => {
     setShowLearningModule,
     quizRunId,
     isClosing,
+    showQuitModal,
+    isQuittingRef,
   ]);
   
   useEffect(() => {
+      if (showQuitModal || isQuittingRef?.current) return;
       if (!isIntervention && (!selectedTable || !diff) && !isPreQuizFlow && !isPretest) {
           setShowLearningModule(false);
           navigate('/belts');
       }
-  }, [selectedTable, diff, isPreQuizFlow, isIntervention, isPretest, setShowLearningModule, navigate]);
+  }, [
+    selectedTable,
+    diff,
+    isPreQuizFlow,
+    isIntervention,
+    isPretest,
+    setShowLearningModule,
+    navigate,
+    showQuitModal,
+    isQuittingRef,
+  ]);
 
 // Speak the math fact during Pre-Quiz Fact screen
 //  Disabled during Game Mode learning/practice

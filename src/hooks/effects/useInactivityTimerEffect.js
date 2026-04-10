@@ -46,6 +46,7 @@ export const useInactivityTimerEffect = ({
   getRecoveryRoute,
   logClientError,
   showUiMessage,
+  pathname,
 }) => {
   useEffect(() => {
     if (isQuittingRef.current) {
@@ -56,7 +57,13 @@ export const useInactivityTimerEffect = ({
       return;
     }
 
+    const isQuestionRoute =
+      pathname === '/quiz' ||
+      pathname === '/pretest' ||
+      pathname === '/game-mode';
+
     const isActiveScreen =
+      isQuestionRoute &&
       !!quizRunId &&
       !!currentQuestion &&
       !isTimerPaused &&
@@ -228,6 +235,7 @@ export const useInactivityTimerEffect = ({
     pretestTimeLimitMs,
     selectedOperation,
     selectedTable,
+    pathname,
     getRecoveryRoute,
     logClientError,
     showUiMessage,
