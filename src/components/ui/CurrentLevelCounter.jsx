@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { userGetProgress } from '../../api/mathApi.js';
 import { useMathGamePick } from '../../store/mathGameBridgeStore.js';
 
 const OPERATION_ORDER = ['add', 'sub', 'mul', 'div'];
@@ -22,6 +21,22 @@ const hasFlatLevelKeys = (node) =>
   typeof node === 'object' &&
   Object.keys(node).some((key) => /^L\d+$/i.test(key));
 
+const LEVEL_CACHE_PREFIX = 'math-current-level-label:';
+
+const readCachedLevelLabel = (pin) => {
+  const safePin = String(pin || '').trim();
+  if (!safePin) return '--';
+  const cached = localStorage.getItem(`${LEVEL_CACHE_PREFIX}${safePin}`);
+  return cached && cached.trim() ? cached : '--';
+};
+
+const writeCachedLevelLabel = (pin, label) => {
+  const safePin = String(pin || '').trim();
+  const safeLabel = String(label || '').trim();
+  if (!safePin || !safeLabel || safeLabel === '--') return;
+  localStorage.setItem(`${LEVEL_CACHE_PREFIX}${safePin}`, safeLabel);
+};
+
 const pickCurrentLevelFromLevels = (levelsAsc = []) => {
   if (!levelsAsc.length) return null;
   const unlockedLevels = levelsAsc.filter((l) => !!l.data?.unlocked);
@@ -31,7 +46,12 @@ const pickCurrentLevelFromLevels = (levelsAsc = []) => {
   return highestUnlockedIncomplete || unlockedLevels[unlockedLevels.length - 1] || levelsAsc[0];
 };
 
-const resolveCurrentLevel = (progress) => {
+const resolveCurrentLevel = (progressByOperation = {}, selectedOperation = 'add') => {
+  const progress =
+    progressByOperation && typeof progressByOperation === 'object'
+      ? progressByOperation
+      : {};
+
   if (!progress || typeof progress !== 'object') return '--';
 
   const hasScopedOps = OPERATION_ORDER.some(
@@ -42,6 +62,12 @@ const resolveCurrentLevel = (progress) => {
     const flatLevels = parseLevelsFromNode(progress);
     const current = pickCurrentLevelFromLevels(flatLevels);
     return current ? `Level ${current.level}` : '--';
+  }
+
+  if (!hasScopedOps && progress?.[selectedOperation] && typeof progress[selectedOperation] === 'object') {
+    const flatLevels = parseLevelsFromNode(progress[selectedOperation]);
+    const current = pickCurrentLevelFromLevels(flatLevels);
+    return current ? `${OP_LABEL[selectedOperation] || selectedOperation} Level ${current.level}` : '--';
   }
 
   const snapshots = OPERATION_ORDER.map((op) => {
@@ -62,40 +88,34 @@ const resolveCurrentLevel = (progress) => {
 };
 
 const CurrentLevelCounter = ({ style }) => {
-  const childPin = useMathGamePick((ctx) => ctx.childPin || '');
-  const [levelLabel, setLevelLabel] = useState('--');
-  const [loading, setLoading] = useState(false);
+  const { childPin, progressByOperation, selectedOperation } = useMathGamePick((ctx) => ({
+    childPin: ctx.childPin || '',
+    progressByOperation: ctx.progressByOperation || {},
+    selectedOperation: ctx.selectedOperation || 'add',
+  }));
+  const [levelLabel, setLevelLabel] = useState(() => readCachedLevelLabel(localStorage.getItem('math-child-pin') || ''));
 
   useEffect(() => {
     if (!childPin) {
       setLevelLabel('--');
       return;
     }
-
-    let cancelled = false;
-
-    const loadLevel = async () => {
-      setLoading(true);
-      try {
-        const payload = await userGetProgress(childPin);
-        if (cancelled) return;
-        setLevelLabel(resolveCurrentLevel(payload?.progress || payload));
-      } catch {
-        if (!cancelled) setLevelLabel('--');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    loadLevel();
-    const intervalId = setInterval(loadLevel, 20000);
-    return () => {
-      cancelled = true;
-      clearInterval(intervalId);
-    };
+    setLevelLabel(readCachedLevelLabel(childPin));
   }, [childPin]);
 
-  const displayLevel = useMemo(() => (loading ? `${levelLabel}` : levelLabel), [loading, levelLabel]);
+  const liveLevelLabel = useMemo(
+    () => resolveCurrentLevel(progressByOperation, selectedOperation),
+    [progressByOperation, selectedOperation]
+  );
+
+  useEffect(() => {
+    if (!childPin) return;
+    if (!liveLevelLabel || liveLevelLabel === '--') return;
+    setLevelLabel((prev) => (prev === liveLevelLabel ? prev : liveLevelLabel));
+    writeCachedLevelLabel(childPin, liveLevelLabel);
+  }, [childPin, liveLevelLabel]);
+
+  const displayLevel = useMemo(() => levelLabel || '--', [levelLabel]);
 
   return (
     <div style={style}>
