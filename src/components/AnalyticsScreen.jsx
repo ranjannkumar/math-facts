@@ -9,7 +9,6 @@ import {
   FaBullseye,
   FaCheckCircle,
   FaChartLine,
-  FaUserCircle,
   FaLayerGroup,
 } from "react-icons/fa";
 import {
@@ -43,6 +42,30 @@ const PROGRESS_OPERATION_ORDER = ["add", "sub", "mul", "div"];
 const toSafeStudentText = (value, fallback = "N/A") => {
   const safe = String(value ?? "").trim();
   return safe.length ? safe : fallback;
+};
+
+const getAvatarInitials = (name) => {
+  const safe = toSafeStudentText(name, "S");
+  const parts = safe
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  const initials = parts.map((part) => part[0]?.toUpperCase() || "").join("");
+  return initials || "S";
+};
+
+const getAvatarGradient = (name) => {
+  const source = String(name || "student");
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    hash = (hash * 31 + source.charCodeAt(i)) % 360;
+  }
+  const hueA = hash;
+  const hueB = (hash + 48) % 360;
+  const hueC = (hash + 96) % 360;
+  return {
+    background: `linear-gradient(135deg, hsl(${hueA} 90% 58%), hsl(${hueB} 85% 52%), hsl(${hueC} 88% 50%))`,
+  };
 };
 
 const getBeltLabel = (levelData = {}) => {
@@ -282,7 +305,7 @@ const FactDetailModal = ({ open, onClose, pin, factKey, onDetailLoaded }) => {
                     className="border border-gray-300 rounded-xl p-4 bg-white shadow-sm flex flex-col gap-2"
                   >
                     <div className="font-semibold text-gray-900">
-                      {a.correct ? "Correct" : "Timed Out"} · answered{" "}
+                      {a.correct ? "✅ Correct" : "⏰Timed Out"} · answered{" "}
                       <span className="font-mono">{a.userAnswer}</span>{" "}
                       (correct {a.correctAnswer})
                     </div>
@@ -725,6 +748,12 @@ export default function AnalyticsScreen() {
     return "bg-cyan-500/90 text-white border-cyan-300/60";
   }, [studentInfo.belt]);
 
+  const avatarInitials = useMemo(() => getAvatarInitials(studentInfo.name), [studentInfo.name]);
+  const avatarGradientStyle = useMemo(
+    () => getAvatarGradient(studentInfo.name),
+    [studentInfo.name]
+  );
+
   const dashboardStyle = {
     background: "radial-gradient(circle at top, #05163f 0%, #041233 45%, #020a1f 100%)",
     minHeight: "100vh",
@@ -765,13 +794,18 @@ export default function AnalyticsScreen() {
 
         <div className="rounded-3xl border border-white/10 bg-white/10 overflow-hidden mb-4 shadow-[0_15px_40px_rgba(0,0,0,0.35)]">
           <div className="p-4 md:p-5 flex items-center gap-4">
-            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-300/50 to-cyan-300/35 border border-white/20 flex items-center justify-center">
-              <FaUserCircle className="text-[3rem] text-white/90" />
+            <div
+              className="h-20 w-20 rounded-full border border-white/30 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
+              style={avatarGradientStyle}
+            >
+              <span className="text-3xl font-black text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
+                {avatarInitials}
+              </span>
             </div>
             <div className="min-w-0">
               <h2 className="text-3xl md:text-4xl font-black leading-none truncate">{studentInfo.name}</h2>
               <span className={`inline-flex mt-3 rounded-xl border px-3 py-1 text-lg font-bold ${beltBadgeTone}`}>
-                {studentInfo.belt}
+                {studentInfo.belt} Belt
               </span>
             </div>
           </div>
@@ -984,5 +1018,3 @@ export default function AnalyticsScreen() {
     </div>
   );
 }
-
-
