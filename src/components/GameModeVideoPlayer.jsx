@@ -76,7 +76,7 @@ const GameModeVideoPlayer = () => {
     enabled: Boolean(videoUrl),
     onHardTimeout: runFallbackFinish,
     deps: [videoUrl, runFallbackFinish],
-    hardTimeoutMs: 4000,
+    hardTimeoutMs: 7000,
   });
 
   useEffect(() => {

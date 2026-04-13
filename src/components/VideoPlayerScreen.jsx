@@ -172,7 +172,7 @@ const VideoPlayerScreen = () => {
     enabled: Boolean(selectedVideo),
     onHardTimeout: handleVideoFinish,
     deps: [selectedVideo?.url, handleVideoFinish],
-    hardTimeoutMs: 4000,
+    hardTimeoutMs: 7000,
   });
 
   const renderCard = (option) => (

@@ -18,7 +18,7 @@ const GameModeVideoScreen = () => {
     videoRef,
     onHardTimeout: finish,
     deps: [finish],
-    hardTimeoutMs: 4000,
+    hardTimeoutMs: 7000,
   });
 
   useEffect(() => {

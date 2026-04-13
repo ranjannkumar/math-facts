@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const DEFAULT_SHOW_GATE_AFTER_MS = 1000;
-const DEFAULT_HARD_TIMEOUT_MS = 4000;
+const DEFAULT_HARD_TIMEOUT_MS = 7000;
 const STALL_CHECK_INTERVAL_MS = 500;
-const STALL_THRESHOLD_MS = 1600;
+const STALL_THRESHOLD_MS = 1800;
+const STARTUP_STALL_THRESHOLD_MS = 2200;
 
 export default function useGuardedVideoPlayback({
   videoRef,
@@ -20,6 +21,8 @@ export default function useGuardedVideoPlayback({
   const hasStartedPlaybackRef = useRef(false);
   const lastProgressTimeRef = useRef(0);
   const lastProgressAtRef = useRef(0);
+  const startupAttemptAtRef = useRef(0);
+  const stalledSinceRef = useRef(0);
   const gateTimerRef = useRef(null);
   const hardTimerRef = useRef(null);
   const stallIntervalRef = useRef(null);
@@ -74,13 +77,14 @@ export default function useGuardedVideoPlayback({
     isPlayingRef.current = true;
     needsRecoveryRef.current = false;
     hasStartedPlaybackRef.current = true;
+    stalledSinceRef.current = 0;
     setShowTapToPlay(false);
     clearRecoveryTimers();
   }, [clearRecoveryTimers]);
 
   const beginRecovery = useCallback(
     ({ showGateDelayMs = showGateAfterMs } = {}) => {
-      if (hardTimeoutTriggeredRef.current) return;
+      if (hardTimeoutTriggeredRef.current || needsRecoveryRef.current) return;
       needsRecoveryRef.current = true;
       isPlayingRef.current = false;
       scheduleGateTimer(showGateDelayMs);
@@ -122,6 +126,8 @@ export default function useGuardedVideoPlayback({
       hasStartedPlaybackRef.current = false;
       lastProgressTimeRef.current = 0;
       lastProgressAtRef.current = 0;
+      startupAttemptAtRef.current = 0;
+      stalledSinceRef.current = 0;
       return;
     }
 
@@ -133,6 +139,8 @@ export default function useGuardedVideoPlayback({
     hardTimeoutTriggeredRef.current = false;
     hasStartedPlaybackRef.current = false;
     setShowTapToPlay(false);
+    startupAttemptAtRef.current = Date.now();
+    stalledSinceRef.current = 0;
     markProgress(v);
 
     const onPlaying = () => {
@@ -142,18 +150,20 @@ export default function useGuardedVideoPlayback({
 
     const onTimeUpdate = () => {
       markProgress(v);
-      if ((v.currentTime || 0) > 0) hasStartedPlaybackRef.current = true;
+      if ((v.currentTime || 0) > 0.01) {
+        hasStartedPlaybackRef.current = true;
+        stalledSinceRef.current = 0;
+      }
     };
 
     const onWaitingOrStalled = () => {
-      if (!hasStartedPlaybackRef.current || v.ended) return;
-      beginRecovery({ showGateDelayMs: 400 });
-      tryPlay();
+      if (!hasStartedPlaybackRef.current || v.ended || hardTimeoutTriggeredRef.current) return;
+      if (!stalledSinceRef.current) stalledSinceRef.current = Date.now();
     };
 
     const onPause = () => {
       if (!hasStartedPlaybackRef.current || v.ended || document.hidden) return;
-      beginRecovery({ showGateDelayMs: 0 });
+      if (!stalledSinceRef.current) stalledSinceRef.current = Date.now();
     };
 
     v.addEventListener('playing', onPlaying);
@@ -164,11 +174,9 @@ export default function useGuardedVideoPlayback({
     v.addEventListener('pause', onPause);
 
     tryPlay();
-    beginRecovery({ showGateDelayMs: showGateAfterMs });
 
     stallIntervalRef.current = setInterval(() => {
-      if (!enabled || hardTimeoutTriggeredRef.current || !hasStartedPlaybackRef.current) return;
-      if (v.ended || v.paused) return;
+      if (!enabled || hardTimeoutTriggeredRef.current || v.ended) return;
 
       const now = Date.now();
       const currentTime = Number(v.currentTime || 0);
@@ -177,11 +185,32 @@ export default function useGuardedVideoPlayback({
       if (advanced) {
         lastProgressTimeRef.current = currentTime;
         lastProgressAtRef.current = now;
+        if (currentTime > 0.01) {
+          hasStartedPlaybackRef.current = true;
+          stalledSinceRef.current = 0;
+        }
+        if (needsRecoveryRef.current) {
+          onRecoveredPlaying();
+        }
         return;
       }
 
-      if (now - lastProgressAtRef.current >= STALL_THRESHOLD_MS) {
-        beginRecovery({ showGateDelayMs: 400 });
+      if (!hasStartedPlaybackRef.current) {
+        if (now - startupAttemptAtRef.current >= STARTUP_STALL_THRESHOLD_MS) {
+          beginRecovery({ showGateDelayMs: showGateAfterMs });
+          tryPlay();
+        }
+        return;
+      }
+
+      if (v.paused) return;
+
+      const noProgressFor = now - lastProgressAtRef.current;
+      const hasStallSignal =
+        stalledSinceRef.current > 0 && now - stalledSinceRef.current >= STALL_THRESHOLD_MS;
+
+      if (noProgressFor >= STALL_THRESHOLD_MS || hasStallSignal) {
+        beginRecovery({ showGateDelayMs: showGateAfterMs });
         tryPlay();
       }
     }, STALL_CHECK_INTERVAL_MS);

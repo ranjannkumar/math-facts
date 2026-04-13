@@ -59,7 +59,7 @@ const GameModeSurfVideoScreen = () => {
     videoRef,
     onHardTimeout: runEndFallback,
     deps: [videoSrc, kind, exitAfter, toRocketFlow, runEndFallback],
-    hardTimeoutMs: 4000,
+    hardTimeoutMs: 7000,
   });
 
   useEffect(() => {

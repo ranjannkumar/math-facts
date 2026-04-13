@@ -222,7 +222,7 @@ const TablePicker = () => {
       enabled: Boolean(showFactVideo && factVideoSrc && !showDailyStreakAnimation),
       onHardTimeout: closeFactVideo,
       deps: [showFactVideo, factVideoSrc, showDailyStreakAnimation, closeFactVideo],
-      hardTimeoutMs: 4000,
+      hardTimeoutMs: 7000,
     });
 
   if (showFactVideo && factVideoSrc && !showDailyStreakAnimation) {

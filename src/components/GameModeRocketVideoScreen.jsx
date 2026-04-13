@@ -44,7 +44,7 @@ const GameModeRocketVideoScreen = () => {
     videoRef,
     onHardTimeout: runFinishFallback,
     deps: [videoSrc, kind, runFinishFallback],
-    hardTimeoutMs: 4000,
+    hardTimeoutMs: 7000,
   });
 
   useEffect(() => {
