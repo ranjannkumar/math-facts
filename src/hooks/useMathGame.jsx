@@ -1790,6 +1790,9 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       nextTotal > prevTotal &&
       nextTotal > 0 &&
       nextTotal % 5 === 0;
+    const waitForLightningMilestonePreview = async () => {
+      await new Promise((resolve) => setTimeout(resolve, GAME_MODE_PRE_REWARD_PREVIEW_MS));
+    };
 
     // If backend completed the run, exit after optional final milestone video
     if (out?.completed) {
@@ -1815,6 +1818,9 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         // If we have bonus videos, ALWAYS play them at lightning completion (100),
         // even if the last answer was not ⚡ (because 100 is also a 5-milestone).
         if (options) {
+          if (reachedNewMilestone) {
+            await waitForLightningMilestonePreview();
+          }
           setVideoOptions(options);
 
           // after the selected video ends, go to Lightning Complete screen
@@ -1839,6 +1845,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
         setShouldExitAfterVideo(true);
         setIsTimerPaused(true);
         setPausedTime(Date.now());
+        await waitForLightningMilestonePreview();
 
         const options = generateRandomVideoOptions();
         if (options) setVideoOptions(options);
@@ -1859,6 +1866,7 @@ const showAnswerSymbolFor300ms = useCallback((payload) => {
       setIsTimerPaused(true);
       setPausedTime(Date.now());
       setShouldExitAfterVideo(false);
+      await waitForLightningMilestonePreview();
 
       const options = generateRandomVideoOptions();
       if (options) setVideoOptions(options);
