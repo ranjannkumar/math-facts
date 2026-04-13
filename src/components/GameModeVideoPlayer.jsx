@@ -57,7 +57,9 @@ const GameModeVideoPlayer = () => {
   const location = useLocation();
   const videoUrl = location.state?.videoUrl; // came from selection screen
   const videoRef = useRef(null);
-  const finishHandlerRef = useRef(() => {});
+  const finishHandlerRef = useRef(() => {
+    navigate("/game-mode", { replace: true });
+  });
 
   // prevent replay while we're already finishing/navigating
   const finishTriggeredRef = useRef(false);

@@ -17,7 +17,9 @@ const GameModeSurfVideoScreen = () => {
   const videoRef = useRef(null);
   const surfVideoListRef = useRef([]);
   const endHandledRef = useRef(false);
-  const endHandlerRef = useRef(() => {});
+  const endHandlerRef = useRef(() => {
+    navigate('/game-mode', { replace: true });
+  });
 
   const {
     startSurfNextQuiz,

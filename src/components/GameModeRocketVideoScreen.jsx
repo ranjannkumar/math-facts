@@ -14,7 +14,9 @@ const GameModeRocketVideoScreen = () => {
   const { kind } = useParams();
   const videoRef = useRef(null);
   const finishedRef = useRef(false);
-  const finishRef = useRef(() => {});
+  const finishRef = useRef(() => {
+    navigate('/game-mode', { replace: true });
+  });
 
   const {
     setIsTimerPaused,

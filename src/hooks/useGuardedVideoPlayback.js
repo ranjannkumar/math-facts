@@ -5,6 +5,8 @@ const DEFAULT_HARD_TIMEOUT_MS = 7000;
 const STALL_CHECK_INTERVAL_MS = 500;
 const STALL_THRESHOLD_MS = 1800;
 const STARTUP_STALL_THRESHOLD_MS = 2200;
+const PROGRESS_EPSILON = 0.01;
+const RECOVERY_SUCCESS_DELTA_SEC = 0.2;
 
 export default function useGuardedVideoPlayback({
   videoRef,
@@ -23,6 +25,8 @@ export default function useGuardedVideoPlayback({
   const lastProgressAtRef = useRef(0);
   const startupAttemptAtRef = useRef(0);
   const stalledSinceRef = useRef(0);
+  const recoveryStartedAtRef = useRef(0);
+  const recoveryBaselineTimeRef = useRef(0);
   const gateTimerRef = useRef(null);
   const hardTimerRef = useRef(null);
   const stallIntervalRef = useRef(null);
@@ -54,30 +58,45 @@ export default function useGuardedVideoPlayback({
     }, delayMs);
   }, []);
 
-  const markProgress = useCallback((v) => {
+  const markProgress = useCallback((v, { force = false } = {}) => {
     const ct = Number(v?.currentTime || 0);
-    if (ct >= 0) {
+    const hasAdvanced = ct > lastProgressTimeRef.current + PROGRESS_EPSILON;
+    if (ct >= 0 && (force || hasAdvanced)) {
       lastProgressTimeRef.current = ct;
       lastProgressAtRef.current = Date.now();
     }
   }, []);
 
+  const triggerHardTimeout = useCallback(() => {
+    if (hardTimeoutTriggeredRef.current) return;
+    hardTimeoutTriggeredRef.current = true;
+    needsRecoveryRef.current = false;
+    recoveryStartedAtRef.current = 0;
+    recoveryBaselineTimeRef.current = 0;
+    setShowTapToPlay(false);
+    clearRecoveryTimers();
+    onHardTimeout?.();
+  }, [clearRecoveryTimers, onHardTimeout]);
+
   const scheduleHardTimer = useCallback(() => {
     if (hardTimerRef.current) clearTimeout(hardTimerRef.current);
     hardTimerRef.current = setTimeout(() => {
       if (!needsRecoveryRef.current || hardTimeoutTriggeredRef.current) return;
-      hardTimeoutTriggeredRef.current = true;
-      needsRecoveryRef.current = false;
-      setShowTapToPlay(false);
-      onHardTimeout?.();
+      triggerHardTimeout();
     }, hardTimeoutMs);
-  }, [hardTimeoutMs, onHardTimeout]);
+  }, [hardTimeoutMs, triggerHardTimeout]);
 
-  const onRecoveredPlaying = useCallback(() => {
+  const onRecoveredProgress = useCallback((currentTimeSec) => {
+    if (needsRecoveryRef.current) {
+      const baseline = recoveryBaselineTimeRef.current;
+      if (currentTimeSec < baseline + RECOVERY_SUCCESS_DELTA_SEC) return;
+    }
     isPlayingRef.current = true;
     needsRecoveryRef.current = false;
     hasStartedPlaybackRef.current = true;
     stalledSinceRef.current = 0;
+    recoveryStartedAtRef.current = 0;
+    recoveryBaselineTimeRef.current = 0;
     setShowTapToPlay(false);
     clearRecoveryTimers();
   }, [clearRecoveryTimers]);
@@ -85,12 +104,22 @@ export default function useGuardedVideoPlayback({
   const beginRecovery = useCallback(
     ({ showGateDelayMs = showGateAfterMs } = {}) => {
       if (hardTimeoutTriggeredRef.current) return;
+      const alreadyRecovering = needsRecoveryRef.current;
       needsRecoveryRef.current = true;
       isPlayingRef.current = false;
+      if (!alreadyRecovering) {
+        const v = videoRef?.current;
+        recoveryStartedAtRef.current = Date.now();
+        recoveryBaselineTimeRef.current = Number(
+          v?.currentTime ?? lastProgressTimeRef.current ?? 0
+        );
+      }
       scheduleGateTimer(showGateDelayMs);
-      scheduleHardTimer();
+      if (!alreadyRecovering) {
+        scheduleHardTimer();
+      }
     },
-    [scheduleGateTimer, scheduleHardTimer, showGateAfterMs]
+    [videoRef, scheduleGateTimer, scheduleHardTimer, showGateAfterMs]
   );
 
   const tryPlay = useCallback(() => {
@@ -128,6 +157,8 @@ export default function useGuardedVideoPlayback({
       lastProgressAtRef.current = 0;
       startupAttemptAtRef.current = 0;
       stalledSinceRef.current = 0;
+      recoveryStartedAtRef.current = 0;
+      recoveryBaselineTimeRef.current = 0;
       return;
     }
 
@@ -141,18 +172,23 @@ export default function useGuardedVideoPlayback({
     setShowTapToPlay(false);
     startupAttemptAtRef.current = Date.now();
     stalledSinceRef.current = 0;
-    markProgress(v);
+    recoveryStartedAtRef.current = 0;
+    recoveryBaselineTimeRef.current = 0;
+    markProgress(v, { force: true });
 
     const onPlaying = () => {
-      markProgress(v);
-      onRecoveredPlaying();
+      isPlayingRef.current = true;
     };
 
     const onTimeUpdate = () => {
       markProgress(v);
-      if ((v.currentTime || 0) > 0.01) {
+      const currentTime = Number(v.currentTime || 0);
+      if (currentTime > 0.01) {
         hasStartedPlaybackRef.current = true;
         stalledSinceRef.current = 0;
+        if (needsRecoveryRef.current) {
+          onRecoveredProgress(currentTime);
+        }
       }
     };
 
@@ -180,7 +216,16 @@ export default function useGuardedVideoPlayback({
 
       const now = Date.now();
       const currentTime = Number(v.currentTime || 0);
-      const advanced = currentTime > lastProgressTimeRef.current + 0.01;
+      const advanced = currentTime > lastProgressTimeRef.current + PROGRESS_EPSILON;
+
+      if (
+        needsRecoveryRef.current &&
+        recoveryStartedAtRef.current > 0 &&
+        now - recoveryStartedAtRef.current >= hardTimeoutMs
+      ) {
+        triggerHardTimeout();
+        return;
+      }
 
       if (advanced) {
         lastProgressTimeRef.current = currentTime;
@@ -190,7 +235,7 @@ export default function useGuardedVideoPlayback({
           stalledSinceRef.current = 0;
         }
         if (needsRecoveryRef.current) {
-          onRecoveredPlaying();
+          onRecoveredProgress(currentTime);
         }
         return;
       }
@@ -234,8 +279,10 @@ export default function useGuardedVideoPlayback({
     beginRecovery,
     clearRecoveryTimers,
     clearStallWatch,
-    onRecoveredPlaying,
+    onRecoveredProgress,
+    triggerHardTimeout,
     markProgress,
+    hardTimeoutMs,
     showGateAfterMs,
     ...deps,
   ]);
