@@ -1,10 +1,12 @@
 // src/components/TablePicker.jsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { themeConfigs } from '../utils/mathGameLogic.js';
 import { getOperationLabel, getOperationMaxLevel } from '../config/modulesConfig.js';
 import { useMathGamePick } from '../store/mathGameBridgeStore.js';
+import useGuardedVideoPlayback from '../hooks/useGuardedVideoPlayback.js';
+import VideoPlaybackGate from './ui/VideoPlaybackGate.jsx';
 // import UserInfoBadge from './ui/UserInfoBadge.jsx';
 // import DailyStreakCounter from './ui/DailyStreakCounter.jsx';
 
@@ -155,6 +157,7 @@ const TablePicker = () => {
 
   const [showFactVideo, setShowFactVideo] = useState(false);
   const [loadingDots, setLoadingDots] = useState(1);
+  const factVideoRef = useRef(null);
   useEffect(() => {
   if (playFactVideoAfterStreak && !showDailyStreakAnimation) {
     setShowFactVideo(true);
@@ -208,12 +211,26 @@ const TablePicker = () => {
   };
 
   const factVideoSrc = getFactVideoPath(levelNumber);
+  const closeFactVideo = useCallback(() => {
+    setShowFactVideo(false);
+    setHideStatsUI(false);
+  }, [setHideStatsUI]);
+
+  const { showTapToPlay: showFactTapToPlay, handleTapToPlay: handleFactTapToPlay } =
+    useGuardedVideoPlayback({
+      videoRef: factVideoRef,
+      enabled: Boolean(showFactVideo && factVideoSrc && !showDailyStreakAnimation),
+      onHardTimeout: closeFactVideo,
+      deps: [showFactVideo, factVideoSrc, showDailyStreakAnimation, closeFactVideo],
+      hardTimeoutMs: 4000,
+    });
 
   if (showFactVideo && factVideoSrc && !showDailyStreakAnimation) {
     return (
       <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
   <div className="w-full h-full flex items-center justify-center px-4">
     <video
+      ref={factVideoRef}
       src={factVideoSrc}
       autoPlay
       playsInline
@@ -224,19 +241,19 @@ const TablePicker = () => {
         h-auto
         object-contain
       "
-      onEnded={() => {
-        setShowFactVideo(false);
-        setHideStatsUI(false);
-      }}
+      onEnded={closeFactVideo}
+      onError={closeFactVideo}
     />
   </div>
+  <VideoPlaybackGate
+    visible={showFactTapToPlay}
+    onTapToPlay={handleFactTapToPlay}
+    onSkip={closeFactVideo}
+  />
 
   {/* SKIP BUTTON */}
   <button
-    onClick={() => {
-      setShowFactVideo(false);
-      setHideStatsUI(false);
-    }}
+    onClick={closeFactVideo}
     className="
       absolute
       top-4 right-4

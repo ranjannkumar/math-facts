@@ -1,6 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMathGamePick } from '../store/mathGameBridgeStore.js';
+import useGuardedVideoPlayback from '../hooks/useGuardedVideoPlayback.js';
+import VideoPlaybackGate from './ui/VideoPlaybackGate.jsx';
 
 const VIDEO_MAP = {
   intro: '/SurfGameIntro.mp4',
@@ -15,6 +17,7 @@ const GameModeSurfVideoScreen = () => {
   const videoRef = useRef(null);
   const surfVideoListRef = useRef([]);
   const endHandledRef = useRef(false);
+  const endHandlerRef = useRef(() => {});
 
   const {
     startSurfNextQuiz,
@@ -48,6 +51,17 @@ const GameModeSurfVideoScreen = () => {
   const exitAfter = !!location.state?.exitAfter;
   const toRocketFlow = !!location.state?.toRocketFlow;
 
+  const runEndFallback = useCallback(() => {
+    Promise.resolve(endHandlerRef.current?.());
+  }, []);
+
+  const { showTapToPlay, handleTapToPlay } = useGuardedVideoPlayback({
+    videoRef,
+    onHardTimeout: runEndFallback,
+    deps: [videoSrc, kind, exitAfter, toRocketFlow, runEndFallback],
+    hardTimeoutMs: 4000,
+  });
+
   useEffect(() => {
     surfVideoListRef.current = surfVideoList || [];
   }, [surfVideoList]);
@@ -76,11 +90,9 @@ const GameModeSurfVideoScreen = () => {
       return { option1: shuffled[0], option2: shuffled[1] };
     };
 
-    v.muted = false;
     if (kind === 'intro' || kind === 'win' || kind === 'lose') {
       v.playbackRate = 2;
     }
-    v.setAttribute('playsinline', 'true');
 
     const handleEnded = async () => {
       // Guard against double-fire in React StrictMode/dev.
@@ -130,6 +142,7 @@ const GameModeSurfVideoScreen = () => {
 
       navigate('/game-mode', { replace: true });
     };
+    endHandlerRef.current = handleEnded;
 
     const handleError = () => {
       // Continue the same flow as a normal completion to avoid intro crashes.
@@ -138,10 +151,6 @@ const GameModeSurfVideoScreen = () => {
 
     v.addEventListener('ended', handleEnded);
     v.addEventListener('error', handleError);
-    v.play().catch(() => {
-      // iOS Safari can block autoplay for unmuted video; continue flow safely.
-      setTimeout(() => Promise.resolve(handleEnded()), 800);
-    });
     return () => {
       v.removeEventListener('ended', handleEnded);
       v.removeEventListener('error', handleError);
@@ -173,6 +182,11 @@ const GameModeSurfVideoScreen = () => {
         playsInline
         autoPlay
         className="w-full h-full object-contain"
+      />
+      <VideoPlaybackGate
+        visible={showTapToPlay}
+        onTapToPlay={handleTapToPlay}
+        onSkip={runEndFallback}
       />
     </div>
   );

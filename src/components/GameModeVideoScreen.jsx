@@ -1,10 +1,25 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import useGuardedVideoPlayback from "../hooks/useGuardedVideoPlayback.js";
+import VideoPlaybackGate from "./ui/VideoPlaybackGate.jsx";
 
 const GameModeVideoScreen = () => {
   const nav = useNavigate();
   const videoRef = useRef(null);
   const finishedRef = useRef(false);
+
+  const finish = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    nav("/game-mode-intro", { replace: true });
+  }, [nav]);
+
+  const { showTapToPlay, handleTapToPlay } = useGuardedVideoPlayback({
+    videoRef,
+    onHardTimeout: finish,
+    deps: [finish],
+    hardTimeoutMs: 4000,
+  });
 
   useEffect(() => {
     finishedRef.current = false;
@@ -14,19 +29,7 @@ const GameModeVideoScreen = () => {
     const v = videoRef.current;
     if (!v) return;
 
-    const finish = () => {
-      if (finishedRef.current) return;
-      finishedRef.current = true;
-      nav("/game-mode-intro", { replace: true });
-    };
-
-    v.muted = false;
     v.playbackRate = 2;
-    v.setAttribute("playsinline", "true");
-    v.play().catch(() => {
-      // If autoplay fails on a device, continue flow instead of hanging/crashing.
-      setTimeout(finish, 800);
-    });
 
     const handleEnded = () => finish();
     const handleError = () => setTimeout(finish, 1200);
@@ -37,7 +40,7 @@ const GameModeVideoScreen = () => {
       v.removeEventListener("ended", handleEnded);
       v.removeEventListener("error", handleError);
     };
-  }, [nav]);
+  }, [finish]);
 
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center">
@@ -49,6 +52,7 @@ const GameModeVideoScreen = () => {
         autoPlay
         className="w-full h-full object-contain"
       />
+      <VideoPlaybackGate visible={showTapToPlay} onTapToPlay={handleTapToPlay} onSkip={finish} />
     </div>
   );
 };

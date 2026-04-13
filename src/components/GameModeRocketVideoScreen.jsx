@@ -1,6 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMathGamePick } from '../store/mathGameBridgeStore.js';
+import useGuardedVideoPlayback from '../hooks/useGuardedVideoPlayback.js';
+import VideoPlaybackGate from './ui/VideoPlaybackGate.jsx';
 
 const VIDEO_MAP = {
   intro: '/RocketIntro.mp4',
@@ -12,6 +14,7 @@ const GameModeRocketVideoScreen = () => {
   const { kind } = useParams();
   const videoRef = useRef(null);
   const finishedRef = useRef(false);
+  const finishRef = useRef(() => {});
 
   const {
     setIsTimerPaused,
@@ -32,6 +35,17 @@ const GameModeRocketVideoScreen = () => {
   }));
 
   const videoSrc = VIDEO_MAP[kind] || VIDEO_MAP.intro;
+
+  const runFinishFallback = useCallback(() => {
+    Promise.resolve(finishRef.current?.());
+  }, []);
+
+  const { showTapToPlay, handleTapToPlay } = useGuardedVideoPlayback({
+    videoRef,
+    onHardTimeout: runFinishFallback,
+    deps: [videoSrc, kind, runFinishFallback],
+    hardTimeoutMs: 4000,
+  });
 
   useEffect(() => {
     finishedRef.current = false;
@@ -66,6 +80,7 @@ const GameModeRocketVideoScreen = () => {
 
       navigate('/game-mode', { replace: true });
     };
+    finishRef.current = finish;
 
     const onEnded = () => finish();
     const onError = () => {
@@ -73,15 +88,9 @@ const GameModeRocketVideoScreen = () => {
       setTimeout(finish, 1200);
     };
 
-    videoEl.muted = false;
     if (kind === 'intro') {
       videoEl.playbackRate = 2;
     }
-    videoEl.setAttribute('playsinline', 'true');
-    videoEl.play().catch(() => {
-      // iOS Safari can block autoplay for unmuted intro videos.
-      setTimeout(finish, 800);
-    });
     videoEl.addEventListener('ended', onEnded);
     videoEl.addEventListener('error', onError);
 
@@ -110,6 +119,11 @@ const GameModeRocketVideoScreen = () => {
         playsInline
         autoPlay
         className="w-full h-full object-contain"
+      />
+      <VideoPlaybackGate
+        visible={showTapToPlay}
+        onTapToPlay={handleTapToPlay}
+        onSkip={runFinishFallback}
       />
     </div>
   );

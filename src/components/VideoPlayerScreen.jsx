@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { getOperationMaxLevel, normalizeOperation } from '../config/modulesConfig.js';
 import { useMathGamePick } from '../store/mathGameBridgeStore.js';
+import useGuardedVideoPlayback from '../hooks/useGuardedVideoPlayback.js';
+import VideoPlaybackGate from './ui/VideoPlaybackGate.jsx';
 
 const rewardVideoModules = import.meta.glob('/public/reward-videos/**/*.mp4', { as: 'url' });
 const rewardThumbPngModules = import.meta.glob('/public/reward-videos/**/*.png', { as: 'url' });
@@ -53,15 +55,6 @@ const VideoPlayerScreen = () => {
   const [videoEnded, setVideoEnded] = useState(false);
   const videoRef = useRef(null);
   const [rewardVideoList, setRewardVideoList] = useState([]);
-
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-
-    v.muted = false;
-    v.setAttribute("playsinline", "true");
-    v.play().catch(() => { /* iOS may block until gesture */ });
-  }, [selectedVideo]);
 
 
   useEffect(() => {
@@ -170,6 +163,18 @@ const VideoPlayerScreen = () => {
     }
   }, [videoEnded, handleNavigation]);
 
+  const handleVideoFinish = useCallback(() => {
+    setVideoEnded(true);
+  }, []);
+
+  const { showTapToPlay, handleTapToPlay } = useGuardedVideoPlayback({
+    videoRef,
+    enabled: Boolean(selectedVideo),
+    onHardTimeout: handleVideoFinish,
+    deps: [selectedVideo?.url, handleVideoFinish],
+    hardTimeoutMs: 4000,
+  });
+
   const renderCard = (option) => (
     <button
       type="button"
@@ -236,7 +241,13 @@ return (
       preload="auto"
       autoPlay
       onEnded={() => setVideoEnded(true)}
+      onError={handleVideoFinish}
       className="w-full h-full object-contain pointer-events-none"
+    />
+    <VideoPlaybackGate
+      visible={showTapToPlay}
+      onTapToPlay={handleTapToPlay}
+      onSkip={handleVideoFinish}
     />
   </div>
 );

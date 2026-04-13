@@ -1,6 +1,8 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useMathGamePick } from "../store/mathGameBridgeStore.js";
+import useGuardedVideoPlayback from "../hooks/useGuardedVideoPlayback.js";
+import VideoPlaybackGate from "./ui/VideoPlaybackGate.jsx";
 
 const GameModeVideoPlayer = () => {
   const navigate = useNavigate();
@@ -55,6 +57,7 @@ const GameModeVideoPlayer = () => {
   const location = useLocation();
   const videoUrl = location.state?.videoUrl; // came from selection screen
   const videoRef = useRef(null);
+  const finishHandlerRef = useRef(() => {});
 
   // prevent replay while we're already finishing/navigating
   const finishTriggeredRef = useRef(false);
@@ -63,6 +66,18 @@ const GameModeVideoPlayer = () => {
   useEffect(() => {
     finishTriggeredRef.current = false;
   }, [videoUrl]);
+
+  const runFallbackFinish = useCallback(() => {
+    Promise.resolve(finishHandlerRef.current?.());
+  }, []);
+
+  const { showTapToPlay, handleTapToPlay } = useGuardedVideoPlayback({
+    videoRef,
+    enabled: Boolean(videoUrl),
+    onHardTimeout: runFallbackFinish,
+    deps: [videoUrl, runFallbackFinish],
+    hardTimeoutMs: 4000,
+  });
 
   useEffect(() => {
     const videoEl = videoRef.current;
@@ -134,6 +149,7 @@ const GameModeVideoPlayer = () => {
         navigate("/game-mode", { replace: true });
       }
     };
+    finishHandlerRef.current = cleanupAndNavigate;
 
     const handleEnded = () => cleanupAndNavigate();
     const handleError = () => {
@@ -144,13 +160,6 @@ const GameModeVideoPlayer = () => {
     videoEl.playbackRate = 2.0;
     videoEl.addEventListener("ended", handleEnded);
     videoEl.addEventListener("error", handleError);
-
-    const playPromise = videoEl.play();
-    if (playPromise && typeof playPromise.catch === "function") {
-      playPromise.catch((err) => {
-        console.warn("[GameMode] Autoplay failed:", err);
-      });
-    }
 
     return () => {
       videoEl.removeEventListener("ended", handleEnded);
@@ -201,6 +210,11 @@ const GameModeVideoPlayer = () => {
         disableRemotePlayback
         className="w-screen h-screen object-contain pointer-events-none"
         key={videoName || videoUrl}
+      />
+      <VideoPlaybackGate
+        visible={showTapToPlay}
+        onTapToPlay={handleTapToPlay}
+        onSkip={runFallbackFinish}
       />
     </div>
   );
