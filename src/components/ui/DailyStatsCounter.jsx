@@ -9,7 +9,7 @@ const DailyStatsCounter = ({ style }) => {
         <div className="mr-1 sm:mr-2 md:mr-3 text-lg sm:text-xl md:text-2xl">{'\u{1F4DD}'}</div>
         <div className="min-w-0">
           <div className="text-xs sm:text-xs md:text-sm opacity-80">Today's Score</div>
-          <div className="text-sm sm:text-base md:text-lg lg:text-xl leading-tight">{dailyCorrect} correct</div>
+          <div className="text-sm sm:text-base md:text-lg lg:text-xl leading-tight">{dailyCorrect}</div>
         </div>
       </div>
     </div>
