@@ -84,7 +84,7 @@ export default function useGuardedVideoPlayback({
 
   const beginRecovery = useCallback(
     ({ showGateDelayMs = showGateAfterMs } = {}) => {
-      if (hardTimeoutTriggeredRef.current || needsRecoveryRef.current) return;
+      if (hardTimeoutTriggeredRef.current) return;
       needsRecoveryRef.current = true;
       isPlayingRef.current = false;
       scheduleGateTimer(showGateDelayMs);
@@ -197,20 +197,22 @@ export default function useGuardedVideoPlayback({
 
       if (!hasStartedPlaybackRef.current) {
         if (now - startupAttemptAtRef.current >= STARTUP_STALL_THRESHOLD_MS) {
-          beginRecovery({ showGateDelayMs: showGateAfterMs });
+          beginRecovery({ showGateDelayMs: 0 });
           tryPlay();
         }
         return;
       }
 
-      if (v.paused) return;
-
       const noProgressFor = now - lastProgressAtRef.current;
+      const pausedWithoutEnd = v.paused && !v.ended && !document.hidden;
+      if (pausedWithoutEnd && !stalledSinceRef.current) {
+        stalledSinceRef.current = now;
+      }
       const hasStallSignal =
         stalledSinceRef.current > 0 && now - stalledSinceRef.current >= STALL_THRESHOLD_MS;
 
       if (noProgressFor >= STALL_THRESHOLD_MS || hasStallSignal) {
-        beginRecovery({ showGateDelayMs: showGateAfterMs });
+        beginRecovery({ showGateDelayMs: 0 });
         tryPlay();
       }
     }, STALL_CHECK_INTERVAL_MS);
