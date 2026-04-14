@@ -283,7 +283,7 @@
   min-width: 980px;
   table-layout: fixed;
   border-collapse: separate;
-  border-spacing: 0 0.5rem;
+  border-spacing: 0;
 }
 
 .admin-dashboard__col--index {
@@ -381,13 +381,17 @@
 
 .admin-dashboard__table thead tr:first-child th:last-child {
   border-top-right-radius: 0.8rem;
-  border-bottom-right-radius: 0.8rem;
+  border-bottom-right-radius: 0;
 }
 
 .admin-dashboard__table thead tr:nth-child(2) th {
   background: rgba(27, 49, 83, 0.82);
   padding-top: 0.58rem;
   padding-bottom: 0.58rem;
+}
+
+.admin-dashboard__table thead tr:nth-child(2) th:last-child {
+  border-bottom-right-radius: 0.8rem;
 }
 
 .admin-dashboard__table tbody tr {
