@@ -384,8 +384,9 @@ const AdminDashboard = () => {
   };
 
   const summary = useMemo(() => {
-    const totalStudents = Number.isFinite(totalCount) ? totalCount : stats.length;
     const loadedStudents = stats.length;
+    const totalStudentsFromApi = Number.isFinite(totalCount) ? totalCount : loadedStudents;
+    const totalStudents = Math.max(totalStudentsFromApi, loadedStudents);
     const onlineStudents = stats.reduce(
       (acc, student) => acc + (Boolean(student?.loggedInToday) ? 1 : 0),
       0
@@ -541,6 +542,7 @@ const AdminDashboard = () => {
             <div className="admin-dashboard__table-wrap">
               <table className="admin-dashboard__table">
                 <colgroup>
+                  <col className="admin-dashboard__col admin-dashboard__col--index" />
                   <col className="admin-dashboard__col admin-dashboard__col--student" />
                   <col className="admin-dashboard__col admin-dashboard__col--status" />
                   <col className="admin-dashboard__col admin-dashboard__col--streak" />
@@ -553,6 +555,7 @@ const AdminDashboard = () => {
                 </colgroup>
                 <thead>
                   <tr className="admin-dashboard__head-row admin-dashboard__head-row--group">
+                    <th rowSpan={2} className="admin-dashboard__index-head">#</th>
                     <th rowSpan={2}>Student</th>
                     <th rowSpan={2}>Logged In Today</th>
                     <th rowSpan={2}>Streak</th>
@@ -570,7 +573,7 @@ const AdminDashboard = () => {
                 </thead>
 
                 <tbody>
-                  {stats.map((student) => {
+                  {stats.map((student, index) => {
                     const studentName = formatStudentNameForDashboard(student.name);
                     const studentPin = student.pin;
                     const isOnline = Boolean(student.loggedInToday);
@@ -591,6 +594,7 @@ const AdminDashboard = () => {
                         tabIndex={0}
                         aria-label={`View analytics for ${studentName}`}
                       >
+                        <td className="admin-dashboard__row-number">{index + 1}</td>
                         <td>
                           <div className="admin-dashboard__student-cell">
                             <span

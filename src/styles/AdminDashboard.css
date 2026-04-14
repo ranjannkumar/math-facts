@@ -286,6 +286,10 @@
   border-spacing: 0 0.5rem;
 }
 
+.admin-dashboard__col--index {
+  width: 64px;
+}
+
 .admin-dashboard__col--student {
   width: 240px;
 }
@@ -422,6 +426,16 @@
 
 .admin-dashboard__table tbody tr:focus-visible {
   outline: none;
+}
+
+.admin-dashboard__index-head,
+.admin-dashboard__row-number {
+  text-align: center !important;
+}
+
+.admin-dashboard__row-number {
+  font-weight: 700;
+  color: rgba(214, 232, 255, 0.95);
 }
 
 .admin-dashboard__student-cell {
